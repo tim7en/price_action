@@ -1,0 +1,15 @@
+{
+  "downloaded_at_utc": "2026-05-08T10:51:04.179572+00:00",
+  "ticker": "HOOD",
+  "source": "Yahoo Finance chart API",
+  "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/HOOD",
+  "start": "2000-01-01",
+  "end": "2026-05-08",
+  "rows": 1180,
+  "first_date": "2021-08-25",
+  "last_date": "2026-05-07",
+  "feature_windows": {
+    "sma": 20,
+    "atr": 14
+  }
+}

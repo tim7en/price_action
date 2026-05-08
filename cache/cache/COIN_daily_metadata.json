@@ -1,0 +1,15 @@
+{
+  "downloaded_at_utc": "2026-05-08T10:51:03.027486+00:00",
+  "ticker": "COIN",
+  "source": "Yahoo Finance chart API",
+  "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/COIN",
+  "start": "2000-01-01",
+  "end": "2026-05-08",
+  "rows": 1254,
+  "first_date": "2021-05-11",
+  "last_date": "2026-05-07",
+  "feature_windows": {
+    "sma": 20,
+    "atr": 14
+  }
+}

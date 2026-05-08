@@ -1,0 +1,20 @@
+{
+  "feature": "us_nominal_gdp_saar_bil",
+  "name": "Gross Domestic Product",
+  "source": "FRED",
+  "source_url": "https://fred.stlouisfed.org/series/GDP",
+  "units": "billions of current dollars, seasonally adjusted annual rate",
+  "history_start": "1999-01-01",
+  "history_end": "2025-10-01",
+  "rows_with_values": 108,
+  "total_rows": 7300,
+  "missing_rows": 7192,
+  "coverage_ratio": 0.014794520547945205,
+  "frequency": "quarterly",
+  "latest_value": 31442.483,
+  "days_since_update": 219,
+  "expected_max_lag_days": 140,
+  "stale": true,
+  "stale_status": "stale",
+  "notes": []
+}

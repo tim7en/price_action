@@ -1,0 +1,20 @@
+{
+  "feature": "market_cap_to_gdp_pct",
+  "name": "Market Capitalization of Listed Domestic Companies for United States",
+  "source": "FRED",
+  "source_url": "https://fred.stlouisfed.org/series/DDDM01USA156NWDB",
+  "units": "percent of GDP",
+  "history_start": "1999-01-01",
+  "history_end": "2020-01-01",
+  "rows_with_values": 22,
+  "total_rows": 7300,
+  "missing_rows": 7278,
+  "coverage_ratio": 0.0030136986301369864,
+  "frequency": "annual_or_irregular",
+  "latest_value": 194.889,
+  "days_since_update": 2319,
+  "expected_max_lag_days": 550,
+  "stale": true,
+  "stale_status": "stale",
+  "notes": []
+}

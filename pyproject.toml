@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "price-action"
+version = "0.1.0"
+description = "Starter ML pipeline for price action experiments"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26,<3.0",
+    "pandas>=2.2,<3.0",
+    "scikit-learn>=1.5,<2.0",
+    "lightgbm>=4.5,<5.0",
+]
+
+[project.scripts]
+price-action-train = "price_action.train:main"
+price-action-build-macro-store = "price_action.macro_features:main"
+price-action-refresh-data = "price_action.update_data:main"
+price-action-panel = "price_action.panel:main"
+price-action-report = "price_action.report:main"
+price-action-recommend = "price_action.recommend:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/price_action"]
+

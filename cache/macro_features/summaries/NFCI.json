@@ -1,0 +1,22 @@
+{
+  "feature": "NFCI",
+  "name": "Chicago Fed National Financial Conditions Index",
+  "source": "FRED",
+  "source_url": "https://fred.stlouisfed.org/series/NFCI",
+  "units": "index level",
+  "history_start": "1999-03-12",
+  "history_end": "2026-03-27",
+  "rows_with_values": 1412,
+  "total_rows": 7300,
+  "missing_rows": 5888,
+  "coverage_ratio": 0.19342465753424656,
+  "frequency": "weekly",
+  "latest_value": -0.43366,
+  "days_since_update": 42,
+  "expected_max_lag_days": 21,
+  "stale": true,
+  "stale_status": "stale",
+  "notes": [
+    "Weekly financial conditions series."
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "feature": "wilshire_total_market_index",
+  "name": "WILSHIRE_TOTAL_MARKET",
+  "source": "Yahoo Finance chart API",
+  "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EFTW5000",
+  "units": "index level",
+  "history_start": "1999-01-04",
+  "history_end": "2026-04-08",
+  "rows_with_values": 6845,
+  "total_rows": 7300,
+  "missing_rows": 455,
+  "coverage_ratio": 0.9376712328767123,
+  "frequency": "daily",
+  "latest_value": 67945.4921875,
+  "days_since_update": 30,
+  "expected_max_lag_days": 10,
+  "stale": true,
+  "stale_status": "stale",
+  "notes": []
+}

@@ -1,0 +1,20 @@
+{
+  "feature": "copper_usd_per_lb",
+  "name": "copper_usd_per_lb",
+  "source": "unknown",
+  "source_url": null,
+  "units": null,
+  "history_start": "2000-08-30",
+  "history_end": "2026-04-09",
+  "rows_with_values": 6430,
+  "total_rows": 7300,
+  "missing_rows": 870,
+  "coverage_ratio": 0.8808219178082192,
+  "frequency": "daily",
+  "latest_value": 5.767000198364258,
+  "days_since_update": 29,
+  "expected_max_lag_days": 10,
+  "stale": true,
+  "stale_status": "stale",
+  "notes": []
+}

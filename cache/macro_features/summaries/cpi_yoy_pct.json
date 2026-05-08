@@ -1,0 +1,22 @@
+{
+  "feature": "cpi_yoy_pct",
+  "name": "cpi_yoy_pct",
+  "source": "FRED",
+  "source_url": "https://fred.stlouisfed.org/series/CPIAUCSL",
+  "units": "percent",
+  "history_start": "1999-01-01",
+  "history_end": "2026-02-01",
+  "rows_with_values": 325,
+  "total_rows": 7300,
+  "missing_rows": 6975,
+  "coverage_ratio": 0.04452054794520548,
+  "frequency": "monthly",
+  "latest_value": 2.4340041103732224,
+  "days_since_update": 96,
+  "expected_max_lag_days": 62,
+  "stale": true,
+  "stale_status": "stale",
+  "notes": [
+    "Derived from CPI."
+  ]
+}

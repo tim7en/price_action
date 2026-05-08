@@ -1,0 +1,22 @@
+{
+  "feature": "T10Y3M",
+  "name": "10-Year Treasury Constant Maturity Minus 3-Month Treasury Constant Maturity",
+  "source": "FRED",
+  "source_url": "https://fred.stlouisfed.org/series/T10Y3M",
+  "units": "percent",
+  "history_start": "1999-03-10",
+  "history_end": "2026-04-07",
+  "rows_with_values": 6774,
+  "total_rows": 7300,
+  "missing_rows": 526,
+  "coverage_ratio": 0.927945205479452,
+  "frequency": "daily",
+  "latest_value": 0.62,
+  "days_since_update": 31,
+  "expected_max_lag_days": 10,
+  "stale": true,
+  "stale_status": "stale",
+  "notes": [
+    "Yield-curve slope proxy."
+  ]
+}
