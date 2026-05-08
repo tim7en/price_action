@@ -5,6 +5,8 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from .macro_context import MODEL_MACRO_CONTEXT_COLUMNS
+
 
 def rolling_zscore(series: pd.Series, window: int) -> pd.Series:
     mean = series.rolling(window=window, min_periods=window).mean()
@@ -53,27 +55,7 @@ def build_feature_frame(
     if "atr" in frame.columns:
         frame["atr_pct"] = frame["atr"] / frame["close"]
 
-    context_columns = _existing(
-        [
-            "dxy_close",
-            "gold_usd_per_oz",
-            "wti_usd_per_bbl",
-            "us_2y_yield",
-            "us_10y_yield",
-            "us_30y_yield",
-            "yield_curve_10y_2y",
-            "high_yield_spread",
-            "spot_vix",
-            "vix3m_level",
-            "market_cap_to_gdp_pct",
-            "market_cap_to_gdp_pct_patched",
-            "cpi_yoy_pct",
-            "unemployment_rate_pct",
-            "NFCI",
-            "T10Y3M",
-        ],
-        frame,
-    )
+    context_columns = _existing(MODEL_MACRO_CONTEXT_COLUMNS, frame)
 
     for column in context_columns:
         frame[column] = pd.to_numeric(frame[column], errors="coerce").ffill()

@@ -19,6 +19,7 @@ price-action-train = "price_action.train:main"
 price-action-build-macro-store = "price_action.macro_features:main"
 price-action-refresh-data = "price_action.update_data:main"
 price-action-panel = "price_action.panel:main"
+price-action-macro-report = "price_action.macro_report:main"
 price-action-report = "price_action.report:main"
 price-action-recommend = "price_action.recommend:main"
 

@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Macro Variables Used By The Models</title>
+  <style>
+    :root {
+      --bg: #f7f2e8;
+      --panel: #fffdf8;
+      --ink: #1b2430;
+      --muted: #5f6b76;
+      --line: #d5cfc5;
+      --accent: #7a3e2b;
+      --accent-soft: #e9dcc8;
+      --shadow: 0 20px 45px rgba(27, 36, 48, 0.08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      background:
+        radial-gradient(circle at top left, rgba(122, 62, 43, 0.10), transparent 28%),
+        radial-gradient(circle at top right, rgba(15, 76, 92, 0.08), transparent 24%),
+        var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+    a { color: #0f4c5c; }
+    .page { max-width: 1220px; margin: 0 auto; padding: 48px 24px 80px; }
+    .hero {
+      background: linear-gradient(135deg, rgba(255, 253, 248, 0.96), rgba(247, 242, 232, 0.96));
+      border: 1px solid rgba(213, 207, 197, 0.9);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 40px;
+      margin-bottom: 28px;
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.78rem;
+      color: var(--accent);
+    }
+    h1, h2, h3 { line-height: 1.15; margin: 0; }
+    h1 { font-size: clamp(2.4rem, 4vw, 4.2rem); max-width: 12ch; }
+    h2 { font-size: clamp(1.5rem, 2.5vw, 2.2rem); margin-bottom: 8px; }
+    h3 { font-size: 1.15rem; margin-bottom: 10px; }
+    .hero p { max-width: 68ch; color: var(--muted); font-size: 1.02rem; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .hero-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(233, 220, 200, 0.75);
+      color: var(--ink);
+      border: 1px solid rgba(122, 62, 43, 0.12);
+      font-size: 0.92rem;
+    }
+    .toc {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .toc a {
+      text-decoration: none;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(213, 207, 197, 0.9);
+      background: rgba(255, 253, 248, 0.8);
+      color: var(--ink);
+      box-shadow: 0 10px 24px rgba(27, 36, 48, 0.04);
+    }
+    .methodology {
+      background: rgba(255, 253, 248, 0.88);
+      border-radius: 22px;
+      border: 1px solid rgba(213, 207, 197, 0.9);
+      padding: 26px 28px;
+      margin-bottom: 28px;
+    }
+        .framework-section {
+            background: rgba(255, 253, 248, 0.88);
+            border-radius: 22px;
+            border: 1px solid rgba(213, 207, 197, 0.9);
+            padding: 26px 28px;
+            margin-bottom: 28px;
+        }
+        .compact-section { padding-bottom: 20px; }
+        .framework-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+        }
+        .framework-card, .principle-card, .scenario-card {
+            background: var(--panel);
+            border-radius: 18px;
+            border: 1px solid rgba(213, 207, 197, 0.95);
+            padding: 18px;
+            min-height: 100%;
+        }
+        .framework-card p, .principle-card p, .scenario-card p { margin: 10px 0 0; color: var(--muted); }
+        .plain-list { margin: 12px 0 0; padding-left: 18px; color: var(--muted); }
+        .plain-list li + li { margin-top: 8px; }
+        .two-column-list { columns: 2; column-gap: 28px; }
+        .formula-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+            margin-bottom: 18px;
+        }
+        .formula-card {
+            margin: 0;
+            padding: 14px 16px;
+            background: #f4ede1;
+            border: 1px solid rgba(122, 62, 43, 0.14);
+            border-radius: 14px;
+            overflow-x: auto;
+            color: var(--ink);
+            font-size: 0.9rem;
+            font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+        }
+    .group-section {
+      margin-bottom: 34px;
+      padding: 28px;
+      border-radius: 24px;
+      background: rgba(255, 253, 248, 0.9);
+      border: 1px solid rgba(213, 207, 197, 0.92);
+      box-shadow: var(--shadow);
+    }
+    .section-copy p { margin-top: 0; color: var(--muted); max-width: 72ch; }
+    .plot-frame {
+      margin: 24px 0 22px;
+      padding: 16px;
+      background: rgba(247, 242, 232, 0.75);
+      border-radius: 18px;
+      border: 1px solid rgba(213, 207, 197, 0.85);
+    }
+    .plot-frame img { display: block; width: 100%; border-radius: 10px; }
+    .series-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+    .series-card {
+      background: var(--panel);
+      border-radius: var(--radius);
+      border: 1px solid rgba(213, 207, 197, 0.95);
+      padding: 18px 18px 16px;
+      min-height: 100%;
+    }
+    .series-key {
+      margin: 0 0 8px;
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+    }
+    .series-brief { margin: 0 0 16px; color: var(--muted); }
+    .series-meta { margin: 0; display: grid; gap: 10px; }
+    .series-meta div {
+      display: grid;
+      grid-template-columns: 82px 1fr;
+      gap: 8px;
+      align-items: start;
+      padding-top: 10px;
+      border-top: 1px solid rgba(213, 207, 197, 0.6);
+    }
+    .series-meta dt { font-weight: 600; color: var(--ink); }
+    .series-meta dd { margin: 0; color: var(--muted); }
+        .detail-block { margin-top: 14px; }
+        .detail-label {
+            margin: 0 0 8px;
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent);
+        }
+        .chip-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .chip-list li {
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(233, 220, 200, 0.55);
+            border: 1px solid rgba(122, 62, 43, 0.1);
+            color: var(--ink);
+            font-size: 0.84rem;
+            line-height: 1.3;
+        }
+    @media (max-width: 720px) {
+      .page { padding: 24px 16px 56px; }
+            .hero, .methodology, .framework-section, .group-section { padding: 22px; }
+      .series-meta div { grid-template-columns: 1fr; }
+            .two-column-list { columns: 1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">Model Macro Atlas</p>
+      <h1>Macro Variables Used By The Models</h1>
+            <p>This document groups the macro variables currently fed into the price-action models and shows their long-history timelines in a cycle-aware format. It also distinguishes what the live model uses today from the richer regime architecture it should evolve toward: VIX as a structural regime variable, valuation as fragility rather than timing, and rate pace as a dedicated shock channel.</p>
+      <div class="hero-meta">
+        <span>Generated 2026-05-08 17:17 UTC</span>
+        <span>16 base macro series</span>
+                <span>Current live transforms: level, 63-day z-score, 5-day delta</span>
+      </div>
+    </section>
+
+    <nav class="toc">
+      <a href="#inflation_labor">Inflation And Labor</a> <a href="#rates_curve">Rates And The Curve</a> <a href="#credit_conditions">Credit And Conditions</a> <a href="#volatility_risk">Volatility And Risk Appetite</a> <a href="#dollar_real_assets">Dollar And Real Assets</a> <a href="#valuation_balance_sheet">Valuation And Balance Sheet Backdrop</a>
+    </nav>
+
+    <section class="methodology">
+      <p class="eyebrow">Method</p>
+            <p>The charts use the same base macro series list referenced by model feature engineering. Each series is aligned to the daily market frame and forward-filled the same way the models consume it. Crisis windows are shaded to make cross-cycle comparisons easier: Dot-com unwind: 2000-2002 | GFC: 2007-2009 | Pandemic shock: 2020-2020 | Inflation tightening: 2021-2023. The cards below add model-role guidance so the report does not treat VIX, valuation, credit, and rates as interchangeable inputs.</p>
+    </section>
+
+        <section class="framework-section">
+  <p class="eyebrow">System Design</p>
+  <h2>A Better Macro Architecture</h2>
+  <div class="framework-grid framework-card-grid">
+<article class="framework-card">
+  <h3>Regime Layer</h3>
+  <p>This layer decides whether the environment is calm, stressed, panicking, recovering, or inflation-shocked before any directional forecast is trusted.</p>
+  <ul class="plain-list"><li>VIX level, change, percentile, and term structure</li><li>Credit and liquidity stress via high-yield spreads, NFCI, and dollar strength</li><li>Rate shock via front-end repricing and curve deformation</li><li>Valuation fragility as a backdrop rather than a timing trigger</li></ul>
+</article>
+<article class="framework-card">
+  <h3>Prediction Layer</h3>
+  <p>Once regime is known, price-action and macro features forecast forward return within that environment instead of pretending all regimes behave the same way.</p>
+  <ul class="plain-list"><li>Price action and volume</li><li>Macro and valuation context</li><li>Volatility-adjusted returns and breakout strength</li><li>Sentiment and liquidity inputs when available</li></ul>
+</article>
+<article class="framework-card">
+  <h3>Decision Layer</h3>
+  <p>The trading decision should use regime and return forecasts to decide not only direction but exposure quality.</p>
+  <ul class="plain-list"><li>Trade or no trade</li><li>Position size</li><li>Stop distance</li><li>Leverage and cooldown</li><li>Which strategy family is active</li></ul>
+</article>
+  </div>
+</section>
+
+        <section class="framework-section">
+  <p class="eyebrow">Interpretation Guardrails</p>
+  <h2>How These Variables Should Be Read</h2>
+  <div class="framework-grid principle-grid">
+<article class="principle-card">
+  <h3>VIX gets a structural role, not a manual weight</h3>
+  <p>VIX is option-implied 30-day stress, not a generic input beside RSI. It should affect participation, sizing, stops, leverage, and strategy selection, not only the probability score.</p>
+</article>
+<article class="principle-card">
+  <h3>Normalize price moves by implied volatility</h3>
+  <p>A 2% move at low VIX is abnormal; the same move at high VIX may be ordinary. Returns, breakouts, drawdowns, and volume spikes become more informative when scaled by implied volatility.</p>
+</article>
+<article class="principle-card">
+  <h3>Valuation is a vulnerability multiplier</h3>
+  <p>High CAPE or market-cap-to-GDP does not mean crash tomorrow. It lowers long-run expected return and becomes dangerous when combined with rising volatility, widening spreads, or rapid tightening.</p>
+</article>
+<article class="principle-card">
+  <h3>Rate pace matters more than static levels</h3>
+  <p>Equities usually react hardest to speed, surprise, and direction of rate change. Front-end repricing, real-yield moves, and curve change deserve their own shock variables.</p>
+</article>
+<article class="principle-card">
+  <h3>Interactions matter more than isolated readings</h3>
+  <p>High valuation alone is not enough, and high VIX alone is not enough. The dangerous state is the interaction: high valuation plus rising VIX plus fast rate hikes plus negative momentum plus credit stress.</p>
+</article>
+  </div>
+</section>
+
+        <section class="framework-section">
+  <p class="eyebrow">Engineering Blueprint</p>
+  <h2>Current Inputs Versus Recommended Extensions</h2>
+  <div class="formula-strip">
+    <pre class="formula-card">expected_daily_vol = spot_vix / 100 / sqrt(252)</pre>
+    <pre class="formula-card">vix_adjusted_move = return_1d / expected_daily_vol</pre>
+    <pre class="formula-card">crash_risk_score = valuation_fragility_score * volatility_stress_score * rate_shock_score</pre>
+  </div>
+  <div class="framework-grid framework-card-grid">
+<article class="framework-card">
+  <h3>Derive Next From Current Inputs</h3>
+  <ul class="plain-list"><li>vix_percentile_1y, vix_change_1d, vix_change_5d, vix_change_20d, and vix_acceleration</li><li>realized_vol_20d and iv_rv_spread = spot_vix minus realized_vol_20d</li><li>return_1d_vix_adjusted, return_5d_vix_adjusted, breakout_strength_vix_adjusted, and drawdown_vix_adjusted</li><li>two_year_yield_change_1m, yield_curve_change_3m, credit_stress_score, valuation_fragility_score, and rate_shock_score</li> </ul>
+</article>
+<article class="framework-card">
+  <h3>Available In The Repository But Not Active In The Current Model List</h3>
+  <ul class="plain-list"><li>shiller_cape_ratio belongs in the valuation-fragility layer and should be read as a long-horizon vulnerability variable, not a short-term crash timer</li> </ul>
+</article>
+<article class="framework-card">
+  <h3>Feeds Worth Adding</h3>
+  <ul class="plain-list"><li>Fed funds level and 3m, 6m, and 12m change</li><li>Real-yield level and change</li><li>Expected Fed path and policy-surprise measures</li><li>Liquidity and sentiment proxies for confirmation and de-risking</li> </ul>
+</article>
+  </div>
+</section>
+
+        <section class="framework-section compact-section">
+  <p class="eyebrow">Interaction Library</p>
+  <h2>Signals That Matter More Than Raw Levels</h2>
+  <ul class="plain-list two-column-list">
+<li>high_valuation x rising_vix</li><li>high_valuation x fast_rate_hikes</li><li>high_valuation x yield_curve_inversion</li><li>rising_vix x negative_price_momentum</li><li>rate_shock x growth_stock_exposure</li><li>vix_spike x volume_spike</li><li>credit_stress x dollar_strength</li>
+  </ul>
+</section>
+
+        <section class="framework-section">
+  <p class="eyebrow">Scenario Playbook</p>
+  <h2>How The Macro Stack Should Influence Trading Decisions</h2>
+  <div class="framework-grid scenario-grid">
+<article class="scenario-card">
+  <h3>High valuation, low VIX</h3>
+  <p>The market is expensive but not yet stressed. Lower long-run expected return, but do not force a short solely because valuation is rich.</p>
+</article>
+<article class="scenario-card">
+  <h3>High valuation, rising VIX</h3>
+  <p>Fragility is starting to activate. Reduce long exposure, tighten risk, and demand stronger confirmation before trusting breakouts.</p>
+</article>
+<article class="scenario-card">
+  <h3>High valuation, rising VIX, fast rate hikes</h3>
+  <p>This is closer to a crash-risk regime. Avoid leveraged longs, prefer defense, and treat liquidity-sensitive assets as vulnerable.</p>
+</article>
+<article class="scenario-card">
+  <h3>High VIX but falling</h3>
+  <p>Stress is still elevated, but the direction of stress is improving. This can be a recovery or relief-rally regime rather than a pure panic regime.</p>
+</article>
+<article class="scenario-card">
+  <h3>Low VIX, strong trend</h3>
+  <p>Trend following can work well, but complacency risk rises if valuation is stretched and the front end starts repricing higher.</p>
+</article>
+  </div>
+</section>
+
+    <section id="inflation_labor" class="group-section">
+  <div class="section-copy">
+    <p class="eyebrow">Macro Channel</p>
+    <h2>Inflation And Labor</h2>
+    <p>These series capture the pressure between demand, pricing power, and slack in the real economy.</p>
+  </div>
+  <figure class="plot-frame">
+    <img src="plots/inflation_labor.svg" alt="Inflation And Labor timeline plots" />
+  </figure>
+  <div class="series-grid">
+<article class="series-card">
+  <p class="series-key">cpi_yoy_pct</p>
+  <h3>CPI YoY</h3>
+  <p class="series-brief">Inflation tells you whether nominal growth is being driven by real expansion or by rising prices that central banks may need to restrain.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Inflation-pressure gauge</dd></div>
+    <div><dt>Latest</dt><dd>2.43%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-02-01</dd></div>
+    <div><dt>Frequency</dt><dd>monthly</dd></div>
+    <div><dt>Coverage</dt><dd>4.5%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/CPIAUCSL">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>cpi_yoy_change_3m</li><li>inflation_momentum</li><li>inflation_shock_flag</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>inflation_pressure x rising_long_yields</li><li>inflation_pressure x falling_margins_proxy</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">unemployment_rate_pct</p>
+  <h3>Unemployment Rate</h3>
+  <p class="series-brief">Unemployment is the slack gauge. It tends to bottom late in the cycle and rise after tightening starts to bite.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Labor-market slack indicator</dd></div>
+    <div><dt>Latest</dt><dd>4.30%</dd></div>
+    <div><dt>Units</dt><dd>percent, seasonally adjusted</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-03-01</dd></div>
+    <div><dt>Frequency</dt><dd>monthly</dd></div>
+    <div><dt>Coverage</dt><dd>4.5%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/UNRATE">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>unemployment_change_3m</li><li>unemployment_change_12m</li><li>labor_deterioration_flag</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>rising_unemployment x widening_spreads</li><li>rising_unemployment x falling_equity_momentum</li></ul>
+</div>
+</article>
+  </div>
+</section> <section id="rates_curve" class="group-section">
+  <div class="section-copy">
+    <p class="eyebrow">Macro Channel</p>
+    <h2>Rates And The Curve</h2>
+    <p>Policy, term premia, and curve shape define the price of money, but the speed of rate change often matters more than the static level.</p>
+  </div>
+  <figure class="plot-frame">
+    <img src="plots/rates_curve.svg" alt="Rates And The Curve timeline plots" />
+  </figure>
+  <div class="series-grid">
+<article class="series-card">
+  <p class="series-key">us_2y_yield</p>
+  <h3>2-Year Treasury Constant Maturity Rate</h3>
+  <p class="series-brief">The 2-year yield is the cleanest market read on the policy path over the next several meetings.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Front-end rate-shock variable</dd></div>
+    <div><dt>Latest</dt><dd>3.81%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-01-04 to 2026-04-07</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>93.4%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/DGS2">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>two_year_yield_change_1m</li><li>two_year_yield_change_3m</li><li>rate_acceleration</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>fast_2y_repricing x high_valuation</li><li>rate_shock x growth_stock_exposure</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">us_10y_yield</p>
+  <h3>10-Year Treasury Constant Maturity Rate</h3>
+  <p class="series-brief">The 10-year yield anchors discount rates across the economy and usually reflects the market&#x27;s growth-plus-inflation view.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Discount-rate anchor</dd></div>
+    <div><dt>Latest</dt><dd>4.33%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-01-04 to 2026-04-07</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>93.4%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/DGS10">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>ten_year_yield_change_1m</li><li>ten_year_yield_change_3m</li><li>long_rate_shock_score</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>rising_10y x stretched_valuation</li><li>rising_10y x weak_momentum</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">us_30y_yield</p>
+  <h3>30-Year Treasury Constant Maturity Rate</h3>
+  <p class="series-brief">The long bond shows how investors price inflation credibility and long-duration term risk.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Long-duration stress barometer</dd></div>
+    <div><dt>Latest</dt><dd>4.90%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-01-04 to 2026-04-07</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>93.4%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/DGS30">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>thirty_year_yield_change_1m</li><li>curve_30y10y_proxy</li><li>duration_stress_flag</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>long_bond_selloff x expensive_equities</li><li>long_bond_selloff x weak_liquidity</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">yield_curve_10y_2y</p>
+  <h3>10Y minus 2Y Treasury Spread</h3>
+  <p class="series-brief">A flatter or inverted 10s2s curve usually signals late-cycle policy tightness and weaker future growth expectations.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Cycle-state and inversion gauge</dd></div>
+    <div><dt>Latest</dt><dd>0.52%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-01-04 to 2026-04-07</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>93.4%</dd></div>
+    <div><dt>Source</dt><dd>derived</dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>curve_change_1m</li><li>inversion_flag</li><li>steepening_after_inversion</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>curve_inversion x high_valuation</li><li>curve_resteepening x widening_spreads</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">T10Y3M</p>
+  <h3>10-Year Treasury Constant Maturity Minus 3-Month Treasury Constant Maturity</h3>
+  <p class="series-brief">The 10Y-3M slope is a more policy-sensitive curve measure that has historically mattered for recession timing.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Policy-sensitive curve slope</dd></div>
+    <div><dt>Latest</dt><dd>0.62%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-03-10 to 2026-04-07</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>92.8%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/T10Y3M">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>t10y3m_change_1m</li><li>deep_inversion_flag</li><li>curve_shock_score</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>deep_inversion x rising_unemployment</li><li>deep_inversion x high_valuation</li></ul>
+</div>
+</article>
+  </div>
+</section> <section id="credit_conditions" class="group-section">
+  <div class="section-copy">
+    <p class="eyebrow">Macro Channel</p>
+    <h2>Credit And Conditions</h2>
+    <p>When financing tightens, spreads widen first and the real economy usually feels it later.</p>
+  </div>
+  <figure class="plot-frame">
+    <img src="plots/credit_conditions.svg" alt="Credit And Conditions timeline plots" />
+  </figure>
+  <div class="series-grid">
+<article class="series-card">
+  <p class="series-key">high_yield_spread</p>
+  <h3>ICE BofA US High Yield Index Option-Adjusted Spread</h3>
+  <p class="series-brief">Credit spreads widen when balance-sheet stress rises and lenders demand more compensation for cyclical risk.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Credit-stress gauge</dd></div>
+    <div><dt>Latest</dt><dd>3.05%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-03-10 to 2026-04-06</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>96.9%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/BAMLH0A0HYM2">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>hy_spread_change_5d</li><li>hy_spread_percentile_1y</li><li>credit_stress_score</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>widening_spreads x negative_momentum</li><li>widening_spreads x rising_vix</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">NFCI</p>
+  <h3>Chicago Fed National Financial Conditions Index</h3>
+  <p class="series-brief">The Chicago Fed NFCI summarizes how easy or restrictive overall financial conditions are across funding, leverage, and risk markets.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Composite financial-conditions gauge</dd></div>
+    <div><dt>Latest</dt><dd>-0.43</dd></div>
+    <div><dt>Units</dt><dd>index level</dd></div>
+    <div><dt>History</dt><dd>1999-03-12 to 2026-03-27</dd></div>
+    <div><dt>Frequency</dt><dd>weekly</dd></div>
+    <div><dt>Coverage</dt><dd>19.3%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/NFCI">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>nfci_change_4w</li><li>tightening_flag</li><li>conditions_stress_score</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>tightening_conditions x expensive_market</li><li>tightening_conditions x strong_dollar</li></ul>
+</div>
+</article>
+  </div>
+</section> <section id="volatility_risk" class="group-section">
+  <div class="section-copy">
+    <p class="eyebrow">Macro Channel</p>
+    <h2>Volatility And Risk Appetite</h2>
+    <p>These are not just predictors. They are regime controls that should influence participation, sizing, stops, and strategy selection.</p>
+  </div>
+  <figure class="plot-frame">
+    <img src="plots/volatility_risk.svg" alt="Volatility And Risk Appetite timeline plots" />
+  </figure>
+  <div class="series-grid">
+<article class="series-card">
+  <p class="series-key">spot_vix</p>
+  <h3>Spot VIX</h3>
+  <p class="series-brief">Spot VIX is the market&#x27;s immediate fear gauge. Spikes usually mark forced de-risking and unstable positioning.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Primary regime variable</dd></div>
+    <div><dt>Latest</dt><dd>24.17</dd></div>
+    <div><dt>Units</dt><dd>index level</dd></div>
+    <div><dt>History</dt><dd>1999-03-10 to 2026-04-06</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>93.7%</dd></div>
+    <div><dt>Source</dt><dd>unknown</dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>vix_percentile_1y</li><li>vix_change_1d</li><li>vix_change_5d</li><li>vix_change_20d</li><li>vix_acceleration</li><li>return_1d_vix_adjusted</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>rising_vix x negative_price_momentum</li><li>vix_spike x volume_spike</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">vix3m_level</p>
+  <h3>VIX 3M</h3>
+  <p class="series-brief">Three-month implied volatility reflects medium-horizon hedging demand and helps separate brief panic from persistent uncertainty.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Medium-horizon stress and term-structure leg</dd></div>
+    <div><dt>Latest</dt><dd>21.91</dd></div>
+    <div><dt>Units</dt><dd>index level</dd></div>
+    <div><dt>History</dt><dd>2006-07-17 to 2026-04-09</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>68.0%</dd></div>
+    <div><dt>Source</dt><dd>unknown</dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>vix3m_minus_vix</li><li>vix_term_structure_ratio</li><li>term_structure_change_5d</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>inverted_vix_curve x weak_trend</li><li>falling_vix3m x recovery_regime</li></ul>
+</div>
+</article>
+  </div>
+</section> <section id="dollar_real_assets" class="group-section">
+  <div class="section-copy">
+    <p class="eyebrow">Macro Channel</p>
+    <h2>Dollar And Real Assets</h2>
+    <p>The dollar and commodity complex help frame global liquidity, inflation pass-through, and growth sensitivity.</p>
+  </div>
+  <figure class="plot-frame">
+    <img src="plots/dollar_real_assets.svg" alt="Dollar And Real Assets timeline plots" />
+  </figure>
+  <div class="series-grid">
+<article class="series-card">
+  <p class="series-key">dxy_close</p>
+  <h3>DXY</h3>
+  <p class="series-brief">The dollar is the global funding barometer. Sharp rises often coincide with tighter liquidity and more fragile risk assets.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Liquidity and funding-stress gauge</dd></div>
+    <div><dt>Latest</dt><dd>99.00</dd></div>
+    <div><dt>Units</dt><dd>index level</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-04-09</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>94.4%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB">Yahoo Finance chart API</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>dxy_change_5d</li><li>dxy_percentile_1y</li><li>dollar_strength x credit_stress</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>rising_dxy x widening_high_yield_spread</li><li>rising_dxy x falling_risk_assets</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">gold_usd_per_oz</p>
+  <h3>GOLD</h3>
+  <p class="series-brief">Gold tends to strengthen when investors prefer scarce stores of value over cash-flow risk and policy credibility is being tested.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Defensive real-asset cross-check</dd></div>
+    <div><dt>Latest</dt><dd>$4,764.60</dd></div>
+    <div><dt>Units</dt><dd>USD per ounce</dd></div>
+    <div><dt>History</dt><dd>2000-08-30 to 2026-04-09</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>88.0%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF">Yahoo Finance chart API</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>gold_momentum_20d</li><li>gold_vs_dxy_relative_strength</li><li>gold_breakout x rising_vix</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>gold_strength x falling_real_growth</li><li>gold_strength x policy_credibility_stress</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">wti_usd_per_bbl</p>
+  <h3>WTI Crude Oil Spot Price, Cushing, OK</h3>
+  <p class="series-brief">Oil is a growth and inflation transmission channel. Big moves reshape margins, consumer purchasing power, and inflation expectations.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Growth and inflation shock channel</dd></div>
+    <div><dt>Latest</dt><dd>$114.01</dd></div>
+    <div><dt>Units</dt><dd>USD per barrel</dd></div>
+    <div><dt>History</dt><dd>1999-01-04 to 2026-04-06</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>93.6%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/DCOILWTICO">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>wti_change_20d</li><li>wti_volatility_20d</li><li>oil_spike x inflation_pressure</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>oil_spike x rising_yields</li><li>oil_shock x weak_equity_breadth</li></ul>
+</div>
+</article>
+  </div>
+</section> <section id="valuation_balance_sheet" class="group-section">
+  <div class="section-copy">
+    <p class="eyebrow">Macro Channel</p>
+    <h2>Valuation And Balance Sheet Backdrop</h2>
+    <p>These series describe valuation fragility. They do not time the next crash by themselves, but they matter when stress begins to activate.</p>
+  </div>
+  <figure class="plot-frame">
+    <img src="plots/valuation_balance_sheet.svg" alt="Valuation And Balance Sheet Backdrop timeline plots" />
+  </figure>
+  <div class="series-grid">
+<article class="series-card">
+  <p class="series-key">market_cap_to_gdp_pct</p>
+  <h3>Market Cap to GDP</h3>
+  <p class="series-brief">This is the slow-moving official valuation backdrop: financial asset prices versus the productive economy beneath them.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Slow valuation-fragility backdrop</dd></div>
+    <div><dt>Latest</dt><dd>194.89%</dd></div>
+    <div><dt>Units</dt><dd>percent of GDP</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2020-01-01</dd></div>
+    <div><dt>Frequency</dt><dd>annual_or_irregular</dd></div>
+    <div><dt>Coverage</dt><dd>0.3%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/DDDM01USA156NWDB">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>valuation_percentile</li><li>valuation_zscore</li><li>valuation_fragility_score</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>high_valuation x rising_vix</li><li>high_valuation x fast_rate_hikes</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">market_cap_to_gdp_pct_patched</p>
+  <h3>Market Cap to GDP, Patched Daily Proxy</h3>
+  <p class="series-brief">The patched series extends the official valuation gauge into a usable daily proxy so the model can track the backdrop in real time.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Daily valuation backdrop for regime-aware models</dd></div>
+    <div><dt>Latest</dt><dd>278.54%</dd></div>
+    <div><dt>Units</dt><dd>percent of GDP</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-04-09</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>23.3%</dd></div>
+    <div><dt>Source</dt><dd>derived_plus_official</dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>daily_valuation_fragility_score</li><li>valuation_trend_3m</li><li>valuation x rate_shock</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>high_valuation x curve_inversion</li><li>high_valuation x widening_spreads</li></ul>
+</div>
+</article>
+  </div>
+</section>
+  </main>
+</body>
+</html>
