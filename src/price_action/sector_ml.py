@@ -37,6 +37,7 @@ DEFAULT_SECTOR_ML_CONFIG: dict[str, Any] = {
     "start_date": "2000-01-01",
     "holdout_start": "2025-01-01",
     "historical_benchmark_start": "2006-01-01",
+    "rebalance_interval_scenarios": (5, 10, 21),
     "train_years": 5,
     "validation_years": 1,
     "label_horizon": 5,
@@ -404,6 +405,8 @@ def _build_rotation_backtest_view(
     scope_label: str,
     scope_kind: str,
     scope_note: str,
+    holding_period_bars: int | None = None,
+    rebalance_interval_bars: int | None = None,
 ) -> dict[str, Any]:
     if signal_frame.empty:
         return {"available": False, "message": f"No predictions were available for {scope_label.lower()}."}
@@ -427,7 +430,8 @@ def _build_rotation_backtest_view(
 
     top_n = int(config["top_n"])
     threshold = float(config["signal_threshold"])
-    holding_period = int(config["label_horizon"])
+    holding_period = int(holding_period_bars or config["label_horizon"])
+    rebalance_interval = int(rebalance_interval_bars or holding_period)
     cost_rate = float(config["cost_bps"]) / 10_000.0
     leverage_multiple = float(config["leverage_multiple"])
     annual_financing_rate = float(config["annual_financing_rate"])
@@ -526,11 +530,32 @@ def _build_rotation_backtest_view(
             if reserve_top_symbol is not None and reserve_invested_weight > 0.0
             else 0.0
         )
+        reserve_leverage_notional_weight = reserve_invested_weight * leverage_multiple
+        reserve_leverage_sector_return = (
+            reserve_leverage_notional_weight * float(period_returns.get(reserve_top_symbol, 0.0))
+            if reserve_top_symbol is not None and reserve_leverage_notional_weight > 0.0
+            else 0.0
+        )
+        reserve_leverage_turnover = reserve_turnover * leverage_multiple
+        reserve_leverage_cost = reserve_cost * leverage_multiple
+        reserve_leverage_financing_cost = (
+            reserve_invested_weight
+            * max(leverage_multiple - 1.0, 0.0)
+            * annual_financing_rate
+            * period_year_fraction
+        )
         reserve_cash_return = (reserve_cash_weight - reserve_invested_weight) * cash_period_return
         core_component = core_sector_weight * quality_return
         if quality_selected.empty:
             core_component += core_sector_weight * cash_period_return
         reserve_rule_return = core_component + reserve_sector_return - reserve_cost + reserve_cash_return
+        reserve_leverage_rule_return = (
+            core_component
+            + reserve_leverage_sector_return
+            - reserve_leverage_cost
+            - reserve_leverage_financing_cost
+            + reserve_cash_return
+        )
 
         regime_label = str(signal_slice["regime_label"].mode().iloc[0]) if not signal_slice.empty else "Cash"
         selected_slice = quality_selected.head(top_n)
@@ -550,15 +575,19 @@ def _build_rotation_backtest_view(
                 "quality_return": quality_return,
                 "spy_return": spy_return,
                 "reserve_rule_return": reserve_rule_return,
+                "reserve_leverage_rule_return": reserve_leverage_rule_return,
                 "probability_return_x3": probability_return_x3,
                 "quality_return_x3": quality_return_x3,
                 "spy_return_x3": spy_return_x3,
                 "probability_turnover": probability_turnover,
                 "quality_turnover": quality_turnover,
                 "reserve_turnover": reserve_turnover,
+                "reserve_leverage_turnover": reserve_leverage_turnover,
                 "reserve_deployed_fraction": reserve_target_fraction,
                 "reserve_invested_weight": reserve_invested_weight,
+                "reserve_leverage_notional_weight": reserve_leverage_notional_weight,
                 "reserve_cash_weight": reserve_cash_weight - reserve_invested_weight,
+                "reserve_leverage_financing_cost": reserve_leverage_financing_cost,
                 "top_probability": float(signal_slice["ensemble_probability"].max()) if not signal_slice.empty else None,
                 "top_quality_score": float(signal_slice["quality_weighted_score"].max()) if not signal_slice.empty else None,
                 "selected_count": int(len(selected_slice.index)),
@@ -569,7 +598,7 @@ def _build_rotation_backtest_view(
         previous_weights["quality"] = quality_weights
         previous_weights["reserve"] = reserve_weights
         reserve_deployed_fraction = reserve_target_fraction
-        signal_pointer += holding_period
+        signal_pointer += rebalance_interval
 
     period_log_frame = pd.DataFrame(period_rows)
     if period_log_frame.empty:
@@ -579,15 +608,18 @@ def _build_rotation_backtest_view(
     period_log_frame["equity_quality"] = (1.0 + period_log_frame["quality_return"]).cumprod()
     period_log_frame["equity_spy"] = (1.0 + period_log_frame["spy_return"]).cumprod()
     period_log_frame["equity_reserve_rule"] = (1.0 + period_log_frame["reserve_rule_return"]).cumprod()
+    period_log_frame["equity_reserve_leverage_rule"] = (1.0 + period_log_frame["reserve_leverage_rule_return"]).cumprod()
     period_log_frame["equity_probability_x3"] = (1.0 + period_log_frame["probability_return_x3"]).cumprod()
     period_log_frame["equity_quality_x3"] = (1.0 + period_log_frame["quality_return_x3"]).cumprod()
     period_log_frame["equity_spy_x3"] = (1.0 + period_log_frame["spy_return_x3"]).cumprod()
 
     strategy_rows = []
+    reserve_leverage_label = f"Reserve Cash Rule x{leverage_multiple:.0f} Drawdown Sleeve @ {annual_financing_rate:.0%}"
     for label, return_column, turnover_column in (
         ("ML Probability Rotation", "probability_return", "probability_turnover"),
         ("ML Quality-Weighted Rotation", "quality_return", "quality_turnover"),
         ("Sector Reserve Cash Rule", "reserve_rule_return", "reserve_turnover"),
+        (reserve_leverage_label, "reserve_leverage_rule_return", "reserve_leverage_turnover"),
         ("SPY Buy And Hold", "spy_return", None),
         (f"ML Probability Rotation x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "probability_return_x3", "probability_turnover"),
         (f"ML Quality-Weighted Rotation x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "quality_return_x3", "quality_turnover"),
@@ -607,6 +639,7 @@ def _build_rotation_backtest_view(
         ("ML Probability Rotation", "probability_return", "probability_turnover"),
         ("ML Quality-Weighted Rotation", "quality_return", "quality_turnover"),
         ("Sector Reserve Cash Rule", "reserve_rule_return", "reserve_turnover"),
+        (reserve_leverage_label, "reserve_leverage_rule_return", "reserve_leverage_turnover"),
         ("SPY Buy And Hold", "spy_return", None),
         (f"ML Probability Rotation x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "probability_return_x3", "probability_turnover"),
         (f"ML Quality-Weighted Rotation x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "quality_return_x3", "quality_turnover"),
@@ -660,6 +693,9 @@ def _build_rotation_backtest_view(
         "benchmark_start": benchmark_start,
         "benchmark_end": benchmark_end,
         "period_count": int(len(period_log_frame.index)),
+        "holding_period_bars": holding_period,
+        "rebalance_interval_bars": rebalance_interval,
+        "reserve_leverage_label": reserve_leverage_label,
         "period_log_frame": period_log_frame,
         "strategy_summary_frame": strategy_summary_frame,
         "yearly_summary_frame": pd.DataFrame(yearly_rows),
@@ -668,10 +704,11 @@ def _build_rotation_backtest_view(
         "current_signal_date": pd.Timestamp(current_signal_date),
         "benchmark_symbol": "SPY",
         "method_note": (
-            f"{scope_note} Signals are generated from walk-forward out-of-sample sector predictions, executed one bar after the signal date, and held for five bars before the next rebalance. "
+            f"{scope_note} Signals are generated from walk-forward out-of-sample sector predictions, executed one bar after the signal date, and held for {holding_period} bars before the next rebalance. "
             "The quality-weighted variant mixes live ensemble probability with a sector quality prior estimated only from the pre-holdout validation window. "
             "The reserve-cash rule keeps 40% of the portfolio in cash earning 5% annually, deploys 10% of that reserve after a 5% SPY drawdown, another 10% after a 10% drawdown, and the rest after a 20% drawdown, then rebuilds the reserve only after SPY gets back to its prior high. "
-            f"The leveraged scenario applies {leverage_multiple:.0f}x gross exposure and charges {annual_financing_rate:.0%} annual interest on the borrowed {max(leverage_multiple - 1.0, 0.0):.0f}x capital over each realized holding period."
+            f"The leveraged scenario applies {leverage_multiple:.0f}x gross exposure and charges {annual_financing_rate:.0%} annual interest on the borrowed {max(leverage_multiple - 1.0, 0.0):.0f}x capital over each realized holding period. "
+            f"{reserve_leverage_label} only levers the deployed reserve sleeve during drawdowns and rotates that sleeve back to cash once SPY returns to a fresh high."
         ),
     }
 
@@ -1131,6 +1168,31 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         scope_kind="walkforward_history",
         scope_note="This benchmark uses every walk-forward out-of-sample window from 2006 onward, including the 2008 financial crisis, the 2020 shock, and the 2022 rate-reset drawdown.",
     )
+    rebalance_rows: list[dict[str, Any]] = []
+    for cadence_bars in tuple(int(value) for value in config["rebalance_interval_scenarios"]):
+        if cadence_bars == int(config["label_horizon"]):
+            cadence_view = historical_rotation_view
+        else:
+            cadence_view = _build_rotation_backtest_view(
+                signal_frame=historical_signal_frame,
+                validation_quality_frame=validation_quality_frame,
+                project_root=root,
+                config=config,
+                scope_label=f"2006-2026 walk-forward history ({cadence_bars}-bar cadence)",
+                scope_kind="rebalance_sensitivity",
+                scope_note=(
+                    f"This benchmark reuses the same daily ML signal but only rebalances every {cadence_bars} bars, so it is an execution-cadence overlay rather than a separately retrained {cadence_bars}-bar forecast model."
+                ),
+                holding_period_bars=cadence_bars,
+                rebalance_interval_bars=cadence_bars,
+            )
+        if not isinstance(cadence_view, dict) or not cadence_view.get("available"):
+            continue
+        cadence_summary = cadence_view["strategy_summary_frame"].copy()
+        cadence_summary.insert(0, "cadence_label", f"{cadence_bars}-bar")
+        cadence_summary.insert(0, "cadence_bars", cadence_bars)
+        rebalance_rows.extend(cadence_summary.to_dict(orient="records"))
+    rebalance_sensitivity_frame = pd.DataFrame(rebalance_rows)
 
     return {
         "available": True,
@@ -1155,4 +1217,5 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         "oos_signal_frame": oos_signal_frame,
         "holdout_rotation_view": holdout_rotation_view,
         "historical_rotation_view": historical_rotation_view,
+        "rebalance_sensitivity_frame": rebalance_sensitivity_frame,
     }

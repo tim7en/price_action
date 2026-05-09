@@ -152,8 +152,10 @@ def _render_equity_curve_chart(period_log_frame: pd.DataFrame, leveraged: bool =
         quality_column = "equity_quality_x3"
         probability_column = "equity_probability_x3"
         spy_column = "equity_spy_x3"
+        reserve_leverage_column = "equity_reserve_leverage_rule"
         quality_label = "ML quality-weighted x3"
         probability_label = "ML probability-only x3"
+        reserve_leverage_label = "Reserve drawdown sleeve x3"
         spy_label = "SPY x3"
     else:
         title = "Holdout Equity Curves"
@@ -167,10 +169,14 @@ def _render_equity_curve_chart(period_log_frame: pd.DataFrame, leveraged: bool =
         spy_label = "SPY"
 
     plot_columns = ["exit_date", quality_column, probability_column, spy_column]
+    if leveraged and reserve_leverage_column in period_log_frame.columns:
+        plot_columns.insert(3, reserve_leverage_column)
     if not leveraged:
         plot_columns.insert(3, reserve_column)
     plot_frame = period_log_frame[plot_columns].copy()
     value_columns = [quality_column, probability_column, spy_column]
+    if leveraged and reserve_leverage_column in plot_frame.columns:
+        value_columns.append(reserve_leverage_column)
     if not leveraged:
         value_columns.append(reserve_column)
     values = plot_frame[value_columns].to_numpy(dtype=float)
@@ -193,6 +199,7 @@ def _render_equity_curve_chart(period_log_frame: pd.DataFrame, leveraged: bool =
     end_quality = float(plot_frame[quality_column].iloc[-1])
     end_probability = float(plot_frame[probability_column].iloc[-1])
     end_spy = float(plot_frame[spy_column].iloc[-1])
+    end_reserve_leverage = float(plot_frame[reserve_leverage_column].iloc[-1]) if leveraged and reserve_leverage_column in plot_frame.columns else None
     end_reserve = float(plot_frame[reserve_column].iloc[-1]) if not leveraged else None
     return f"""
 <div class=\"chart-shell\">
@@ -200,13 +207,225 @@ def _render_equity_curve_chart(period_log_frame: pd.DataFrame, leveraged: bool =
     <rect x=\"0\" y=\"0\" width=\"960\" height=\"280\" rx=\"18\" fill=\"rgba(255, 253, 248, 0.92)\"></rect>
         <polyline fill=\"none\" stroke=\"#7a3e2b\" stroke-width=\"4\" points=\"{points(quality_column)}\"></polyline>
         <polyline fill=\"none\" stroke=\"#0f4c5c\" stroke-width=\"3\" stroke-dasharray=\"7 6\" points=\"{points(probability_column)}\"></polyline>
+        {f'<polyline fill="none" stroke="#9c6644" stroke-width="3" points="{points(reserve_leverage_column)}"></polyline>' if leveraged and reserve_leverage_column in plot_frame.columns else ''}
         {f'<polyline fill="none" stroke="#2d6a4f" stroke-width="3" points="{points(reserve_column)}"></polyline>' if not leveraged else ''}
         <polyline fill=\"none\" stroke=\"#7d8b99\" stroke-width=\"3\" points=\"{points(spy_column)}\"></polyline>
         <text x=\"28\" y=\"34\" fill=\"#1b2430\" font-size=\"18\" font-family=\"Iowan Old Style, Georgia, serif\">{title}</text>
-        <text x=\"28\" y=\"56\" fill=\"#5f6b76\" font-size=\"13\">{quality_label}: {_format_return_pct(end_quality - 1.0)} | {probability_label}: {_format_return_pct(end_probability - 1.0)}{f' | {reserve_label}: {_format_return_pct(end_reserve - 1.0)}' if not leveraged and end_reserve is not None else ''} | {spy_label}: {_format_return_pct(end_spy - 1.0)}</text>
+        <text x=\"28\" y=\"56\" fill=\"#5f6b76\" font-size=\"13\">{quality_label}: {_format_return_pct(end_quality - 1.0)} | {probability_label}: {_format_return_pct(end_probability - 1.0)}{f' | {reserve_leverage_label}: {_format_return_pct(end_reserve_leverage - 1.0)}' if leveraged and end_reserve_leverage is not None else ''}{f' | {reserve_label}: {_format_return_pct(end_reserve - 1.0)}' if not leveraged and end_reserve is not None else ''} | {spy_label}: {_format_return_pct(end_spy - 1.0)}</text>
   </svg>
 </div>
 """
+
+
+def _render_rebalance_tradeoff_chart(sensitivity_frame: pd.DataFrame) -> str:
+    if sensitivity_frame.empty:
+        return ""
+
+    selected_frame = sensitivity_frame.loc[
+        sensitivity_frame["strategy_label"].astype(str).isin(
+            [
+                "ML Quality-Weighted Rotation",
+                "Sector Reserve Cash Rule",
+                "SPY Buy And Hold",
+            ]
+        )
+        | sensitivity_frame["strategy_label"].astype(str).str.startswith("Reserve Cash Rule x")
+    ].copy()
+    if selected_frame.empty:
+        return ""
+
+    colors = {
+        "ML Quality-Weighted Rotation": "#7a3e2b",
+        "Sector Reserve Cash Rule": "#2d6a4f",
+        "SPY Buy And Hold": "#7d8b99",
+    }
+    reserve_leverage_rows = selected_frame.loc[selected_frame["strategy_label"].astype(str).str.startswith("Reserve Cash Rule x")]
+    reserve_leverage_label = str(reserve_leverage_rows["strategy_label"].iloc[0]) if not reserve_leverage_rows.empty else None
+    if reserve_leverage_label is not None:
+        colors[reserve_leverage_label] = "#9c6644"
+
+    selected_frame["turnover_per_year"] = pd.to_numeric(selected_frame["turnover_per_year"], errors="coerce").fillna(0.0)
+    selected_frame["cagr"] = pd.to_numeric(selected_frame["cagr"], errors="coerce")
+    x_min = float(selected_frame["turnover_per_year"].min())
+    x_max = float(selected_frame["turnover_per_year"].max())
+    y_min = float(min(selected_frame["cagr"].min(), 0.0))
+    y_max = float(max(selected_frame["cagr"].max(), 0.0))
+    x_span = max(x_max - x_min, 1e-9)
+    y_span = max(y_max - y_min, 1e-9)
+    width = 960.0
+    height = 320.0
+    left = 72.0
+    right = 24.0
+    top = 28.0
+    bottom = 42.0
+
+    def x_position(value: float) -> float:
+        return left + ((value - x_min) / x_span) * (width - left - right)
+
+    def y_position(value: float) -> float:
+        return height - bottom - ((value - y_min) / y_span) * (height - top - bottom)
+
+    legend_items = []
+    for label, color in colors.items():
+        if label not in set(selected_frame["strategy_label"].astype(str)):
+            continue
+        legend_items.append(f'<text x="{left + 22 + len(legend_items) * 220:.1f}" y="22" fill="#1b2430" font-size="12">{html.escape(label)}</text><circle cx="{left + 10 + len(legend_items) * 220:.1f}" cy="18" r="5" fill="{color}"></circle>')
+
+    points_markup: list[str] = []
+    for row in selected_frame.itertuples(index=False):
+        label = str(row.strategy_label)
+        color = colors.get(label, "#0f4c5c")
+        x = x_position(float(row.turnover_per_year))
+        y = y_position(float(row.cagr))
+        cadence_text = f"{int(row.cadence_bars)}d"
+        points_markup.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="{color}"></circle>')
+        points_markup.append(f'<text x="{x + 8:.1f}" y="{y - 8:.1f}" fill="#5f6b76" font-size="11">{cadence_text}</text>')
+
+    grid_lines = []
+    for fraction in (0.0, 0.25, 0.5, 0.75, 1.0):
+        y = top + fraction * (height - top - bottom)
+        cagr_value = y_max - fraction * y_span
+        grid_lines.append(f'<line x1="{left:.1f}" y1="{y:.1f}" x2="{width - right:.1f}" y2="{y:.1f}" stroke="rgba(125, 139, 153, 0.18)" stroke-width="1"></line>')
+        grid_lines.append(f'<text x="12" y="{y + 4:.1f}" fill="#5f6b76" font-size="11">{_format_return_pct(cagr_value)}</text>')
+
+    return """
+<div class="chart-shell">
+  <svg viewBox="0 0 960 320" role="img" aria-label="Rebalance cadence tradeoff chart">
+    <rect x="0" y="0" width="960" height="320" rx="18" fill="rgba(255, 253, 248, 0.92)"></rect>
+    {grid}
+    <line x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
+    <line x1="{left}" y1="{top}" x2="{left}" y2="{height - bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
+    <text x="{left}" y="{height - 10}" fill="#5f6b76" font-size="12">Turnover per year</text>
+    <text x="12" y="14" fill="#5f6b76" font-size="12">CAGR</text>
+    <text x="{left}" y="304" fill="#5f6b76" font-size="11">Lower-left means low turnover and low CAGR. Upper-left is the efficient corner.</text>
+    {legend}
+    {points}
+  </svg>
+</div>
+""".format(
+        grid="".join(grid_lines),
+        left=f"{left:.1f}",
+        right=f"{right:.1f}",
+        top=f"{top:.1f}",
+        bottom=f"{bottom:.1f}",
+        width=f"{width:.1f}",
+        height=f"{height:.1f}",
+        legend="".join(legend_items),
+        points="".join(points_markup),
+    )
+
+
+def _render_rebalance_sensitivity_section(sector_ml_view: dict[str, Any]) -> str:
+    if not sector_ml_view.get("available"):
+        return ""
+
+    sensitivity_frame = sector_ml_view.get("rebalance_sensitivity_frame")
+    if not isinstance(sensitivity_frame, pd.DataFrame) or sensitivity_frame.empty:
+        return ""
+
+    quality_rows = sensitivity_frame.loc[sensitivity_frame["strategy_label"] == "ML Quality-Weighted Rotation"].copy()
+    reserve_rows = sensitivity_frame.loc[sensitivity_frame["strategy_label"] == "Sector Reserve Cash Rule"].copy()
+    reserve_leverage_rows = sensitivity_frame.loc[
+        sensitivity_frame["strategy_label"].astype(str).str.startswith("Reserve Cash Rule x")
+    ].copy()
+    spy_rows = sensitivity_frame.loc[sensitivity_frame["strategy_label"] == "SPY Buy And Hold"].copy()
+
+    best_quality = quality_rows.sort_values("sharpe", ascending=False).iloc[0] if not quality_rows.empty else None
+    best_reserve = reserve_rows.sort_values("sharpe", ascending=False).iloc[0] if not reserve_rows.empty else None
+    lowest_turnover_quality = quality_rows.sort_values("turnover_per_year", ascending=True).iloc[0] if not quality_rows.empty else None
+    best_spy = spy_rows.sort_values("cagr", ascending=False).iloc[0] if not spy_rows.empty else None
+
+    cards: list[str] = [
+        _render_stat_card(
+            title="Cadence overlay, not retraining",
+            body="The cadence test reuses the same daily ML signal and only changes execution frequency to 5, 10, or 21 bars. This isolates turnover and holding-period effects without pretending the model was retrained for monthly horizons.",
+            tag="Method",
+        )
+    ]
+    if best_quality is not None:
+        cards.append(
+            _render_stat_card(
+                title=f"Quality best at {int(best_quality.cadence_bars)} bars",
+                body=(
+                    f"Sharpe {_format_decimal(best_quality.sharpe)}, CAGR {_format_return_pct(best_quality.cagr)}, max drawdown {_format_return_pct(best_quality.max_drawdown)}, turnover {_format_turnover(best_quality.turnover_per_year)}."
+                ),
+                tag="Quality cadence",
+            )
+        )
+    if best_reserve is not None:
+        cards.append(
+            _render_stat_card(
+                title=f"Reserve rule best at {int(best_reserve.cadence_bars)} bars",
+                body=(
+                    f"Sharpe {_format_decimal(best_reserve.sharpe)}, CAGR {_format_return_pct(best_reserve.cagr)}, max drawdown {_format_return_pct(best_reserve.max_drawdown)}, turnover {_format_turnover(best_reserve.turnover_per_year)}."
+                ),
+                tag="Reserve cadence",
+            )
+        )
+    if lowest_turnover_quality is not None:
+        cards.append(
+            _render_stat_card(
+                title=f"Lowest-turnover quality cadence: {int(lowest_turnover_quality.cadence_bars)} bars",
+                body=(
+                    f"Turnover drops to {_format_turnover(lowest_turnover_quality.turnover_per_year)} with CAGR {_format_return_pct(lowest_turnover_quality.cagr)} and max drawdown {_format_return_pct(lowest_turnover_quality.max_drawdown)}."
+                ),
+                tag="Turnover tradeoff",
+            )
+        )
+    if best_spy is not None:
+        cards.append(
+            _render_stat_card(
+                title=f"SPY strongest at {int(best_spy.cadence_bars)} bars",
+                body=(
+                    f"CAGR {_format_return_pct(best_spy.cagr)}, Sharpe {_format_decimal(best_spy.sharpe)}, max drawdown {_format_return_pct(best_spy.max_drawdown)}."
+                ),
+                tag="Benchmark cadence",
+            )
+        )
+
+    rows: list[tuple[str, ...]] = []
+    for row in sensitivity_frame.sort_values(["cadence_bars", "strategy_label"], ascending=[True, True]).itertuples(index=False):
+        rows.append(
+            (
+                str(row.cadence_label),
+                str(row.strategy_label),
+                _format_return_pct(row.total_return),
+                _format_return_pct(row.cagr),
+                _format_decimal(row.sharpe),
+                _format_return_pct(row.max_drawdown),
+                str(int(getattr(row, "trade_count", 0) or 0)),
+                str(int(getattr(row, "period_count", 0) or 0)),
+                _format_turnover(row.turnover_per_year),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Execution Sensitivity</p>',
+            '  <h2>How 5, 10, And 21-Bar Rebalancing Change The Result</h2>',
+            '  <p>This section uses the full 2006-2026 walk-forward history and compares the same sector signal under slower execution cadences. It answers whether lower turnover can preserve enough of the edge to matter in practice.</p>',
+            '  <div class="card-grid">',
+            "\n".join(cards),
+            '  </div>',
+            _render_rebalance_tradeoff_chart(sensitivity_frame),
+            _render_data_table(
+                headers=(
+                    'Cadence',
+                    'Strategy',
+                    'Total Return',
+                    'CAGR',
+                    'Sharpe',
+                    'Max DD',
+                    'Trades',
+                    'Windows',
+                    'Turnover',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
+    )
 
 
 def _render_stat_card(title: str, body: str, tag: str) -> str:
@@ -626,6 +845,7 @@ def _render_rotation_backtest_section(
     summary_frame = rotation_view["strategy_summary_frame"].copy()
     quality_row = summary_frame.loc[summary_frame["strategy_label"] == "ML Quality-Weighted Rotation"].iloc[0]
     reserve_row = summary_frame.loc[summary_frame["strategy_label"] == "Sector Reserve Cash Rule"].iloc[0]
+    reserve_leverage_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith("Reserve Cash Rule x")].iloc[0]
     spy_row = summary_frame.loc[summary_frame["strategy_label"] == "SPY Buy And Hold"].iloc[0]
     quality_x3_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith("ML Quality-Weighted Rotation x")].iloc[0]
     spy_x3_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith("SPY Buy And Hold x")].iloc[0]
@@ -672,6 +892,13 @@ def _render_rotation_backtest_section(
             tag="Reserve rule",
         ),
         _render_stat_card(
+            title=str(reserve_leverage_row.strategy_label),
+            body=(
+                f"CAGR {_format_return_pct(reserve_leverage_row.cagr)}, Sharpe {_format_decimal(reserve_leverage_row.sharpe)}, max drawdown {_format_return_pct(reserve_leverage_row.max_drawdown)}, turnover {_format_turnover(reserve_leverage_row.turnover_per_year)}. Only the deployed reserve sleeve is levered."
+            ),
+            tag="Leveraged reserve",
+        ),
+        _render_stat_card(
             title=f"Worst SPY signal drawdown {_format_return_pct(spy_worst_drawdown)}",
             body=(
                 f"Peak reserve deployment reached {_format_weight_pct(reserve_peak_fraction)} of the reserve sleeve. {reserve_tier_note}"
@@ -695,7 +922,7 @@ def _render_rotation_backtest_section(
         _render_stat_card(
             title=f"Latest complete signal {signal_date}",
             body=(
-                f"Windows count realized five-bar evaluation periods. Trades count actual entries or rebalances. SPY buy-and-hold therefore shows {int(spy_row.trade_count)} entry across {int(spy_row.period_count)} evaluation windows."
+                f"Windows count realized {int(rotation_view.get('holding_period_bars', 0) or 0)}-bar evaluation periods. Trades count actual entries or rebalances. SPY buy-and-hold therefore shows {int(spy_row.trade_count)} entry across {int(spy_row.period_count)} evaluation windows."
             ),
             tag="Metric definition",
         ),
@@ -801,6 +1028,7 @@ def _render_rotation_period_log_section(
                 _format_return_pct(row.quality_return),
                 _format_return_pct(row.quality_return_x3),
                 _format_return_pct(row.reserve_rule_return),
+                _format_return_pct(row.reserve_leverage_rule_return),
                 _format_return_pct(row.probability_return),
                 _format_return_pct(row.spy_return),
                 _format_return_pct(row.spy_return_x3),
@@ -828,6 +1056,7 @@ def _render_rotation_period_log_section(
                     'Quality Return',
                     'Quality Return x3',
                     'Reserve Rule Return',
+                    'Reserve Rule x3',
                     'Probability Return',
                     'SPY Return',
                     'SPY Return x3',
@@ -1385,6 +1614,7 @@ def _render_html(
         {_render_live_ml_allocation_section(live_ml_view=live_ml_view)}
         {_render_holdout_backtest_section(sector_ml_view=sector_ml_view)}
         {_render_history_backtest_section(sector_ml_view=sector_ml_view)}
+        {_render_rebalance_sensitivity_section(sector_ml_view=sector_ml_view)}
         {_render_holdout_year_regime_section(sector_ml_view=sector_ml_view)}
         {_render_history_year_regime_section(sector_ml_view=sector_ml_view)}
         {_render_history_drawdown_section(sector_ml_view=sector_ml_view)}
@@ -1439,6 +1669,7 @@ def generate_sector_rotation_report(
     ml_history_period_log_path = report_dir / "sector_ml_history_period_log.csv"
     ml_history_yearly_path = report_dir / "sector_ml_history_yearly_summary.csv"
     ml_history_regime_path = report_dir / "sector_ml_history_regime_summary.csv"
+    ml_rebalance_sensitivity_path = report_dir / "sector_ml_rebalance_sensitivity.csv"
     ml_live_allocation_path = report_dir / "sector_ml_live_allocation.csv"
 
     summary_payload: dict[str, Any] = {
@@ -1514,6 +1745,14 @@ def generate_sector_rotation_report(
                 "method_note": history_view.get("method_note"),
                 "strategy_summary": json.loads(history_view["strategy_summary_frame"].to_json(orient="records")),
             }
+        rebalance_sensitivity_frame = sector_ml_view.get("rebalance_sensitivity_frame")
+        if isinstance(rebalance_sensitivity_frame, pd.DataFrame) and not rebalance_sensitivity_frame.empty:
+            rebalance_sensitivity_frame.to_csv(ml_rebalance_sensitivity_path, index=False)
+            summary_payload["ml"]["rebalance_sensitivity"] = {
+                "available": True,
+                "cadences": sorted(rebalance_sensitivity_frame["cadence_bars"].dropna().astype(int).unique().tolist()),
+                "strategy_summary": json.loads(rebalance_sensitivity_frame.to_json(orient="records")),
+            }
     else:
         summary_payload["ml"]["message"] = str(sector_ml_view.get("message") or "Sector ML study unavailable.")
 
@@ -1559,6 +1798,7 @@ def generate_sector_rotation_report(
         "ml_history_period_log": str(ml_history_period_log_path) if ml_history_period_log_path.exists() else None,
         "ml_history_yearly": str(ml_history_yearly_path) if ml_history_yearly_path.exists() else None,
         "ml_history_regime": str(ml_history_regime_path) if ml_history_regime_path.exists() else None,
+        "ml_rebalance_sensitivity": str(ml_rebalance_sensitivity_path) if ml_rebalance_sensitivity_path.exists() else None,
         "ml_live_allocation": str(ml_live_allocation_path) if ml_live_allocation_path.exists() else None,
     }
 
