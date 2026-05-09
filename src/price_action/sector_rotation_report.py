@@ -3144,6 +3144,422 @@ def _render_executive_summary_pdf(
     return True
 
 
+def _render_rotation_playbook_html(
+        generated_at: str,
+        regime_overview: dict[str, Any],
+        sector_ml_view: dict[str, Any],
+        live_ml_view: dict[str, Any],
+) -> str:
+        current = regime_overview["current"]
+        current_regime = str(current["regime_label"])
+        current_quadrant = str(current["quadrant_label"])
+        config = sector_ml_view.get("config") or {}
+        signal_date = (
+                pd.Timestamp(live_ml_view["signal_date"]).strftime("%Y-%m-%d")
+                if live_ml_view.get("signal_date") is not None
+                else "n/a"
+        )
+        threshold = float(config.get("signal_threshold", 0.55))
+        hold_bars = int(config.get("label_horizon", 5))
+        feature_lag = int(config.get("feature_lag", 1))
+        top_n = int(config.get("top_n", 3))
+        cash_weight = float(config.get("reserve_cash_weight", 0.40))
+        core_weight = float(config.get("core_sector_weight", 0.60))
+        first_drawdown = float(config.get("reserve_drawdown_first", 0.05))
+        second_drawdown = float(config.get("reserve_drawdown_second", 0.10))
+        full_drawdown = float(config.get("reserve_drawdown_full", 0.20))
+        first_deploy = float(config.get("reserve_deploy_first", 0.10))
+        second_deploy = float(config.get("reserve_deploy_second", 0.20))
+        full_deploy = max(0.0, 1.0 - first_deploy - second_deploy)
+
+        allocation_frame = live_ml_view.get("allocation_frame")
+        full_frame = live_ml_view.get("full_frame")
+
+        cards: list[str] = [
+                _render_stat_card(
+                        title="Current macro state",
+                        body=(
+                                f"Regime: {current_regime}. Quadrant: {current_quadrant}. The live rotation page uses the latest complete signal dated {signal_date}."
+                        ),
+                        tag="Now",
+                ),
+                _render_stat_card(
+                        title="Core portfolio rule",
+                        body=(
+                                f"Keep {_format_weight_pct(cash_weight)} in cash by rule. Only the {_format_weight_pct(core_weight)} equity sleeve rotates across sectors."
+                        ),
+                        tag="Sizing",
+                ),
+                _render_stat_card(
+                        title="When to rotate",
+                        body=(
+                                f"Re-evaluate every {hold_bars} trading bars, using features lagged {feature_lag} bar and executing one bar after the signal."
+                        ),
+                        tag="Timing",
+                ),
+                _render_stat_card(
+                        title="Eligibility rule",
+                        body=(
+                                f"A sector qualifies for the live basket only if its ensemble probability is at least {_format_probability_pct(threshold)}. If nothing qualifies, the page falls back to the top combined scores."
+                        ),
+                        tag="Filter",
+                ),
+        ]
+
+        current_rows: list[tuple[str, ...]] = []
+        instruction_lines: list[str] = []
+        if isinstance(allocation_frame, pd.DataFrame) and not allocation_frame.empty:
+                for row in allocation_frame.itertuples(index=False):
+                        current_rows.append(
+                                (
+                                        f"{row.sector_label} ({row.symbol})",
+                                        str(row.family),
+                                        _format_weight_pct(row.portfolio_weight),
+                                        _format_weight_pct(row.sleeve_weight),
+                                        _format_probability_pct(row.ensemble_probability),
+                                        _format_decimal(row.combined_live_score, 3),
+                                        _format_decimal(row.entry_score, 3),
+                                        _format_decimal(row.validation_quality_score, 3),
+                                )
+                        )
+                        instruction_lines.append(
+                                f"Rotate {_format_weight_pct(row.portfolio_weight)} of the full portfolio into {row.sector_label} ({row.symbol})."
+                        )
+                selected_count = len(allocation_frame.index)
+                cards.append(
+                        _render_stat_card(
+                                title="Where to rotate now",
+                                body=(
+                                        " ".join(instruction_lines)
+                                        if instruction_lines
+                                        else "No sector currently qualifies, so the equity sleeve should stay out of rotation until the next signal."
+                                ),
+                                tag="Action",
+                        )
+                )
+                cards.append(
+                        _render_stat_card(
+                                title="Basket breadth",
+                                body=(
+                                        f"{selected_count} sector{'s' if selected_count != 1 else ''} currently pass the live filter, versus a nominal target basket size of up to {top_n} primary sectors."
+                                ),
+                                tag="Breadth",
+                        )
+                )
+        else:
+                cards.append(
+                        _render_stat_card(
+                                title="Where to rotate now",
+                                body="No eligible live basket was available from the current signal, so no rotation instruction can be issued from this report build.",
+                                tag="Action",
+                        )
+                )
+
+        watch_rows: list[tuple[str, ...]] = []
+        if isinstance(full_frame, pd.DataFrame) and not full_frame.empty:
+                watch_frame = full_frame.head(6).copy()
+                for row in watch_frame.itertuples(index=False):
+                        watch_rows.append(
+                                (
+                                        f"{row.sector_label} ({row.symbol})",
+                                        "Yes" if bool(row.recommended_live) else "No",
+                                        _format_probability_pct(row.ensemble_probability),
+                                        _format_decimal(row.combined_live_score, 3),
+                                        _format_decimal(row.entry_score, 3),
+                                        _format_decimal(row.best_overfit_stability_score, 1),
+                                        _format_decimal(row.ensemble_holdout_sharpe, 2),
+                                )
+                        )
+
+        reserve_rows = [
+                (
+                        f"SPY drawdown at least {_format_return_pct(-first_drawdown)}",
+                        f"Deploy {_format_weight_pct(first_deploy * cash_weight)} of the full portfolio from reserve cash.",
+                        "Keep the rest of the reserve in cash until a deeper drawdown appears.",
+                ),
+                (
+                        f"SPY drawdown at least {_format_return_pct(-second_drawdown)}",
+                        f"Deploy another {_format_weight_pct(second_deploy * cash_weight)} of the full portfolio.",
+                        "This is cumulative on top of the first tier.",
+                ),
+                (
+                        f"SPY drawdown at least {_format_return_pct(-full_drawdown)}",
+                        f"Deploy the remaining {_format_weight_pct(full_deploy * cash_weight)} of the full portfolio.",
+                        "The reserve sleeve is fully mobilized only at deep stress.",
+                ),
+                (
+                        "SPY returns to a fresh high",
+                        "Rotate the deployed reserve sleeve back to cash.",
+                        "The reserve bucket rebuilds only after the drawdown is fully repaired.",
+                ),
+        ]
+
+        rules_rows = [
+                (
+                        "Step 1",
+                        "Classify the macro regime",
+                        f"Use the current regime and quadrant as the macro prior. Right now that is {current_regime} in {current_quadrant}.",
+                ),
+                (
+                        "Step 2",
+                        "Read the latest complete ML signal",
+                        f"Only the fully known signal dated {signal_date} is allowed into the live basket. There is no intraperiod look-ahead refresh.",
+                ),
+                (
+                        "Step 3",
+                        "Filter sectors by live probability",
+                        f"Require ensemble probability >= {_format_probability_pct(threshold)} before a sector can enter the live basket.",
+                ),
+                (
+                        "Step 4",
+                        "Rank the eligible sectors",
+                        "Score sectors with 40% macro regime rank, 20% live probability rank, 15% quality-weighted ML rank, 10% validation quality, 10% model stability, and 5% holdout Sharpe.",
+                ),
+                (
+                        "Step 5",
+                        "Allocate the equity sleeve",
+                        f"Spread the {_format_weight_pct(core_weight)} equity sleeve across the highest combined scores. The rest stays in cash by design.",
+                ),
+                (
+                        "Step 6",
+                        "Use reserve deployment only in drawdowns",
+                        "The reserve rule is separate from the sector basket. It reacts only to visible SPY drawdowns and moves back to cash after a new high.",
+                ),
+        ]
+
+        current_table = ""
+        if current_rows:
+                current_table = _render_data_table(
+                        headers=(
+                                "Current sector",
+                                "Role",
+                                "Portfolio weight",
+                                "Within 60% sleeve",
+                                "ML probability",
+                                "Combined score",
+                                "Regime score",
+                                "Validation quality",
+                        ),
+                        rows=current_rows,
+                )
+
+        watch_table = ""
+        if watch_rows:
+                watch_table = _render_data_table(
+                        headers=(
+                                "Sector",
+                                "In live basket",
+                                "ML probability",
+                                "Combined score",
+                                "Regime score",
+                                "Stability",
+                                "Holdout Sharpe",
+                        ),
+                        rows=watch_rows,
+                )
+
+        return f"""<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"utf-8\" />
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+    <title>Sector Rotation Playbook</title>
+    <style>
+        :root {{
+            --bg: {PAGE_BACKGROUND};
+            --panel: {PANEL_BACKGROUND};
+            --ink: {TEXT_COLOR};
+            --muted: {MUTED_TEXT_COLOR};
+            --line: {GRID_COLOR};
+            --accent: #7a3e2b;
+            --accent-two: #154c5c;
+            --shadow: 0 24px 48px rgba(27, 36, 48, 0.08);
+            --radius: 18px;
+        }}
+        * {{ box-sizing: border-box; }}
+        body {{
+            margin: 0;
+            font-family: \"Iowan Old Style\", \"Palatino Linotype\", \"Book Antiqua\", Georgia, serif;
+            background:
+                radial-gradient(circle at top left, rgba(122, 62, 43, 0.10), transparent 28%),
+                radial-gradient(circle at 85% 0%, rgba(21, 76, 92, 0.10), transparent 26%),
+                var(--bg);
+            color: var(--ink);
+            line-height: 1.6;
+        }}
+        .page {{ max-width: 1180px; margin: 0 auto; padding: 42px 24px 72px; }}
+        .hero, .section {{
+            background: rgba(255, 253, 248, 0.94);
+            border: 1px solid rgba(213, 207, 197, 0.9);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            padding: 28px;
+            margin-bottom: 24px;
+        }}
+        .hero {{ padding: 36px; }}
+        .eyebrow {{
+            margin: 0 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            font-size: 0.78rem;
+            color: var(--accent);
+        }}
+        h1, h2, h3 {{ line-height: 1.12; margin: 0; }}
+        h1 {{ font-size: clamp(2.2rem, 4vw, 3.8rem); max-width: 12ch; }}
+        h2 {{ font-size: clamp(1.4rem, 2.5vw, 2.1rem); margin-bottom: 8px; }}
+        p {{ color: var(--muted); }}
+        .hero-grid {{ display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: start; }}
+        .hero-meta {{ display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }}
+        .hero-meta span {{
+            display: inline-flex;
+            align-items: center;
+            padding: 9px 14px;
+            border-radius: 999px;
+            background: rgba(233, 220, 200, 0.78);
+            color: var(--ink);
+            border: 1px solid rgba(122, 62, 43, 0.12);
+            font-size: 0.92rem;
+        }}
+        .focus-box {{
+            background: linear-gradient(160deg, rgba(122, 62, 43, 0.08), rgba(21, 76, 92, 0.08));
+            border: 1px solid rgba(122, 62, 43, 0.14);
+            border-radius: 20px;
+            padding: 20px;
+        }}
+        .focus-box h3 {{ font-size: 1.15rem; margin-bottom: 8px; }}
+        .card-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+        }}
+        .stat-card {{
+            background: var(--panel);
+            border-radius: 18px;
+            border: 1px solid rgba(213, 207, 197, 0.95);
+            padding: 18px;
+            min-height: 100%;
+        }}
+        .card-tag {{
+            margin: 0 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.74rem;
+            color: var(--accent);
+        }}
+        .split {{ display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 18px; }}
+        .table-shell {{
+            margin-top: 18px;
+            overflow-x: auto;
+            border-radius: 18px;
+            border: 1px solid rgba(213, 207, 197, 0.9);
+            background: rgba(255, 253, 248, 0.9);
+        }}
+        .data-table {{ width: 100%; border-collapse: collapse; min-width: 740px; }}
+        .data-table th,
+        .data-table td {{
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid rgba(213, 207, 197, 0.65);
+            vertical-align: top;
+        }}
+        .data-table th {{
+            background: rgba(244, 237, 225, 0.82);
+            color: var(--ink);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }}
+        .data-table tr:last-child td {{ border-bottom: none; }}
+        ul.simple {{ margin: 14px 0 0; padding-left: 18px; color: var(--muted); }}
+        @media (max-width: 920px) {{
+            .hero-grid, .split {{ grid-template-columns: 1fr; }}
+        }}
+        @media (max-width: 720px) {{
+            .page {{ padding: 24px 16px 56px; }}
+            .hero, .section {{ padding: 22px; }}
+        }}
+    </style>
+</head>
+<body>
+    <main class=\"page\">
+        <section class=\"hero\">
+            <div class=\"hero-grid\">
+                <div>
+                    <p class=\"eyebrow\">Rotation Playbook</p>
+                    <h1>What To Rotate Into, And When</h1>
+                    <p>This page translates the sector rotation model into operating rules. It tells you the current destination for the rotating equity sleeve, the conditions that trigger a change, and the separate reserve-cash drawdown rule.</p>
+                    <div class=\"hero-meta\">
+                        <span>{html.escape(generated_at)}</span>
+                        <span>Current regime: {html.escape(current_regime)}</span>
+                        <span>Quadrant: {html.escape(current_quadrant)}</span>
+                        <span>Latest complete signal: {html.escape(signal_date)}</span>
+                    </div>
+                </div>
+                <aside class=\"focus-box\">
+                    <p class=\"eyebrow\">Plain English</p>
+                    <h3>Current instruction</h3>
+                    <p>{html.escape(' '.join(instruction_lines) if instruction_lines else 'No sector currently clears the live entry filter, so wait for the next complete signal rather than forcing a rotation.')}</p>
+                    <ul class=\"simple\">
+                        <li>Keep {html.escape(_format_weight_pct(cash_weight))} in cash by rule.</li>
+                        <li>Rotate only the {html.escape(_format_weight_pct(core_weight))} equity sleeve.</li>
+                        <li>Use the reserve sleeve only when SPY drawdown thresholds are hit.</li>
+                    </ul>
+                </aside>
+            </div>
+        </section>
+
+        <section class=\"section\">
+            <p class=\"eyebrow\">Operating Rules</p>
+            <h2>How The Rotation Decision Is Made</h2>
+            <p>The rotation is rule-based. The page below is not discretionary commentary. It is a direct translation of the live sector ranking and the reserve cash trigger logic already used in the report.</p>
+            <div class=\"card-grid\">
+                {'\n'.join(cards)}
+            </div>
+            {_render_data_table(headers=("Step", "Rule", "What it means"), rows=rules_rows)}
+        </section>
+
+        <section class=\"section\">
+            <p class=\"eyebrow\">Current Rotation</p>
+            <h2>Where The Equity Sleeve Should Sit Now</h2>
+            <p>The live basket only includes sectors that clear the probability filter on the latest complete signal. If the filter is tight, the basket can shrink below the normal target breadth rather than forcing weak ideas into the portfolio.</p>
+            {current_table}
+        </section>
+
+        <section class=\"section\">
+            <p class=\"eyebrow\">Watchlist</p>
+            <h2>Nearest Alternatives If The Basket Changes</h2>
+            <p>These are the highest-scoring sectors after applying the macro prior and the ML overlays. A sector can rank well and still stay out of the live basket if it does not clear the probability threshold.</p>
+            {watch_table}
+        </section>
+
+        <section class=\"section\">
+            <div class=\"split\">
+                <div>
+                    <p class=\"eyebrow\">Reserve Sleeve</p>
+                    <h2>Drawdown Deployment Rules</h2>
+                    <p>This is separate from the rotating sector basket. The reserve sleeve is a cash buffer that only becomes active when SPY is already in drawdown on the signal date.</p>
+                    {_render_data_table(headers=("Trigger", "Action", "Comment"), rows=reserve_rows)}
+                </div>
+                <div>
+                    <p class=\"eyebrow\">Bias Controls</p>
+                    <h2>Why This Is Not Forward Looking</h2>
+                    <p>The live page uses the same no-leak controls as the benchmark report.</p>
+                    <ul class=\"simple\">
+                        <li>Features are lagged by {feature_lag} bar before training and prediction.</li>
+                        <li>The signal executes one bar after it is observed and then holds for {hold_bars} bars.</li>
+                        <li>The model used a five-year expanding train and one-year validation with purge and embargo controls already baked into the report engine.</li>
+                        <li>The current rotation instruction comes from the latest complete holdout signal, not from future returns or revised macro labels.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
+"""
+
+
 def _render_html(
     generated_at: str,
     regime_overview: dict[str, Any],
@@ -3345,6 +3761,7 @@ def generate_sector_rotation_report(
     ml_strategy_usage_path = report_dir / "sector_ml_strategy_sector_usage.csv"
     executive_summary_path = report_dir / "executive_summary.html"
     executive_summary_pdf_path = report_dir / "executive_summary.pdf"
+    rotation_playbook_path = report_dir / "rotation_playbook.html"
 
     summary_payload: dict[str, Any] = {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -3460,6 +3877,9 @@ def generate_sector_rotation_report(
         "html": str(executive_summary_path),
         "pdf": str(executive_summary_pdf_path),
     }
+    summary_payload["rotation_playbook"] = {
+        "html": str(rotation_playbook_path),
+    }
 
     summary_path.write_text(json.dumps(summary_payload, indent=2), encoding="utf-8")
 
@@ -3477,6 +3897,12 @@ def generate_sector_rotation_report(
         regime_overview=regime_overview,
         sector_ml_view=sector_ml_view,
     )
+    rotation_playbook_html = _render_rotation_playbook_html(
+        generated_at=generated_at,
+        regime_overview=regime_overview,
+        sector_ml_view=sector_ml_view,
+        live_ml_view=live_ml_view,
+    )
     _render_executive_summary_pdf(
         pdf_path=executive_summary_pdf_path,
         generated_at=generated_at,
@@ -3486,11 +3912,13 @@ def generate_sector_rotation_report(
     report_path = report_dir / "index.html"
     report_path.write_text(html_text, encoding="utf-8")
     executive_summary_path.write_text(executive_summary_html, encoding="utf-8")
+    rotation_playbook_path.write_text(rotation_playbook_html, encoding="utf-8")
 
     return {
         "report": str(report_path),
         "executive_summary": str(executive_summary_path),
         "executive_summary_pdf": str(executive_summary_pdf_path),
+        "rotation_playbook": str(rotation_playbook_path),
         "summary": str(summary_path),
         "sector_matrix": str(matrix_path) if matrix_path.exists() else None,
         "sector_current": str(current_path) if current_path.exists() else None,

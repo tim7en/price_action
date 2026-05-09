@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sector Rotation Playbook</title>
+    <style>
+        :root {
+            --bg: #f7f2e8;
+            --panel: #fffdf8;
+            --ink: #1b2430;
+            --muted: #5f6b76;
+            --line: #d5cfc5;
+            --accent: #7a3e2b;
+            --accent-two: #154c5c;
+            --shadow: 0 24px 48px rgba(27, 36, 48, 0.08);
+            --radius: 18px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+            background:
+                radial-gradient(circle at top left, rgba(122, 62, 43, 0.10), transparent 28%),
+                radial-gradient(circle at 85% 0%, rgba(21, 76, 92, 0.10), transparent 26%),
+                var(--bg);
+            color: var(--ink);
+            line-height: 1.6;
+        }
+        .page { max-width: 1180px; margin: 0 auto; padding: 42px 24px 72px; }
+        .hero, .section {
+            background: rgba(255, 253, 248, 0.94);
+            border: 1px solid rgba(213, 207, 197, 0.9);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+        .hero { padding: 36px; }
+        .eyebrow {
+            margin: 0 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            font-size: 0.78rem;
+            color: var(--accent);
+        }
+        h1, h2, h3 { line-height: 1.12; margin: 0; }
+        h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); max-width: 12ch; }
+        h2 { font-size: clamp(1.4rem, 2.5vw, 2.1rem); margin-bottom: 8px; }
+        p { color: var(--muted); }
+        .hero-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: start; }
+        .hero-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+        .hero-meta span {
+            display: inline-flex;
+            align-items: center;
+            padding: 9px 14px;
+            border-radius: 999px;
+            background: rgba(233, 220, 200, 0.78);
+            color: var(--ink);
+            border: 1px solid rgba(122, 62, 43, 0.12);
+            font-size: 0.92rem;
+        }
+        .focus-box {
+            background: linear-gradient(160deg, rgba(122, 62, 43, 0.08), rgba(21, 76, 92, 0.08));
+            border: 1px solid rgba(122, 62, 43, 0.14);
+            border-radius: 20px;
+            padding: 20px;
+        }
+        .focus-box h3 { font-size: 1.15rem; margin-bottom: 8px; }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+        }
+        .stat-card {
+            background: var(--panel);
+            border-radius: 18px;
+            border: 1px solid rgba(213, 207, 197, 0.95);
+            padding: 18px;
+            min-height: 100%;
+        }
+        .card-tag {
+            margin: 0 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.74rem;
+            color: var(--accent);
+        }
+        .split { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 18px; }
+        .table-shell {
+            margin-top: 18px;
+            overflow-x: auto;
+            border-radius: 18px;
+            border: 1px solid rgba(213, 207, 197, 0.9);
+            background: rgba(255, 253, 248, 0.9);
+        }
+        .data-table { width: 100%; border-collapse: collapse; min-width: 740px; }
+        .data-table th,
+        .data-table td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid rgba(213, 207, 197, 0.65);
+            vertical-align: top;
+        }
+        .data-table th {
+            background: rgba(244, 237, 225, 0.82);
+            color: var(--ink);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .data-table tr:last-child td { border-bottom: none; }
+        ul.simple { margin: 14px 0 0; padding-left: 18px; color: var(--muted); }
+        @media (max-width: 920px) {
+            .hero-grid, .split { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 720px) {
+            .page { padding: 24px 16px 56px; }
+            .hero, .section { padding: 22px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <div class="hero-grid">
+                <div>
+                    <p class="eyebrow">Rotation Playbook</p>
+                    <h1>What To Rotate Into, And When</h1>
+                    <p>This page translates the sector rotation model into operating rules. It tells you the current destination for the rotating equity sleeve, the conditions that trigger a change, and the separate reserve-cash drawdown rule.</p>
+                    <div class="hero-meta">
+                        <span>Generated 2026-05-09 16:03 UTC</span>
+                        <span>Current regime: Fragile Late-Cycle Watch</span>
+                        <span>Quadrant: Growth Down / Inflation Down</span>
+                        <span>Latest complete signal: 2026-03-03</span>
+                    </div>
+                </div>
+                <aside class="focus-box">
+                    <p class="eyebrow">Plain English</p>
+                    <h3>Current instruction</h3>
+                    <p>Rotate 60.0% of the full portfolio into Utilities (XLU).</p>
+                    <ul class="simple">
+                        <li>Keep 40.0% in cash by rule.</li>
+                        <li>Rotate only the 60.0% equity sleeve.</li>
+                        <li>Use the reserve sleeve only when SPY drawdown thresholds are hit.</li>
+                    </ul>
+                </aside>
+            </div>
+        </section>
+
+        <section class="section">
+            <p class="eyebrow">Operating Rules</p>
+            <h2>How The Rotation Decision Is Made</h2>
+            <p>The rotation is rule-based. The page below is not discretionary commentary. It is a direct translation of the live sector ranking and the reserve cash trigger logic already used in the report.</p>
+            <div class="card-grid">
+                <article class="stat-card">
+  <p class="card-tag">Now</p>
+  <h3>Current macro state</h3>
+  <p>Regime: Fragile Late-Cycle Watch. Quadrant: Growth Down / Inflation Down. The live rotation page uses the latest complete signal dated 2026-03-03.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Sizing</p>
+  <h3>Core portfolio rule</h3>
+  <p>Keep 40.0% in cash by rule. Only the 60.0% equity sleeve rotates across sectors.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Timing</p>
+  <h3>When to rotate</h3>
+  <p>Re-evaluate every 5 trading bars, using features lagged 1 bar and executing one bar after the signal.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Filter</p>
+  <h3>Eligibility rule</h3>
+  <p>A sector qualifies for the live basket only if its ensemble probability is at least 55%. If nothing qualifies, the page falls back to the top combined scores.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Action</p>
+  <h3>Where to rotate now</h3>
+  <p>Rotate 60.0% of the full portfolio into Utilities (XLU).</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Breadth</p>
+  <h3>Basket breadth</h3>
+  <p>1 sector currently pass the live filter, versus a nominal target basket size of up to 3 primary sectors.</p>
+</article>
+            </div>
+            <div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Step</th><th>Rule</th><th>What it means</th></tr></thead>
+    <tbody><tr><td>Step 1</td><td>Classify the macro regime</td><td>Use the current regime and quadrant as the macro prior. Right now that is Fragile Late-Cycle Watch in Growth Down / Inflation Down.</td></tr><tr><td>Step 2</td><td>Read the latest complete ML signal</td><td>Only the fully known signal dated 2026-03-03 is allowed into the live basket. There is no intraperiod look-ahead refresh.</td></tr><tr><td>Step 3</td><td>Filter sectors by live probability</td><td>Require ensemble probability &gt;= 55% before a sector can enter the live basket.</td></tr><tr><td>Step 4</td><td>Rank the eligible sectors</td><td>Score sectors with 40% macro regime rank, 20% live probability rank, 15% quality-weighted ML rank, 10% validation quality, 10% model stability, and 5% holdout Sharpe.</td></tr><tr><td>Step 5</td><td>Allocate the equity sleeve</td><td>Spread the 60.0% equity sleeve across the highest combined scores. The rest stays in cash by design.</td></tr><tr><td>Step 6</td><td>Use reserve deployment only in drawdowns</td><td>The reserve rule is separate from the sector basket. It reacts only to visible SPY drawdowns and moves back to cash after a new high.</td></tr></tbody>
+  </table>
+</div>
+        </section>
+
+        <section class="section">
+            <p class="eyebrow">Current Rotation</p>
+            <h2>Where The Equity Sleeve Should Sit Now</h2>
+            <p>The live basket only includes sectors that clear the probability filter on the latest complete signal. If the filter is tight, the basket can shrink below the normal target breadth rather than forcing weak ideas into the portfolio.</p>
+            <div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Current sector</th><th>Role</th><th>Portfolio weight</th><th>Within 60% sleeve</th><th>ML probability</th><th>Combined score</th><th>Regime score</th><th>Validation quality</th></tr></thead>
+    <tbody><tr><td>Utilities (XLU)</td><td>Rate-sensitive defense</td><td>60.0%</td><td>100.0%</td><td>60%</td><td>0.575</td><td>0.481</td><td>0.125</td></tr></tbody>
+  </table>
+</div>
+        </section>
+
+        <section class="section">
+            <p class="eyebrow">Watchlist</p>
+            <h2>Nearest Alternatives If The Basket Changes</h2>
+            <p>These are the highest-scoring sectors after applying the macro prior and the ML overlays. A sector can rank well and still stay out of the live basket if it does not clear the probability threshold.</p>
+            <div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Sector</th><th>In live basket</th><th>ML probability</th><th>Combined score</th><th>Regime score</th><th>Stability</th><th>Holdout Sharpe</th></tr></thead>
+    <tbody><tr><td>Information Technology (XLK)</td><td>No</td><td>38%</td><td>0.800</td><td>0.900</td><td>99.6</td><td>1.71</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>No</td><td>53%</td><td>0.775</td><td>0.750</td><td>96.1</td><td>0.78</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>No</td><td>51%</td><td>0.706</td><td>0.500</td><td>98.6</td><td>2.24</td></tr><tr><td>Utilities (XLU)</td><td>Yes</td><td>60%</td><td>0.575</td><td>0.481</td><td>98.8</td><td>2.87</td></tr><tr><td>Consumer Staples (XLP)</td><td>No</td><td>49%</td><td>0.569</td><td>0.750</td><td>93.8</td><td>0.12</td></tr><tr><td>Commodity / Materials (XLB)</td><td>No</td><td>33%</td><td>0.406</td><td>0.312</td><td>94.6</td><td>0.74</td></tr></tbody>
+  </table>
+</div>
+        </section>
+
+        <section class="section">
+            <div class="split">
+                <div>
+                    <p class="eyebrow">Reserve Sleeve</p>
+                    <h2>Drawdown Deployment Rules</h2>
+                    <p>This is separate from the rotating sector basket. The reserve sleeve is a cash buffer that only becomes active when SPY is already in drawdown on the signal date.</p>
+                    <div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Trigger</th><th>Action</th><th>Comment</th></tr></thead>
+    <tbody><tr><td>SPY drawdown at least -5.0%</td><td>Deploy 4.0% of the full portfolio from reserve cash.</td><td>Keep the rest of the reserve in cash until a deeper drawdown appears.</td></tr><tr><td>SPY drawdown at least -10.0%</td><td>Deploy another 8.0% of the full portfolio.</td><td>This is cumulative on top of the first tier.</td></tr><tr><td>SPY drawdown at least -20.0%</td><td>Deploy the remaining 28.0% of the full portfolio.</td><td>The reserve sleeve is fully mobilized only at deep stress.</td></tr><tr><td>SPY returns to a fresh high</td><td>Rotate the deployed reserve sleeve back to cash.</td><td>The reserve bucket rebuilds only after the drawdown is fully repaired.</td></tr></tbody>
+  </table>
+</div>
+                </div>
+                <div>
+                    <p class="eyebrow">Bias Controls</p>
+                    <h2>Why This Is Not Forward Looking</h2>
+                    <p>The live page uses the same no-leak controls as the benchmark report.</p>
+                    <ul class="simple">
+                        <li>Features are lagged by 1 bar before training and prediction.</li>
+                        <li>The signal executes one bar after it is observed and then holds for 5 bars.</li>
+                        <li>The model used a five-year expanding train and one-year validation with purge and embargo controls already baked into the report engine.</li>
+                        <li>The current rotation instruction comes from the latest complete holdout signal, not from future returns or revised macro labels.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
