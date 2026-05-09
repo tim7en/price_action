@@ -3,11 +3,16 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import textwrap
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.patches import FancyBboxPatch
+from matplotlib.ticker import FuncFormatter
 
 from .data import resolve_project_root
 from .macro_report import (
@@ -1511,6 +1516,72 @@ def _risk_bucket_from_row(label: str, max_drawdown: float | int | None) -> tuple
         return ("Medium risk / lower efficiency", "#6c757d", "This earns a return, but the drawdown path is harsher than the reward profile deserves.")
 
 
+def _build_executive_summary_view(
+    regime_overview: dict[str, Any],
+    sector_ml_view: dict[str, Any],
+) -> dict[str, Any]:
+    history_view = sector_ml_view.get("historical_rotation_view") if isinstance(sector_ml_view, dict) else None
+    holdout_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
+    if not isinstance(history_view, dict) or not history_view.get("available"):
+        return {"available": False, "message": "Historical strategy summary unavailable."}
+    if not isinstance(holdout_view, dict) or not holdout_view.get("available"):
+        return {"available": False, "message": "Holdout strategy summary unavailable."}
+
+    history_frame = history_view["strategy_summary_frame"].copy()
+    holdout_frame = holdout_view["strategy_summary_frame"].copy()
+    reserve_leverage_label = str(history_view.get("reserve_leverage_label") or "Reserve Cash Rule x")
+    selected_specs = [
+        ("Sector Reserve Cash Rule", "Reserve Rule"),
+        ("ML Quality-Weighted Rotation", "Quality Rotation"),
+        ("SPY Buy And Hold", "SPY"),
+        (reserve_leverage_label, "Reserve x3"),
+        ("ML Quality-Weighted Rotation x", "Quality x3"),
+        ("SPY Buy And Hold x", "SPY x3"),
+    ]
+
+    rows: list[dict[str, Any]] = []
+    for lookup_label, short_label in selected_specs:
+        startswith = lookup_label.endswith("x")
+        history_row = _select_strategy_row(history_frame, lookup_label, startswith=startswith)
+        holdout_row = _select_strategy_row(holdout_frame, lookup_label, startswith=startswith)
+        bucket_label, bucket_color, bucket_body = _risk_bucket_from_row(
+            str(history_row.strategy_label),
+            history_row.max_drawdown,
+        )
+        rows.append(
+            {
+                "strategy_label": str(history_row.strategy_label),
+                "short_label": short_label,
+                "bucket_label": bucket_label,
+                "bucket_color": bucket_color,
+                "bucket_body": bucket_body,
+                "history_total_return": float(history_row.total_return),
+                "history_cagr": float(history_row.cagr),
+                "history_sharpe": float(history_row.sharpe),
+                "history_max_drawdown": float(history_row.max_drawdown),
+                "holdout_cagr": float(holdout_row.cagr),
+                "holdout_sharpe": float(holdout_row.sharpe),
+                "holdout_max_drawdown": float(holdout_row.max_drawdown),
+                "trade_count": int(history_row.trade_count),
+                "turnover_per_year": float(history_row.turnover_per_year),
+                "cagr": float(history_row.cagr),
+                "max_drawdown": float(history_row.max_drawdown),
+                "total_return": float(history_row.total_return),
+            }
+        )
+
+    strategy_frame = pd.DataFrame(rows)
+    return {
+        "available": True,
+        "strategy_frame": strategy_frame,
+        "current": regime_overview["current"],
+        "reserve_row": strategy_frame.loc[strategy_frame["short_label"] == "Reserve Rule"].iloc[0],
+        "quality_row": strategy_frame.loc[strategy_frame["short_label"] == "Quality Rotation"].iloc[0],
+        "reserve_x3_row": strategy_frame.loc[strategy_frame["short_label"] == "Reserve x3"].iloc[0],
+        "spy_x3_row": strategy_frame.loc[strategy_frame["short_label"] == "SPY x3"].iloc[0],
+    }
+
+
 def _render_summary_risk_map(strategy_frame: pd.DataFrame) -> str:
         if strategy_frame.empty:
                 return ""
@@ -1666,95 +1737,55 @@ def _render_bias_timeline_chart(config: dict[str, Any]) -> str:
 
 
 def _render_executive_summary_html(
-        generated_at: str,
-        regime_overview: dict[str, Any],
-        sector_ml_view: dict[str, Any],
+    generated_at: str,
+    regime_overview: dict[str, Any],
+    sector_ml_view: dict[str, Any],
 ) -> str:
-        history_view = sector_ml_view.get("historical_rotation_view") if isinstance(sector_ml_view, dict) else None
-        holdout_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
-        if not isinstance(history_view, dict) or not history_view.get("available"):
-                return "<html><body><p>Executive summary unavailable.</p></body></html>"
-        if not isinstance(holdout_view, dict) or not holdout_view.get("available"):
-                return "<html><body><p>Executive summary unavailable.</p></body></html>"
+    summary_view = _build_executive_summary_view(
+        regime_overview=regime_overview,
+        sector_ml_view=sector_ml_view,
+    )
+    if not summary_view.get("available"):
+        return "<html><body><p>Executive summary unavailable.</p></body></html>"
 
-        history_frame = history_view["strategy_summary_frame"].copy()
-        holdout_frame = holdout_view["strategy_summary_frame"].copy()
-        reserve_leverage_label = str(history_view.get("reserve_leverage_label") or "Reserve Cash Rule x")
-        selected_specs = [
-                ("Sector Reserve Cash Rule", "Reserve Rule"),
-                ("ML Quality-Weighted Rotation", "Quality Rotation"),
-                ("SPY Buy And Hold", "SPY"),
-                (reserve_leverage_label, "Reserve x3"),
-                ("ML Quality-Weighted Rotation x", "Quality x3"),
-                ("SPY Buy And Hold x", "SPY x3"),
-        ]
+    strategy_frame = summary_view["strategy_frame"]
+    reserve_row = summary_view["reserve_row"]
+    quality_row = summary_view["quality_row"]
+    reserve_x3_row = summary_view["reserve_x3_row"]
+    spy_x3_row = summary_view["spy_x3_row"]
+    current = summary_view["current"]
 
-        rows: list[dict[str, Any]] = []
-        for lookup_label, short_label in selected_specs:
-                startswith = lookup_label.endswith("x")
-                history_row = _select_strategy_row(history_frame, lookup_label, startswith=startswith)
-                holdout_row = _select_strategy_row(holdout_frame, lookup_label, startswith=startswith)
-                bucket_label, bucket_color, bucket_body = _risk_bucket_from_row(str(history_row.strategy_label), history_row.max_drawdown)
-                rows.append(
-                        {
-                                "strategy_label": str(history_row.strategy_label),
-                                "short_label": short_label,
-                                "bucket_label": bucket_label,
-                                "bucket_color": bucket_color,
-                                "bucket_body": bucket_body,
-                                "history_total_return": float(history_row.total_return),
-                                "history_cagr": float(history_row.cagr),
-                                "history_sharpe": float(history_row.sharpe),
-                                "history_max_drawdown": float(history_row.max_drawdown),
-                                "holdout_cagr": float(holdout_row.cagr),
-                                "holdout_sharpe": float(holdout_row.sharpe),
-                                "holdout_max_drawdown": float(holdout_row.max_drawdown),
-                                "trade_count": int(history_row.trade_count),
-                                "turnover_per_year": float(history_row.turnover_per_year),
-                                "cagr": float(history_row.cagr),
-                                "max_drawdown": float(history_row.max_drawdown),
-                                "total_return": float(history_row.total_return),
-                        }
-                )
+    risk_cards = []
+    for label in ["Reserve Rule", "Quality Rotation", "Reserve x3", "SPY x3"]:
+        row = strategy_frame.loc[strategy_frame["short_label"] == label].iloc[0]
+        risk_cards.append(
+            "\n".join(
+                [
+                    '<article class="summary-card">',
+                    f'  <p class="summary-tag">{html.escape(str(row.bucket_label))}</p>',
+                    f'  <h3>{html.escape(str(row.short_label))}</h3>',
+                    f'  <p class="tight-copy">{html.escape(str(row.bucket_body))}</p>',
+                    f'  <p class="metric-line">CAGR {_format_return_pct(row.history_cagr)} | Max DD {_format_return_pct(row.history_max_drawdown)}</p>',
+                    '</article>',
+                ]
+            )
+        )
 
-        strategy_frame = pd.DataFrame(rows)
-        reserve_row = strategy_frame.loc[strategy_frame["short_label"] == "Reserve Rule"].iloc[0]
-        quality_row = strategy_frame.loc[strategy_frame["short_label"] == "Quality Rotation"].iloc[0]
-        reserve_x3_row = strategy_frame.loc[strategy_frame["short_label"] == "Reserve x3"].iloc[0]
-        spy_x3_row = strategy_frame.loc[strategy_frame["short_label"] == "SPY x3"].iloc[0]
-        current = regime_overview["current"]
+    strategy_rows: list[str] = []
+    for row in strategy_frame.itertuples(index=False):
+        strategy_rows.append(
+            "<tr>"
+            f"<td>{html.escape(str(row.short_label))}</td>"
+            f"<td>{html.escape(str(row.bucket_label))}</td>"
+            f"<td>{_format_return_pct(row.history_cagr)}</td>"
+            f"<td>{_format_return_pct(row.history_max_drawdown)}</td>"
+            f"<td>{_format_decimal(row.history_sharpe)}</td>"
+            f"<td>{_format_return_pct(row.holdout_cagr)}</td>"
+            f"<td>{_format_return_pct(row.holdout_max_drawdown)}</td>"
+            "</tr>"
+        )
 
-        risk_cards = []
-        for label in ["Reserve Rule", "Quality Rotation", "Reserve x3", "SPY x3"]:
-                row = strategy_frame.loc[strategy_frame["short_label"] == label].iloc[0]
-                risk_cards.append(
-                        "\n".join(
-                                [
-                                        '<article class="summary-card">',
-                                        f'  <p class="summary-tag">{html.escape(str(row.bucket_label))}</p>',
-                                        f'  <h3>{html.escape(str(row.short_label))}</h3>',
-                        f'  <p class="tight-copy">{html.escape(str(row.bucket_body))}</p>',
-                        f'  <p class="metric-line">CAGR {_format_return_pct(row.history_cagr)} | Max DD {_format_return_pct(row.history_max_drawdown)}</p>',
-                                        '</article>',
-                                ]
-                        )
-                )
-
-        strategy_rows: list[str] = []
-        for row in strategy_frame.itertuples(index=False):
-                strategy_rows.append(
-                        "<tr>"
-                        f"<td>{html.escape(str(row.short_label))}</td>"
-                        f"<td>{html.escape(str(row.bucket_label))}</td>"
-                        f"<td>{_format_return_pct(row.history_cagr)}</td>"
-                        f"<td>{_format_return_pct(row.history_max_drawdown)}</td>"
-                        f"<td>{_format_decimal(row.history_sharpe)}</td>"
-                        f"<td>{_format_return_pct(row.holdout_cagr)}</td>"
-                        f"<td>{_format_return_pct(row.holdout_max_drawdown)}</td>"
-                        "</tr>"
-                )
-
-        return f"""<!DOCTYPE html>
+    return f"""<!DOCTYPE html>
 <html lang=\"en\">
 <head>
     <meta charset=\"utf-8\" />
@@ -1933,6 +1964,435 @@ def _render_executive_summary_html(
 </body>
 </html>
 """
+
+
+def _wrap_pdf_paragraph(text: str, width: int) -> str:
+    return textwrap.fill(str(text), width=width)
+
+
+def _wrap_pdf_bullets(items: list[str], width: int) -> str:
+    return "\n".join(
+        textwrap.fill(item, width=width, initial_indent="• ", subsequent_indent="  ")
+        for item in items
+    )
+
+
+def _pdf_add_panel(
+    axis: Any,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    *,
+    eyebrow: str | None = None,
+    title: str | None = None,
+    body: str | None = None,
+    title_size: float = 13.0,
+    body_size: float = 9.5,
+    facecolor: str = PANEL_BACKGROUND,
+    accent: bool = False,
+) -> None:
+    panel = FancyBboxPatch(
+        (x, y),
+        width,
+        height,
+        boxstyle="round,pad=0.012,rounding_size=0.02",
+        linewidth=1.0,
+        edgecolor=GRID_COLOR,
+        facecolor=facecolor,
+        transform=axis.transAxes,
+    )
+    axis.add_patch(panel)
+
+    text_x = x + 0.018
+    if accent:
+        axis.plot(
+            [x + 0.015, x + 0.015],
+            [y + 0.028, y + height - 0.028],
+            color="#7a3e2b",
+            linewidth=2.4,
+            solid_capstyle="round",
+            transform=axis.transAxes,
+        )
+        text_x = x + 0.03
+
+    cursor_y = y + height - 0.028
+    if eyebrow:
+        axis.text(
+            text_x,
+            cursor_y,
+            eyebrow.upper(),
+            transform=axis.transAxes,
+            fontsize=8.2,
+            fontweight="bold",
+            color="#7a3e2b",
+            va="top",
+            family="serif",
+        )
+        cursor_y -= 0.042
+    if title:
+        axis.text(
+            text_x,
+            cursor_y,
+            title,
+            transform=axis.transAxes,
+            fontsize=title_size,
+            fontweight="bold",
+            color=TEXT_COLOR,
+            va="top",
+            family="serif",
+        )
+        cursor_y -= 0.053 if title_size >= 18 else 0.046
+    if body:
+        axis.text(
+            text_x,
+            cursor_y,
+            body,
+            transform=axis.transAxes,
+            fontsize=body_size,
+            color=MUTED_TEXT_COLOR,
+            va="top",
+            family="serif",
+            linespacing=1.35,
+        )
+
+
+def _draw_pdf_risk_map(axis: Any, strategy_frame: pd.DataFrame) -> None:
+    plot_frame = strategy_frame.copy()
+    plot_frame["drawdown_abs"] = plot_frame["max_drawdown"].astype(float).abs()
+
+    axis.set_facecolor(PANEL_BACKGROUND)
+    axis.scatter(
+        plot_frame["drawdown_abs"],
+        plot_frame["cagr"],
+        s=70,
+        c=plot_frame["bucket_color"],
+        zorder=3,
+    )
+    for row in plot_frame.itertuples(index=False):
+        axis.annotate(
+            str(row.short_label),
+            (float(row.drawdown_abs), float(row.cagr)),
+            textcoords="offset points",
+            xytext=(7, 5),
+            fontsize=8.5,
+            color=TEXT_COLOR,
+            family="serif",
+        )
+
+    axis.set_title("Risk / Reward Map", loc="left", fontsize=14, color=TEXT_COLOR, family="serif", pad=10)
+    axis.grid(color=GRID_COLOR, alpha=0.55, linewidth=0.8)
+    axis.spines["top"].set_visible(False)
+    axis.spines["right"].set_visible(False)
+    axis.spines["left"].set_color(GRID_COLOR)
+    axis.spines["bottom"].set_color(GRID_COLOR)
+    axis.tick_params(colors=MUTED_TEXT_COLOR, labelsize=8.5)
+    axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:.0%}"))
+    axis.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:.0%}"))
+    axis.set_xlabel("Max drawdown", color=MUTED_TEXT_COLOR, fontsize=9)
+    axis.set_ylabel("CAGR", color=MUTED_TEXT_COLOR, fontsize=9)
+    axis.text(
+        0.0,
+        -0.24,
+        "Left is better. Up is better. Full 2006-2026 walk-forward history only.",
+        transform=axis.transAxes,
+        fontsize=8.5,
+        color=MUTED_TEXT_COLOR,
+        family="serif",
+    )
+
+
+def _draw_pdf_terminal_wealth(axis: Any, strategy_frame: pd.DataFrame) -> None:
+    plot_frame = strategy_frame.copy()
+    plot_frame["terminal_wealth"] = 100.0 * (1.0 + plot_frame["total_return"].astype(float))
+
+    bars = axis.bar(
+        plot_frame["short_label"],
+        plot_frame["terminal_wealth"],
+        color=plot_frame["bucket_color"],
+        width=0.62,
+        zorder=3,
+    )
+    for bar, row in zip(bars, plot_frame.itertuples(index=False), strict=False):
+        axis.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            float(row.terminal_wealth) * 1.02,
+            f"${float(row.terminal_wealth):,.0f}",
+            ha="center",
+            va="bottom",
+            fontsize=8.3,
+            color=TEXT_COLOR,
+            family="serif",
+        )
+
+    axis.set_facecolor(PANEL_BACKGROUND)
+    axis.set_title("Terminal Wealth From $100", loc="left", fontsize=14, color=TEXT_COLOR, family="serif", pad=10)
+    axis.grid(axis="y", color=GRID_COLOR, alpha=0.55, linewidth=0.8)
+    axis.spines["top"].set_visible(False)
+    axis.spines["right"].set_visible(False)
+    axis.spines["left"].set_color(GRID_COLOR)
+    axis.spines["bottom"].set_color(GRID_COLOR)
+    axis.tick_params(axis="x", labelrotation=0, labelsize=8.5, colors=MUTED_TEXT_COLOR)
+    axis.tick_params(axis="y", labelsize=8.5, colors=MUTED_TEXT_COLOR)
+    axis.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:,.0f}"))
+    axis.set_ylabel("Terminal wealth", color=MUTED_TEXT_COLOR, fontsize=9)
+    axis.text(
+        0.0,
+        -0.20,
+        "This is why the leveraged rows show 2000%+ total return while still carrying severe path risk.",
+        transform=axis.transAxes,
+        fontsize=8.5,
+        color=MUTED_TEXT_COLOR,
+        family="serif",
+    )
+
+
+def _render_executive_summary_pdf(
+    pdf_path: Path,
+    generated_at: str,
+    regime_overview: dict[str, Any],
+    sector_ml_view: dict[str, Any],
+) -> bool:
+    summary_view = _build_executive_summary_view(
+        regime_overview=regime_overview,
+        sector_ml_view=sector_ml_view,
+    )
+    if not summary_view.get("available"):
+        return False
+
+    strategy_frame = summary_view["strategy_frame"]
+    reserve_row = summary_view["reserve_row"]
+    quality_row = summary_view["quality_row"]
+    reserve_x3_row = summary_view["reserve_x3_row"]
+    spy_x3_row = summary_view["spy_x3_row"]
+    current = summary_view["current"]
+    config = sector_ml_view["config"]
+
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with PdfPages(pdf_path) as pdf:
+        page_one = plt.figure(figsize=(11.0, 8.5), facecolor=PAGE_BACKGROUND)
+        canvas_one = page_one.add_axes([0.0, 0.0, 1.0, 1.0])
+        canvas_one.axis("off")
+
+        hero_body = "\n\n".join(
+            [
+                _wrap_pdf_paragraph(
+                    "This is a short decision memo, not the full report. It separates the investable core from the eye-catching but hard-to-survive ideas.",
+                    66,
+                ),
+                _wrap_pdf_paragraph(
+                    f"{generated_at} | Current regime: {current['regime_label']} | Quadrant: {current['quadrant_label']} | History tested: 2006-2026.",
+                    74,
+                ),
+            ]
+        )
+        bottom_line = _wrap_pdf_bullets(
+            [
+                f"Best unlevered growth engine: Quality Rotation at about {_format_return_pct(quality_row.history_cagr)} CAGR with {_format_return_pct(quality_row.history_max_drawdown)} max drawdown.",
+                f"Best steadier live profile: Reserve Rule at about {_format_return_pct(reserve_row.history_cagr)} CAGR with {_format_return_pct(reserve_row.history_max_drawdown)} max drawdown.",
+                "The 2000% number is total return in the leveraged ML path, not an annual rate.",
+                f"SPY x3 shows why leverage alone is dangerous: {_format_return_pct(spy_x3_row.history_cagr)} CAGR with {_format_return_pct(spy_x3_row.history_max_drawdown)} max drawdown.",
+            ],
+            45,
+        )
+        _pdf_add_panel(
+            canvas_one,
+            0.04,
+            0.75,
+            0.54,
+            0.19,
+            eyebrow="Executive Summary",
+            title="What The Backtest Is Actually Saying",
+            body=hero_body,
+            title_size=22,
+            body_size=10,
+        )
+        _pdf_add_panel(
+            canvas_one,
+            0.61,
+            0.75,
+            0.35,
+            0.19,
+            eyebrow="Bottom Line",
+            title="Keep The Unlevered Reserve Rule As Core",
+            body=bottom_line,
+            title_size=15,
+            body_size=9.2,
+            accent=True,
+        )
+
+        principle_specs = [
+            ("Principle 1", "Protect The Downside First", "The reserve rule earns less than the fastest strategy, but it keeps the path smoother. That matters because strategies only work if you can hold them."),
+            ("Principle 2", "Borrow Only After You Earn The Right", "Leverage is not alpha. It amplifies whatever quality already exists. Here it raises reward and cuts survivability."),
+            ("Principle 3", "Separate Prediction From Proof", "The model signal is one thing. The proof is the untouched holdout and the walk-forward history. They are separate on purpose."),
+        ]
+        for idx, (eyebrow, title, body) in enumerate(principle_specs):
+            _pdf_add_panel(
+                canvas_one,
+                0.04 + idx * 0.31,
+                0.58,
+                0.27,
+                0.12,
+                eyebrow=eyebrow,
+                title=title,
+                body=_wrap_pdf_paragraph(body, 32),
+                title_size=12.5,
+                body_size=8.8,
+            )
+
+        for idx, label in enumerate(["Reserve Rule", "Quality Rotation", "Reserve x3", "SPY x3"]):
+            row = strategy_frame.loc[strategy_frame["short_label"] == label].iloc[0]
+            body = "\n".join(
+                [
+                    _wrap_pdf_paragraph(str(row.bucket_body), 28),
+                    f"CAGR {_format_return_pct(row.history_cagr)} | Max DD {_format_return_pct(row.history_max_drawdown)}",
+                ]
+            )
+            _pdf_add_panel(
+                canvas_one,
+                0.04 + idx * 0.23,
+                0.41,
+                0.20,
+                0.12,
+                eyebrow=str(row.bucket_label),
+                title=str(row.short_label),
+                body=body,
+                title_size=12.5,
+                body_size=8.5,
+                facecolor="#fffaf2",
+            )
+
+        risk_axis = page_one.add_axes([0.06, 0.08, 0.88, 0.24])
+        _draw_pdf_risk_map(risk_axis, strategy_frame)
+        pdf.savefig(page_one, facecolor=page_one.get_facecolor())
+        plt.close(page_one)
+
+        page_two = plt.figure(figsize=(11.0, 8.5), facecolor=PAGE_BACKGROUND)
+        canvas_two = page_two.add_axes([0.0, 0.0, 1.0, 1.0])
+        canvas_two.axis("off")
+        canvas_two.text(0.04, 0.95, "Simple Scorecard And Bias Controls", fontsize=22, fontweight="bold", color=TEXT_COLOR, family="serif", va="top")
+        canvas_two.text(
+            0.04,
+            0.91,
+            "Which ideas belong in the low-risk, balanced, and high-risk buckets? And why this is not a forward-looking backtest?",
+            fontsize=10,
+            color=MUTED_TEXT_COLOR,
+            family="serif",
+            va="top",
+        )
+
+        wealth_axis = page_two.add_axes([0.06, 0.57, 0.88, 0.24])
+        _draw_pdf_terminal_wealth(wealth_axis, strategy_frame)
+
+        _pdf_add_panel(
+            canvas_two,
+            0.04,
+            0.10,
+            0.55,
+            0.36,
+            eyebrow="Risk Ladder",
+            title="High Reward Is Not The Same As High Quality",
+            body="",
+            title_size=15,
+        )
+        table_axis = page_two.add_axes([0.06, 0.14, 0.51, 0.26])
+        table_axis.axis("off")
+        table_rows = [
+            [
+                str(row.short_label),
+                str(row.bucket_label),
+                _format_return_pct(row.history_cagr),
+                _format_return_pct(row.history_max_drawdown),
+                _format_return_pct(row.holdout_cagr),
+                _format_return_pct(row.holdout_max_drawdown),
+            ]
+            for row in strategy_frame.itertuples(index=False)
+        ]
+        table = table_axis.table(
+            cellText=table_rows,
+            colLabels=["Strategy", "Bucket", "Hist CAGR", "Hist DD", "Holdout CAGR", "Holdout DD"],
+            loc="center",
+            cellLoc="left",
+            colWidths=[0.16, 0.30, 0.10, 0.10, 0.12, 0.12],
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(8.0)
+        table.scale(1.0, 1.45)
+        for (row_idx, col_idx), cell in table.get_celld().items():
+            cell.set_edgecolor(GRID_COLOR)
+            if row_idx == 0:
+                cell.set_facecolor("#f4ede1")
+                cell.set_text_props(color=MUTED_TEXT_COLOR, weight="bold")
+            else:
+                cell.set_facecolor(PANEL_BACKGROUND)
+                if col_idx == 0:
+                    cell.set_text_props(color=TEXT_COLOR, weight="bold")
+                else:
+                    cell.set_text_props(color=MUTED_TEXT_COLOR)
+
+        bias_body = _wrap_pdf_bullets(
+            [
+                f"Features are lagged {int(config['feature_lag'])} bar before training and prediction.",
+                f"Each fold uses a {int(config['purge_size'])}-bar purge and {int(config['embargo_size'])}-bar embargo.",
+                f"The final holdout starts on {config['holdout_start']} and is never used for model selection.",
+                f"Signals execute one bar later and hold {int(config['label_horizon'])} bars.",
+                "Macro regime labels explain results but do not generate the historical trades.",
+            ],
+            34,
+        )
+        _pdf_add_panel(
+            canvas_two,
+            0.64,
+            0.26,
+            0.31,
+            0.20,
+            eyebrow="Why This Is Not Forward-Looking",
+            title="Controls Against Bias",
+            body=bias_body,
+            title_size=14,
+            body_size=8.8,
+        )
+
+        decision_body = _wrap_pdf_bullets(
+            [
+                "Core portfolio: unlevered reserve cash rule.",
+                "Growth sleeve: unlevered quality rotation if you can tolerate the deeper drawdown path.",
+                "Tactical only: reserve x3 sleeve, and only if you explicitly accept much deeper drawdowns.",
+                "Avoid as core: SPY x3 and the full x3 rotation variants.",
+            ],
+            34,
+        )
+        _pdf_add_panel(
+            canvas_two,
+            0.64,
+            0.10,
+            0.31,
+            0.12,
+            eyebrow="Decision",
+            title="What To Stick To",
+            body=decision_body,
+            title_size=14,
+            body_size=8.8,
+            accent=True,
+        )
+        canvas_two.text(
+            0.64,
+            0.06,
+            _wrap_pdf_paragraph(
+                "The safest honest reading is: there is evidence of edge, but no evidence that leverage improves the quality of that edge enough to deserve core capital.",
+                54,
+            ),
+            fontsize=8.8,
+            color=MUTED_TEXT_COLOR,
+            family="serif",
+            va="top",
+        )
+
+        pdf.savefig(page_two, facecolor=page_two.get_facecolor())
+        plt.close(page_two)
+
+    return True
 
 
 def _render_html(
@@ -2123,6 +2583,7 @@ def generate_sector_rotation_report(
     ml_rebalance_sensitivity_path = report_dir / "sector_ml_rebalance_sensitivity.csv"
     ml_live_allocation_path = report_dir / "sector_ml_live_allocation.csv"
     executive_summary_path = report_dir / "executive_summary.html"
+    executive_summary_pdf_path = report_dir / "executive_summary.pdf"
 
     summary_payload: dict[str, Any] = {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -2220,6 +2681,7 @@ def generate_sector_rotation_report(
 
     summary_payload["executive_summary"] = {
         "html": str(executive_summary_path),
+        "pdf": str(executive_summary_pdf_path),
     }
 
     summary_path.write_text(json.dumps(summary_payload, indent=2), encoding="utf-8")
@@ -2237,6 +2699,12 @@ def generate_sector_rotation_report(
         regime_overview=regime_overview,
         sector_ml_view=sector_ml_view,
     )
+    _render_executive_summary_pdf(
+        pdf_path=executive_summary_pdf_path,
+        generated_at=generated_at,
+        regime_overview=regime_overview,
+        sector_ml_view=sector_ml_view,
+    )
     report_path = report_dir / "index.html"
     report_path.write_text(html_text, encoding="utf-8")
     executive_summary_path.write_text(executive_summary_html, encoding="utf-8")
@@ -2244,6 +2712,7 @@ def generate_sector_rotation_report(
     return {
         "report": str(report_path),
         "executive_summary": str(executive_summary_path),
+        "executive_summary_pdf": str(executive_summary_pdf_path),
         "summary": str(summary_path),
         "sector_matrix": str(matrix_path) if matrix_path.exists() else None,
         "sector_current": str(current_path) if current_path.exists() else None,
