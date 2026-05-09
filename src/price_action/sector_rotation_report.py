@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import html
 import json
 import textwrap
@@ -14,7 +15,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.patches import FancyBboxPatch
 from matplotlib.ticker import FuncFormatter
 
-from .data import resolve_project_root
+from .data import load_asset_daily, resolve_project_root
 from .macro_report import (
     GRID_COLOR,
     MUTED_TEXT_COLOR,
@@ -145,6 +146,263 @@ def _build_live_ml_allocation_view(
         "allocation_frame": allocation_frame,
         "full_frame": frame.sort_values("combined_live_score", ascending=False).reset_index(drop=True),
         "top_pick": allocation_frame.iloc[0].to_dict() if not allocation_frame.empty else None,
+    }
+
+
+def _split_sector_selection(value: Any) -> list[str]:
+    if value is None or pd.isna(value):
+        return []
+    text = str(value).strip()
+    if not text or text.lower() == "cash":
+        return []
+    return [token.strip() for token in text.split(",") if token.strip() and token.strip().lower() != "cash"]
+
+
+def _build_sector_diagnostics_view(
+    project_root: Path,
+    sector_ml_view: dict[str, Any],
+) -> dict[str, Any]:
+    if not sector_ml_view.get("available"):
+        return {"available": False, "message": "Sector ML view unavailable."}
+
+    oos_signal_frame = sector_ml_view.get("oos_signal_frame")
+    historical_rotation_view = sector_ml_view.get("historical_rotation_view")
+    sector_summary_frame = sector_ml_view.get("sector_summary_frame")
+    config = sector_ml_view.get("config") or {}
+    if not isinstance(oos_signal_frame, pd.DataFrame) or oos_signal_frame.empty:
+        return {"available": False, "message": "Historical OOS signal frame unavailable."}
+    if not isinstance(historical_rotation_view, dict) or not historical_rotation_view.get("available"):
+        return {"available": False, "message": "Historical rotation view unavailable."}
+    if not isinstance(sector_summary_frame, pd.DataFrame) or sector_summary_frame.empty:
+        return {"available": False, "message": "Sector summary frame unavailable."}
+
+    lookback_bars = int(config.get("label_horizon", 5))
+    historical_start = pd.Timestamp(str(config.get("historical_benchmark_start") or "2006-01-01"))
+    cost_rate = float(config.get("cost_bps", 0.0)) / 10_000.0
+    severe_drop_threshold = -0.05
+
+    signal_frame = oos_signal_frame.copy()
+    signal_frame["date"] = pd.to_datetime(signal_frame["date"])
+    signal_frame = signal_frame.loc[signal_frame["date"] >= historical_start].copy()
+    signal_frame["forward_return"] = pd.to_numeric(signal_frame["forward_return"], errors="coerce")
+    signal_frame = signal_frame.dropna(subset=["forward_return"]).reset_index(drop=True)
+    signal_frame["net_forward_return"] = signal_frame["forward_return"] - cost_rate
+
+    prior_rows: list[pd.DataFrame] = []
+    for symbol in sorted(signal_frame["symbol"].astype(str).unique().tolist()):
+        close = pd.to_numeric(load_asset_daily(symbol, project_root=project_root)["close"], errors="coerce")
+        prior = (close / close.shift(lookback_bars) - 1.0).rename("prior_return")
+        prior_frame = prior.to_frame().reset_index(names="date")
+        prior_frame.insert(1, "symbol", symbol)
+        prior_rows.append(prior_frame)
+
+    prior_return_frame = pd.concat(prior_rows, ignore_index=True) if prior_rows else pd.DataFrame(columns=["date", "symbol", "prior_return"])
+    signal_frame = signal_frame.merge(prior_return_frame, on=["date", "symbol"], how="left")
+    signal_frame["drop_flag"] = signal_frame["prior_return"] < 0.0
+    signal_frame["severe_drop_flag"] = signal_frame["prior_return"] <= severe_drop_threshold
+
+    summary_lookup = sector_summary_frame[
+        ["symbol", "family", "ensemble_oos_cagr", "ensemble_oos_sharpe", "ensemble_holdout_turnover_per_year"]
+    ].drop_duplicates(subset=["symbol"])
+    signal_frame = signal_frame.merge(summary_lookup, on="symbol", how="left")
+
+    dip_rows: list[dict[str, Any]] = []
+    for (symbol, sector_label), group in signal_frame.groupby(["symbol", "sector_label"], dropna=False):
+        dip_group = group.loc[group["drop_flag"]].copy()
+        severe_group = group.loc[group["severe_drop_flag"]].copy()
+        if dip_group.empty:
+            continue
+
+        family = str(group["family"].dropna().iloc[0]) if "family" in group and group["family"].notna().any() else "Unknown"
+        dip_rows.append(
+            {
+                "symbol": str(symbol),
+                "sector_label": str(sector_label),
+                "family": family,
+                "all_windows": int(len(group.index)),
+                "dip_windows": int(len(dip_group.index)),
+                "dip_share": float(len(dip_group.index) / len(group.index)) if len(group.index) else 0.0,
+                "avg_prior_return": float(dip_group["prior_return"].mean()),
+                "worst_prior_return": float(dip_group["prior_return"].min()),
+                "avg_forward_return_after_drop": float(dip_group["net_forward_return"].mean()),
+                "median_forward_return_after_drop": float(dip_group["net_forward_return"].median()),
+                "hit_rate_after_drop": float((dip_group["net_forward_return"] > 0.0).mean()),
+                "compounded_return_after_drop": float((1.0 + dip_group["net_forward_return"]).prod() - 1.0),
+                "best_forward_return_after_drop": float(dip_group["net_forward_return"].max()),
+                "worst_forward_return_after_drop": float(dip_group["net_forward_return"].min()),
+                "severe_drop_windows": int(len(severe_group.index)),
+                "avg_forward_return_after_severe_drop": float(severe_group["net_forward_return"].mean()) if not severe_group.empty else None,
+                "hit_rate_after_severe_drop": float((severe_group["net_forward_return"] > 0.0).mean()) if not severe_group.empty else None,
+                "oos_cagr": float(group["ensemble_oos_cagr"].dropna().iloc[0]) if group["ensemble_oos_cagr"].notna().any() else None,
+                "oos_sharpe": float(group["ensemble_oos_sharpe"].dropna().iloc[0]) if group["ensemble_oos_sharpe"].notna().any() else None,
+            }
+        )
+
+    dip_summary_frame = pd.DataFrame(dip_rows)
+    if not dip_summary_frame.empty:
+        dip_summary_frame = dip_summary_frame.sort_values(
+            ["avg_forward_return_after_drop", "hit_rate_after_drop", "dip_windows"],
+            ascending=[False, False, False],
+        ).reset_index(drop=True)
+
+    period_log_frame = historical_rotation_view["period_log_frame"].copy().sort_values("signal_date")
+    strategy_summary_frame = historical_rotation_view["strategy_summary_frame"].copy()
+    benchmark_start = pd.Timestamp(historical_rotation_view["benchmark_start"])
+    benchmark_end = pd.Timestamp(historical_rotation_view["benchmark_end"])
+    years = max((benchmark_end - benchmark_start).days / 365.25, 1e-9)
+
+    base_strategy_specs = {
+        "ML Probability Rotation": {"selection_column": "probability_selection", "return_column": "probability_return"},
+        "ML Quality-Weighted Rotation": {"selection_column": "quality_selection", "return_column": "quality_return"},
+        "Sector Reserve Cash Rule": {"selection_column": "reserve_sector", "return_column": "reserve_rule_return"},
+    }
+    rotation_profile_rows: list[dict[str, Any]] = []
+    usage_event_rows: list[dict[str, Any]] = []
+    symbol_to_sector = (
+        sector_summary_frame[["symbol", "sector_label"]].drop_duplicates(subset=["symbol"]).set_index("symbol")["sector_label"].to_dict()
+    )
+
+    for strategy_label, spec in base_strategy_specs.items():
+        previous_selection: tuple[str, ...] | None = None
+        rotation_count = 0
+        selection_lengths: list[int] = []
+        pattern_counter: Counter[str] = Counter()
+        sector_counter: Counter[str] = Counter()
+        active_windows = 0
+        for row in period_log_frame.itertuples(index=False):
+            selections = tuple(_split_sector_selection(getattr(row, spec["selection_column"])))
+            selection_lengths.append(len(selections))
+            if previous_selection is not None and selections != previous_selection:
+                rotation_count += 1
+            previous_selection = selections
+            selection_label = ", ".join(selections) if selections else "Cash"
+            pattern_counter[selection_label] += 1
+            if selections:
+                active_windows += 1
+                strategy_return = float(getattr(row, spec["return_column"]))
+                for symbol in selections:
+                    sector_counter[symbol] += 1
+                    usage_event_rows.append(
+                        {
+                            "strategy_label": strategy_label,
+                            "symbol": symbol,
+                            "sector_label": str(symbol_to_sector.get(symbol, symbol)),
+                            "signal_date": pd.Timestamp(row.signal_date),
+                            "strategy_return": strategy_return,
+                            "spy_drawdown_signal": float(row.spy_drawdown_signal),
+                        }
+                    )
+
+        pattern_label, pattern_count = pattern_counter.most_common(1)[0] if pattern_counter else ("Cash", 0)
+        top_sector, top_sector_count = sector_counter.most_common(1)[0] if sector_counter else ("Cash", 0)
+        rotation_profile_rows.append(
+            {
+                "strategy_label": strategy_label,
+                "rotation_count": int(rotation_count),
+                "rotation_per_year": float(rotation_count / years),
+                "avg_selected_count": float(sum(selection_lengths) / len(selection_lengths)) if selection_lengths else 0.0,
+                "cash_windows": int(sum(1 for count in selection_lengths if count == 0)),
+                "active_windows": int(active_windows),
+                "unique_selection_patterns": int(len(pattern_counter)),
+                "most_common_selection": pattern_label,
+                "most_common_selection_windows": int(pattern_count),
+                "most_selected_sector": str(symbol_to_sector.get(top_sector, top_sector)),
+                "most_selected_symbol": str(top_sector),
+                "most_selected_sector_windows": int(top_sector_count),
+            }
+        )
+
+    rotation_profile_frame = pd.DataFrame(rotation_profile_rows)
+    rotation_profile_lookup = rotation_profile_frame.set_index("strategy_label").to_dict(orient="index") if not rotation_profile_frame.empty else {}
+
+    def _rotation_profile_for_strategy(label: str) -> dict[str, Any]:
+        if label.startswith("ML Probability Rotation"):
+            return rotation_profile_lookup.get("ML Probability Rotation", {})
+        if label.startswith("ML Quality-Weighted Rotation"):
+            return rotation_profile_lookup.get("ML Quality-Weighted Rotation", {})
+        if label == "Sector Reserve Cash Rule" or label.startswith("Reserve Cash Rule x"):
+            return rotation_profile_lookup.get("Sector Reserve Cash Rule", {})
+        if label.startswith("SPY Buy And Hold"):
+            return {
+                "rotation_count": 0,
+                "rotation_per_year": 0.0,
+                "avg_selected_count": 1.0,
+                "cash_windows": 0,
+                "active_windows": int(len(period_log_frame.index)),
+                "unique_selection_patterns": 1,
+                "most_common_selection": "SPY",
+                "most_common_selection_windows": int(len(period_log_frame.index)),
+                "most_selected_sector": "SPY",
+                "most_selected_symbol": "SPY",
+                "most_selected_sector_windows": int(len(period_log_frame.index)),
+            }
+        return {}
+
+    strategy_detail_rows: list[dict[str, Any]] = []
+    for row in strategy_summary_frame.itertuples(index=False):
+        profile = _rotation_profile_for_strategy(str(row.strategy_label))
+        strategy_detail_rows.append(
+            {
+                "strategy_label": str(row.strategy_label),
+                "total_return": float(row.total_return),
+                "cagr": float(row.cagr),
+                "sharpe": float(row.sharpe),
+                "sortino": float(row.sortino) if not pd.isna(row.sortino) else None,
+                "max_drawdown": float(row.max_drawdown),
+                "hit_rate": float(row.hit_rate),
+                "trade_count": int(getattr(row, "trade_count", 0) or 0),
+                "period_count": int(getattr(row, "period_count", 0) or 0),
+                "entry_count": int(getattr(row, "entry_count", 0) or 0),
+                "turnover_per_year": float(getattr(row, "turnover_per_year", 0.0) or 0.0),
+                **profile,
+            }
+        )
+    strategy_detail_frame = pd.DataFrame(strategy_detail_rows)
+
+    strategy_usage_frame = pd.DataFrame(usage_event_rows)
+    if not strategy_usage_frame.empty:
+        usage_summary_frame = (
+            strategy_usage_frame.groupby(["strategy_label", "symbol", "sector_label"], dropna=False)
+            .agg(
+                selected_windows=("signal_date", "count"),
+                avg_strategy_return=("strategy_return", "mean"),
+                median_strategy_return=("strategy_return", "median"),
+                avg_spy_drawdown_signal=("spy_drawdown_signal", "mean"),
+                latest_signal_date=("signal_date", "max"),
+            )
+            .reset_index()
+        )
+        active_window_lookup = rotation_profile_frame.set_index("strategy_label")["active_windows"].to_dict() if not rotation_profile_frame.empty else {}
+        usage_summary_frame["selection_share_active"] = usage_summary_frame.apply(
+            lambda row: float(row["selected_windows"] / active_window_lookup.get(str(row["strategy_label"]), 1))
+            if active_window_lookup.get(str(row["strategy_label"]), 0)
+            else 0.0,
+            axis=1,
+        )
+        usage_summary_frame = usage_summary_frame.sort_values(
+            ["strategy_label", "selected_windows", "avg_strategy_return"],
+            ascending=[True, False, False],
+        ).reset_index(drop=True)
+    else:
+        usage_summary_frame = pd.DataFrame()
+
+    return {
+        "available": True,
+        "lookback_bars": lookback_bars,
+        "severe_drop_threshold": severe_drop_threshold,
+        "dip_summary_frame": dip_summary_frame,
+        "rotation_profile_frame": rotation_profile_frame,
+        "strategy_detail_frame": strategy_detail_frame,
+        "strategy_usage_frame": usage_summary_frame,
+        "top_dip_row": dip_summary_frame.iloc[0].to_dict() if not dip_summary_frame.empty else None,
+        "top_severe_row": (
+            dip_summary_frame.loc[dip_summary_frame["severe_drop_windows"] > 0]
+            .sort_values(["avg_forward_return_after_severe_drop", "severe_drop_windows"], ascending=[False, False])
+            .iloc[0]
+            .to_dict()
+            if not dip_summary_frame.empty and (dip_summary_frame["severe_drop_windows"] > 0).any()
+            else None
+        ),
     }
 
 
@@ -1101,6 +1359,223 @@ def _render_history_drawdown_section(sector_ml_view: dict[str, Any]) -> str:
         sort_by="spy_drawdown_signal",
         ascending=True,
         max_rows=15,
+    )
+
+
+def _render_sector_dip_section(sector_diagnostics_view: dict[str, Any]) -> str:
+    if not isinstance(sector_diagnostics_view, dict) or not sector_diagnostics_view.get("available"):
+        return ""
+
+    dip_summary_frame = sector_diagnostics_view["dip_summary_frame"]
+    if dip_summary_frame.empty:
+        return ""
+
+    lookback_bars = int(sector_diagnostics_view.get("lookback_bars", 5))
+    severe_drop_threshold = float(sector_diagnostics_view.get("severe_drop_threshold", -0.05))
+    top_dip = sector_diagnostics_view.get("top_dip_row") or {}
+    top_severe = sector_diagnostics_view.get("top_severe_row") or {}
+    rotation_profile_frame = sector_diagnostics_view.get("rotation_profile_frame")
+    strategy_usage_frame = sector_diagnostics_view.get("strategy_usage_frame")
+
+    cards: list[str] = []
+    if top_dip:
+        cards.append(
+            _render_stat_card(
+                title=f"Best after any {lookback_bars}-bar drop: {top_dip['sector_label']} ({top_dip['symbol']})",
+                body=(
+                    f"Average next-window return {_format_return_pct(top_dip['avg_forward_return_after_drop'])} after {int(top_dip['dip_windows'])} drop windows. "
+                    f"Hit rate {_format_probability_pct(top_dip['hit_rate_after_drop'])}."
+                ),
+                tag="Buy-the-dip leader",
+            )
+        )
+    if top_severe:
+        cards.append(
+            _render_stat_card(
+                title=f"Best after {abs(severe_drop_threshold):.0%}+ drop: {top_severe['sector_label']} ({top_severe['symbol']})",
+                body=(
+                    f"Average next-window return {_format_return_pct(top_severe['avg_forward_return_after_severe_drop'])} across {int(top_severe['severe_drop_windows'])} severe-drop windows. "
+                    f"Hit rate {_format_probability_pct(top_severe['hit_rate_after_severe_drop'])}."
+                ),
+                tag="Stress drop leader",
+            )
+        )
+    if isinstance(rotation_profile_frame, pd.DataFrame) and not rotation_profile_frame.empty:
+        most_rotated = rotation_profile_frame.sort_values("rotation_per_year", ascending=False).iloc[0]
+        cards.append(
+            _render_stat_card(
+                title=f"Fastest-rotating live sleeve: {most_rotated.strategy_label}",
+                body=(
+                    f"About {_format_decimal(most_rotated.rotation_per_year, 1)} basket changes per year, with {int(most_rotated.rotation_count)} total changes in the 2006-2026 walk-forward history."
+                ),
+                tag="Rotation speed",
+            )
+        )
+    if isinstance(strategy_usage_frame, pd.DataFrame) and not strategy_usage_frame.empty:
+        quality_usage = strategy_usage_frame.loc[strategy_usage_frame["strategy_label"] == "ML Quality-Weighted Rotation"]
+        if not quality_usage.empty:
+            top_quality_usage = quality_usage.sort_values("selected_windows", ascending=False).iloc[0]
+            cards.append(
+                _render_stat_card(
+                    title=f"Most-used quality sleeve sector: {top_quality_usage.sector_label} ({top_quality_usage.symbol})",
+                    body=(
+                        f"Selected in {int(top_quality_usage.selected_windows)} quality-rotation windows, or {_format_probability_pct(top_quality_usage.selection_share_active)} of active quality windows."
+                    ),
+                    tag="Selection frequency",
+                )
+            )
+
+    rows: list[tuple[str, ...]] = []
+    for row in dip_summary_frame.itertuples(index=False):
+        rows.append(
+            (
+                f"{row.sector_label} ({row.symbol})",
+                str(row.family),
+                str(int(row.dip_windows)),
+                _format_return_pct(row.avg_prior_return),
+                _format_return_pct(row.avg_forward_return_after_drop),
+                _format_probability_pct(row.hit_rate_after_drop),
+                _format_return_pct(row.compounded_return_after_drop),
+                str(int(row.severe_drop_windows)),
+                _format_return_pct(row.avg_forward_return_after_severe_drop),
+                _format_return_pct(row.oos_cagr),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Sector Dip Study</p>',
+            '  <h2>Which Sectors Paid Best After They Dropped</h2>',
+            f'  <p>This ranking uses the full 2006-2026 out-of-sample sector signal history. A drop means the sector itself had a negative trailing {lookback_bars}-bar return on the signal date. The next-window return is the realized out-of-sample {lookback_bars}-bar forward return net of the base transaction-cost assumption.</p>',
+            '  <div class="card-grid">',
+            "\n".join(cards),
+            '  </div>',
+            _render_data_table(
+                headers=(
+                    'Sector',
+                    'Type',
+                    'Drop Windows',
+                    'Avg Prior Drop',
+                    'Avg Next Return',
+                    'Hit Rate',
+                    'Compounded Return',
+                    '5%+ Drop Windows',
+                    'Avg Next Return 5%+',
+                    'OOS CAGR',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
+def _render_strategy_rotation_detail_section(sector_diagnostics_view: dict[str, Any]) -> str:
+    if not isinstance(sector_diagnostics_view, dict) or not sector_diagnostics_view.get("available"):
+        return ""
+
+    strategy_detail_frame = sector_diagnostics_view.get("strategy_detail_frame")
+    if not isinstance(strategy_detail_frame, pd.DataFrame) or strategy_detail_frame.empty:
+        return ""
+
+    rows: list[tuple[str, ...]] = []
+    for row in strategy_detail_frame.itertuples(index=False):
+        rows.append(
+            (
+                str(row.strategy_label),
+                _format_return_pct(row.total_return),
+                _format_return_pct(row.cagr),
+                _format_decimal(row.sharpe),
+                _format_return_pct(row.max_drawdown),
+                _format_probability_pct(row.hit_rate),
+                str(int(row.trade_count)),
+                str(int(row.period_count)),
+                str(int(row.rotation_count)),
+                _format_decimal(row.rotation_per_year, 1),
+                _format_turnover(row.turnover_per_year),
+                _format_decimal(row.avg_selected_count, 1),
+                str(int(row.cash_windows)),
+                str(row.most_common_selection),
+                str(row.most_selected_sector),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Strategy Audit</p>',
+            '  <h2>How Often Each Strategy Rotated And What It Earned</h2>',
+            '  <p>This table uses the full 2006-2026 walk-forward history. Rotations count basket changes from one signal window to the next. The leveraged variants share the same underlying rotation path as their unlevered base strategy and only change the exposure profile.</p>',
+            _render_data_table(
+                headers=(
+                    'Strategy',
+                    'Total Return',
+                    'CAGR',
+                    'Sharpe',
+                    'Max DD',
+                    'Hit Rate',
+                    'Trades',
+                    'Windows',
+                    'Rotations',
+                    'Rot/Yr',
+                    'Turnover',
+                    'Avg Sectors Held',
+                    'Cash Windows',
+                    'Most Common Basket',
+                    'Most Used Sector',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
+def _render_strategy_sector_usage_section(sector_diagnostics_view: dict[str, Any]) -> str:
+    if not isinstance(sector_diagnostics_view, dict) or not sector_diagnostics_view.get("available"):
+        return ""
+
+    strategy_usage_frame = sector_diagnostics_view.get("strategy_usage_frame")
+    if not isinstance(strategy_usage_frame, pd.DataFrame) or strategy_usage_frame.empty:
+        return ""
+
+    rows: list[tuple[str, ...]] = []
+    for row in strategy_usage_frame.itertuples(index=False):
+        rows.append(
+            (
+                str(row.strategy_label),
+                f"{row.sector_label} ({row.symbol})",
+                str(int(row.selected_windows)),
+                _format_probability_pct(row.selection_share_active),
+                _format_return_pct(row.avg_strategy_return),
+                _format_return_pct(row.median_strategy_return),
+                _format_return_pct(row.avg_spy_drawdown_signal),
+                pd.Timestamp(row.latest_signal_date).strftime("%Y-%m-%d"),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Constituent Usage</p>',
+            '  <h2>Which Sectors The Rotation Strategies Actually Used</h2>',
+            '  <p>For the quality and probability strategies, the return columns below are basket returns for windows where the sector was part of the selected basket, not isolated single-sector returns. Use the dip-study section above for isolated per-sector forward returns.</p>',
+            _render_data_table(
+                headers=(
+                    'Strategy',
+                    'Sector',
+                    'Selected Windows',
+                    'Share Of Active Windows',
+                    'Avg Strategy Return',
+                    'Median Strategy Return',
+                    'Avg SPY Drawdown At Entry',
+                    'Last Seen',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
     )
 
 
@@ -2401,6 +2876,7 @@ def _render_html(
     sector_rotation_view: dict[str, Any],
     sector_ml_view: dict[str, Any],
     live_ml_view: dict[str, Any],
+    sector_diagnostics_view: dict[str, Any],
 ) -> str:
     return f"""<!DOCTYPE html>
 <html lang=\"en\">
@@ -2525,6 +3001,9 @@ def _render_html(
         {_render_live_ml_allocation_section(live_ml_view=live_ml_view)}
         {_render_holdout_backtest_section(sector_ml_view=sector_ml_view)}
         {_render_history_backtest_section(sector_ml_view=sector_ml_view)}
+        {_render_sector_dip_section(sector_diagnostics_view=sector_diagnostics_view)}
+        {_render_strategy_rotation_detail_section(sector_diagnostics_view=sector_diagnostics_view)}
+        {_render_strategy_sector_usage_section(sector_diagnostics_view=sector_diagnostics_view)}
         {_render_rebalance_sensitivity_section(sector_ml_view=sector_ml_view)}
         {_render_holdout_year_regime_section(sector_ml_view=sector_ml_view)}
         {_render_history_year_regime_section(sector_ml_view=sector_ml_view)}
@@ -2553,6 +3032,7 @@ def generate_sector_rotation_report(
     regime_overview = _build_regime_overview(frame=frame, lookback_years=REPORT_LOOKBACK_YEARS)
     sector_rotation_view = _build_sector_rotation_view(project_root=root, regime_overview=regime_overview)
     sector_ml_view = build_sector_ml_view(project_root=root)
+    sector_diagnostics_view = _build_sector_diagnostics_view(project_root=root, sector_ml_view=sector_ml_view)
     live_ml_view = _build_live_ml_allocation_view(
         sector_rotation_view=sector_rotation_view,
         sector_ml_view=sector_ml_view,
@@ -2582,6 +3062,9 @@ def generate_sector_rotation_report(
     ml_history_regime_path = report_dir / "sector_ml_history_regime_summary.csv"
     ml_rebalance_sensitivity_path = report_dir / "sector_ml_rebalance_sensitivity.csv"
     ml_live_allocation_path = report_dir / "sector_ml_live_allocation.csv"
+    ml_dip_summary_path = report_dir / "sector_ml_dip_summary.csv"
+    ml_strategy_detail_path = report_dir / "sector_ml_strategy_detail.csv"
+    ml_strategy_usage_path = report_dir / "sector_ml_strategy_sector_usage.csv"
     executive_summary_path = report_dir / "executive_summary.html"
     executive_summary_pdf_path = report_dir / "executive_summary.pdf"
 
@@ -2666,6 +3149,16 @@ def generate_sector_rotation_report(
                 "cadences": sorted(rebalance_sensitivity_frame["cadence_bars"].dropna().astype(int).unique().tolist()),
                 "strategy_summary": json.loads(rebalance_sensitivity_frame.to_json(orient="records")),
             }
+        if sector_diagnostics_view.get("available"):
+            sector_diagnostics_view["dip_summary_frame"].to_csv(ml_dip_summary_path, index=False)
+            sector_diagnostics_view["strategy_detail_frame"].to_csv(ml_strategy_detail_path, index=False)
+            sector_diagnostics_view["strategy_usage_frame"].to_csv(ml_strategy_usage_path, index=False)
+            summary_payload["ml"]["sector_diagnostics"] = {
+                "available": True,
+                "lookback_bars": int(sector_diagnostics_view.get("lookback_bars", 5)),
+                "top_dip_sector": sector_diagnostics_view.get("top_dip_row"),
+                "top_severe_drop_sector": sector_diagnostics_view.get("top_severe_row"),
+            }
     else:
         summary_payload["ml"]["message"] = str(sector_ml_view.get("message") or "Sector ML study unavailable.")
 
@@ -2693,6 +3186,7 @@ def generate_sector_rotation_report(
         sector_rotation_view=sector_rotation_view,
         sector_ml_view=sector_ml_view,
         live_ml_view=live_ml_view,
+        sector_diagnostics_view=sector_diagnostics_view,
     )
     executive_summary_html = _render_executive_summary_html(
         generated_at=generated_at,
@@ -2732,6 +3226,9 @@ def generate_sector_rotation_report(
         "ml_history_regime": str(ml_history_regime_path) if ml_history_regime_path.exists() else None,
         "ml_rebalance_sensitivity": str(ml_rebalance_sensitivity_path) if ml_rebalance_sensitivity_path.exists() else None,
         "ml_live_allocation": str(ml_live_allocation_path) if ml_live_allocation_path.exists() else None,
+        "ml_dip_summary": str(ml_dip_summary_path) if ml_dip_summary_path.exists() else None,
+        "ml_strategy_detail": str(ml_strategy_detail_path) if ml_strategy_detail_path.exists() else None,
+        "ml_strategy_usage": str(ml_strategy_usage_path) if ml_strategy_usage_path.exists() else None,
     }
 
 
