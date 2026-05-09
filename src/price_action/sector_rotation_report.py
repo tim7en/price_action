@@ -41,6 +41,147 @@ def _format_turnover(value: float | int | None) -> str:
     return f"{float(value):.1f}/yr"
 
 
+def _normalised_rank(series: pd.Series) -> pd.Series:
+    numeric = pd.to_numeric(series, errors="coerce")
+    if numeric.dropna().nunique() <= 1:
+        return pd.Series(0.5, index=numeric.index, dtype="float64")
+    return numeric.rank(pct=True, method="average").fillna(0.5)
+
+
+def _build_live_ml_allocation_view(
+    sector_rotation_view: dict[str, Any],
+    sector_ml_view: dict[str, Any],
+) -> dict[str, Any]:
+    rotation_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
+    if not sector_rotation_view.get("available") or not sector_ml_view.get("available") or not isinstance(rotation_view, dict):
+        return {"available": False, "message": "ML-adjusted allocation is unavailable."}
+
+    current_regime_matrix = sector_rotation_view.get("current_matrix")
+    current_signal_frame = rotation_view.get("current_signal_frame")
+    validation_quality_frame = sector_ml_view.get("validation_quality_frame")
+    sector_summary_frame = sector_ml_view.get("sector_summary_frame")
+    if not isinstance(current_regime_matrix, pd.DataFrame) or current_regime_matrix.empty:
+        return {"available": False, "message": "Current regime matrix is unavailable."}
+    if not isinstance(current_signal_frame, pd.DataFrame) or current_signal_frame.empty:
+        return {"available": False, "message": "No latest ML signal was available from the untouched holdout stream."}
+    if not isinstance(validation_quality_frame, pd.DataFrame) or validation_quality_frame.empty:
+        return {"available": False, "message": "Validation quality metrics are unavailable."}
+    if not isinstance(sector_summary_frame, pd.DataFrame) or sector_summary_frame.empty:
+        return {"available": False, "message": "Sector ML summary metrics are unavailable."}
+
+    frame = current_regime_matrix.merge(
+        current_signal_frame[
+            [
+                "symbol",
+                "ensemble_probability",
+                "quality_weighted_score",
+                "validation_quality_score",
+                "quality_weight",
+                "recommended_quality",
+            ]
+        ],
+        on="symbol",
+        how="left",
+    ).merge(
+        sector_summary_frame[
+            [
+                "symbol",
+                "best_overfit_model",
+                "best_overfit_stability_score",
+                "ensemble_holdout_sharpe",
+                "ensemble_holdout_cagr",
+            ]
+        ],
+        on="symbol",
+        how="left",
+    )
+
+    frame["ensemble_probability"] = pd.to_numeric(frame["ensemble_probability"], errors="coerce").fillna(0.0)
+    frame["quality_weighted_score"] = pd.to_numeric(frame["quality_weighted_score"], errors="coerce").fillna(0.0)
+    frame["validation_quality_score"] = pd.to_numeric(frame["validation_quality_score"], errors="coerce").fillna(0.5)
+    frame["best_overfit_stability_score"] = pd.to_numeric(frame["best_overfit_stability_score"], errors="coerce").fillna(50.0)
+    frame["ensemble_holdout_sharpe"] = pd.to_numeric(frame["ensemble_holdout_sharpe"], errors="coerce").fillna(0.0)
+
+    frame["rank_regime"] = _normalised_rank(frame["entry_score"])
+    frame["rank_live_probability"] = _normalised_rank(frame["ensemble_probability"])
+    frame["rank_quality_weighted"] = _normalised_rank(frame["quality_weighted_score"])
+    frame["rank_validation_quality"] = _normalised_rank(frame["validation_quality_score"])
+    frame["rank_stability"] = _normalised_rank(frame["best_overfit_stability_score"])
+    frame["rank_holdout_sharpe"] = _normalised_rank(frame["ensemble_holdout_sharpe"])
+    frame["combined_live_score"] = (
+        0.40 * frame["rank_regime"]
+        + 0.20 * frame["rank_live_probability"]
+        + 0.15 * frame["rank_quality_weighted"]
+        + 0.10 * frame["rank_validation_quality"]
+        + 0.10 * frame["rank_stability"]
+        + 0.05 * frame["rank_holdout_sharpe"]
+    )
+
+    threshold = float(sector_ml_view["config"].get("signal_threshold", 0.55))
+    candidates = frame.loc[frame["ensemble_probability"] >= threshold].copy()
+    if candidates.empty:
+        candidates = frame.copy()
+
+    allocation_frame = candidates.sort_values(
+        ["combined_live_score", "entry_score", "ensemble_probability"],
+        ascending=[False, False, False],
+    ).head(5).copy()
+    weight_base = allocation_frame["combined_live_score"] - allocation_frame["combined_live_score"].min() + 0.05
+    allocation_frame["sleeve_weight"] = weight_base / weight_base.sum()
+    allocation_frame["portfolio_weight"] = allocation_frame["sleeve_weight"] * 0.60
+    allocation_frame = allocation_frame.sort_values("portfolio_weight", ascending=False).reset_index(drop=True)
+    selected_symbols = set(allocation_frame["symbol"].tolist())
+    frame["recommended_live"] = frame["symbol"].isin(selected_symbols)
+
+    return {
+        "available": True,
+        "signal_date": rotation_view.get("current_signal_date"),
+        "message": "This allocation blends the current regime prior with the latest complete ML holdout signal and validation-derived sector quality.",
+        "allocation_frame": allocation_frame,
+        "full_frame": frame.sort_values("combined_live_score", ascending=False).reset_index(drop=True),
+        "top_pick": allocation_frame.iloc[0].to_dict() if not allocation_frame.empty else None,
+    }
+
+
+def _render_equity_curve_chart(period_log_frame: pd.DataFrame) -> str:
+    if period_log_frame.empty:
+        return ""
+
+    plot_frame = period_log_frame[["exit_date", "equity_quality", "equity_probability", "equity_spy"]].copy()
+    values = plot_frame[["equity_quality", "equity_probability", "equity_spy"]].to_numpy(dtype=float)
+    min_value = float(min(values.min(), 1.0))
+    max_value = float(max(values.max(), 1.0))
+    span = max(max_value - min_value, 1e-9)
+    width = 960.0
+    height = 280.0
+    padding = 24.0
+
+    def points(column: str) -> str:
+        coordinates: list[str] = []
+        total = max(len(plot_frame.index) - 1, 1)
+        for position, value in enumerate(plot_frame[column].astype(float)):
+            x = padding + (position / total) * (width - 2 * padding)
+            y = height - padding - ((float(value) - min_value) / span) * (height - 2 * padding)
+            coordinates.append(f"{x:.1f},{y:.1f}")
+        return " ".join(coordinates)
+
+    end_quality = float(plot_frame["equity_quality"].iloc[-1])
+    end_probability = float(plot_frame["equity_probability"].iloc[-1])
+    end_spy = float(plot_frame["equity_spy"].iloc[-1])
+    return f"""
+<div class=\"chart-shell\">
+  <svg viewBox=\"0 0 960 280\" role=\"img\" aria-label=\"Holdout equity curves\">
+    <rect x=\"0\" y=\"0\" width=\"960\" height=\"280\" rx=\"18\" fill=\"rgba(255, 253, 248, 0.92)\"></rect>
+    <polyline fill=\"none\" stroke=\"#7a3e2b\" stroke-width=\"4\" points=\"{points('equity_quality')}\"></polyline>
+    <polyline fill=\"none\" stroke=\"#0f4c5c\" stroke-width=\"3\" stroke-dasharray=\"7 6\" points=\"{points('equity_probability')}\"></polyline>
+    <polyline fill=\"none\" stroke=\"#7d8b99\" stroke-width=\"3\" points=\"{points('equity_spy')}\"></polyline>
+    <text x=\"28\" y=\"34\" fill=\"#1b2430\" font-size=\"18\" font-family=\"Iowan Old Style, Georgia, serif\">Holdout Equity Curves</text>
+    <text x=\"28\" y=\"56\" fill=\"#5f6b76\" font-size=\"13\">ML quality-weighted: {_format_return_pct(end_quality - 1.0)} | ML probability-only: {_format_return_pct(end_probability - 1.0)} | SPY: {_format_return_pct(end_spy - 1.0)}</text>
+  </svg>
+</div>
+"""
+
+
 def _render_stat_card(title: str, body: str, tag: str) -> str:
     return "\n".join(
         [
@@ -362,6 +503,291 @@ def _render_method_section(sector_rotation_view: dict[str, Any]) -> str:
     )
 
 
+def _render_live_ml_allocation_section(live_ml_view: dict[str, Any]) -> str:
+    if not live_ml_view.get("available"):
+        message = str(live_ml_view.get("message") or "ML-adjusted allocation unavailable.")
+        return "\n".join(
+            [
+                '<section class="section">',
+                '  <p class="eyebrow">Live Rotation</p>',
+                '  <h2>Current ML-Adjusted Rotation</h2>',
+                f'  <p>{html.escape(message)}</p>',
+                '</section>',
+            ]
+        )
+
+    signal_date = pd.Timestamp(live_ml_view["signal_date"]).strftime("%Y-%m-%d") if live_ml_view.get("signal_date") is not None else "n/a"
+    top_pick = live_ml_view.get("top_pick")
+    cards: list[str] = [
+        _render_stat_card(
+            title=f"Latest complete ML signal: {signal_date}",
+            body="The ML leg uses the latest fully labeled holdout signal. The historical benchmark below uses only these untouched holdout dates.",
+            tag="Timing",
+        ),
+    ]
+    if isinstance(top_pick, dict):
+        cards.append(
+            _render_stat_card(
+                title=str(top_pick["sector_label"]),
+                body=(
+                    f"Combined score {_format_decimal(top_pick['combined_live_score'], 3)}, live probability {_format_probability_pct(top_pick['ensemble_probability'])}, portfolio weight {_format_weight_pct(top_pick['portfolio_weight'])}."
+                ),
+                tag="Top combined pick",
+            )
+        )
+
+    rows: list[tuple[str, ...]] = []
+    for row in live_ml_view["allocation_frame"].itertuples(index=False):
+        rows.append(
+            (
+                f"{row.sector_label} ({row.symbol})",
+                _format_decimal(row.entry_score, 3),
+                _format_probability_pct(row.ensemble_probability),
+                _format_decimal(row.validation_quality_score, 3),
+                _format_decimal(row.best_overfit_stability_score, 1),
+                _format_decimal(row.combined_live_score, 3),
+                _format_weight_pct(row.sleeve_weight),
+                _format_weight_pct(row.portfolio_weight),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Live Rotation</p>',
+            '  <h2>Current ML-Adjusted Rotation</h2>',
+            f'  <p>{html.escape(str(live_ml_view["message"]))}</p>',
+            '  <div class="card-grid">',
+            "\n".join(cards),
+            '  </div>',
+            _render_data_table(
+                headers=(
+                    'Sector',
+                    'Regime Score',
+                    'ML Probability',
+                    'Validation Quality',
+                    'Stability',
+                    'Combined Score',
+                    'Sleeve Weight',
+                    'Portfolio Weight',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
+def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
+    rotation_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
+    if not isinstance(rotation_view, dict) or not rotation_view.get("available"):
+        message = str(rotation_view.get("message") if isinstance(rotation_view, dict) else "Holdout backtest unavailable.")
+        return "\n".join(
+            [
+                '<section class="section">',
+                '  <p class="eyebrow">Holdout Benchmark</p>',
+                '  <h2>ML Rotation Vs SPY Buy And Hold</h2>',
+                f'  <p>{html.escape(message)}</p>',
+                '</section>',
+            ]
+        )
+
+    summary_frame = rotation_view["strategy_summary_frame"].copy()
+    quality_row = summary_frame.loc[summary_frame["strategy_label"] == "ML Quality-Weighted Rotation"].iloc[0]
+    probability_row = summary_frame.loc[summary_frame["strategy_label"] == "ML Probability Rotation"].iloc[0]
+    spy_row = summary_frame.loc[summary_frame["strategy_label"] == "SPY Buy And Hold"].iloc[0]
+    signal_date = pd.Timestamp(rotation_view["current_signal_date"]).strftime("%Y-%m-%d")
+
+    cards = [
+        _render_stat_card(
+            title="Untouched 2025+ holdout",
+            body="All rotation performance below comes only from the final holdout window. No historical regime score built from future returns is used inside this benchmark.",
+            tag="Leakage control",
+        ),
+        _render_stat_card(
+            title="ML Quality-Weighted Rotation",
+            body=(
+                f"CAGR {_format_return_pct(quality_row.cagr)}, Sharpe {_format_decimal(quality_row.sharpe)}, max drawdown {_format_return_pct(quality_row.max_drawdown)}, turnover {_format_turnover(quality_row.turnover_per_year)}."
+            ),
+            tag="Strategy",
+        ),
+        _render_stat_card(
+            title="SPY Buy And Hold",
+            body=(
+                f"CAGR {_format_return_pct(spy_row.cagr)}, Sharpe {_format_decimal(spy_row.sharpe)}, max drawdown {_format_return_pct(spy_row.max_drawdown)} over the same holdout windows."
+            ),
+            tag="Benchmark",
+        ),
+        _render_stat_card(
+            title=f"Latest complete signal {signal_date}",
+            body="The rotation book rebalances one bar after each signal and holds for five bars before the next rebalance cycle.",
+            tag="Execution",
+        ),
+    ]
+
+    summary_rows: list[tuple[str, ...]] = []
+    for row in summary_frame.itertuples(index=False):
+        summary_rows.append(
+            (
+                str(row.strategy_label),
+                _format_return_pct(row.total_return),
+                _format_return_pct(row.cagr),
+                _format_decimal(row.sharpe),
+                _format_decimal(row.sortino),
+                _format_return_pct(row.max_drawdown),
+                _format_decimal(row.calmar),
+                _format_decimal(row.profit_factor),
+                _format_probability_pct(row.hit_rate),
+                _format_turnover(row.turnover_per_year),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Holdout Benchmark</p>',
+            '  <h2>ML Rotation Vs SPY Buy And Hold</h2>',
+            f'  <p>{html.escape(str(rotation_view["method_note"]))}</p>',
+            '  <div class="card-grid">',
+            "\n".join(cards),
+            '  </div>',
+            _render_equity_curve_chart(rotation_view["period_log_frame"]),
+            _render_data_table(
+                headers=(
+                    'Strategy',
+                    'Total Return',
+                    'CAGR',
+                    'Sharpe',
+                    'Sortino',
+                    'Max DD',
+                    'Calmar',
+                    'Profit Factor',
+                    'Hit Rate',
+                    'Turnover',
+                ),
+                rows=summary_rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
+def _render_holdout_period_log_section(sector_ml_view: dict[str, Any]) -> str:
+    rotation_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
+    if not isinstance(rotation_view, dict) or not rotation_view.get("available"):
+        return ""
+
+    period_log = rotation_view["period_log_frame"].copy().sort_values("signal_date", ascending=False).head(12)
+    rows: list[tuple[str, ...]] = []
+    for row in period_log.itertuples(index=False):
+        rows.append(
+            (
+                pd.Timestamp(row.signal_date).strftime("%Y-%m-%d"),
+                pd.Timestamp(row.entry_date).strftime("%Y-%m-%d"),
+                pd.Timestamp(row.exit_date).strftime("%Y-%m-%d"),
+                str(row.regime_label),
+                str(row.quality_selection),
+                _format_return_pct(row.quality_return),
+                _format_return_pct(row.probability_return),
+                _format_return_pct(row.spy_return),
+                _format_decimal(row.quality_turnover, 2),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Rebalance Log</p>',
+            '  <h2>Latest Holdout Rotation Decisions</h2>',
+            '  <p>The log below shows the most recent holdout rebalance windows, the sectors selected by the quality-weighted ML score, and the realized next-window return compared with SPY.</p>',
+            _render_data_table(
+                headers=(
+                    'Signal Date',
+                    'Entry Date',
+                    'Exit Date',
+                    'Regime',
+                    'Quality Selection',
+                    'Quality Return',
+                    'Probability Return',
+                    'SPY Return',
+                    'Turnover',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
+def _render_holdout_year_regime_section(sector_ml_view: dict[str, Any]) -> str:
+    rotation_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
+    if not isinstance(rotation_view, dict) or not rotation_view.get("available"):
+        return ""
+
+    yearly_rows: list[tuple[str, ...]] = []
+    yearly_frame = rotation_view["yearly_summary_frame"].sort_values(["year", "strategy_label"], ascending=[True, True])
+    for row in yearly_frame.itertuples(index=False):
+        yearly_rows.append(
+            (
+                str(row.strategy_label),
+                str(int(row.year)),
+                _format_return_pct(row.total_return),
+                _format_return_pct(row.cagr),
+                _format_decimal(row.sharpe),
+                _format_return_pct(row.max_drawdown),
+                _format_turnover(row.turnover_per_year),
+            )
+        )
+
+    regime_rows: list[tuple[str, ...]] = []
+    regime_frame = rotation_view["regime_summary_frame"].sort_values(["regime_label", "strategy_label"], ascending=[True, True])
+    for row in regime_frame.itertuples(index=False):
+        regime_rows.append(
+            (
+                str(row.strategy_label),
+                str(row.regime_label),
+                _format_return_pct(row.total_return),
+                _format_return_pct(row.cagr),
+                _format_decimal(row.sharpe),
+                _format_return_pct(row.max_drawdown),
+                _format_probability_pct(row.hit_rate),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Benchmark Slices</p>',
+            '  <h2>Holdout Performance By Year And Signal Regime</h2>',
+            _render_data_table(
+                headers=(
+                    'Strategy',
+                    'Year',
+                    'Total Return',
+                    'CAGR',
+                    'Sharpe',
+                    'Max DD',
+                    'Turnover',
+                ),
+                rows=yearly_rows,
+            ),
+            _render_data_table(
+                headers=(
+                    'Strategy',
+                    'Signal Regime',
+                    'Total Return',
+                    'CAGR',
+                    'Sharpe',
+                    'Max DD',
+                    'Hit Rate',
+                ),
+                rows=regime_rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
 def _render_ml_overview_section(sector_ml_view: dict[str, Any]) -> str:
     if not sector_ml_view.get("available"):
         message = str(sector_ml_view.get("message") or "Sector ML study unavailable.")
@@ -650,6 +1076,7 @@ def _render_html(
     regime_overview: dict[str, Any],
     sector_rotation_view: dict[str, Any],
     sector_ml_view: dict[str, Any],
+    live_ml_view: dict[str, Any],
 ) -> str:
     return f"""<!DOCTYPE html>
 <html lang=\"en\">
@@ -758,6 +1185,7 @@ def _render_html(
       letter-spacing: 0.06em;
     }}
     .data-table tr:last-child td {{ border-bottom: none; }}
+        .chart-shell {{ margin-top: 18px; overflow-x: auto; }}
     @media (max-width: 720px) {{
       .page {{ padding: 24px 16px 56px; }}
       .hero, .section {{ padding: 22px; }}
@@ -769,11 +1197,15 @@ def _render_html(
     {_render_rotation_hero(generated_at=generated_at, regime_overview=regime_overview, sector_rotation_view=sector_rotation_view)}
     {_render_method_section(sector_rotation_view=sector_rotation_view)}
     {_render_overview_section(regime_overview=regime_overview, sector_rotation_view=sector_rotation_view)}
+        {_render_ml_overview_section(sector_ml_view=sector_ml_view)}
+        {_render_live_ml_allocation_section(live_ml_view=live_ml_view)}
+        {_render_holdout_backtest_section(sector_ml_view=sector_ml_view)}
+        {_render_holdout_year_regime_section(sector_ml_view=sector_ml_view)}
+        {_render_holdout_period_log_section(sector_ml_view=sector_ml_view)}
     {_render_sector_mapping_section(sector_rotation_view=sector_rotation_view)}
     {_render_allocation_section(sector_rotation_view=sector_rotation_view)}
     {_render_current_matrix_section(sector_rotation_view=sector_rotation_view)}
     {_render_regime_behaviour_section(sector_rotation_view=sector_rotation_view)}
-        {_render_ml_overview_section(sector_ml_view=sector_ml_view)}
         {_render_ml_sector_table_section(sector_ml_view=sector_ml_view)}
         {_render_ml_model_comparison_section(sector_ml_view=sector_ml_view)}
         {_render_ml_cost_section(sector_ml_view=sector_ml_view)}
@@ -793,6 +1225,10 @@ def generate_sector_rotation_report(
     regime_overview = _build_regime_overview(frame=frame, lookback_years=REPORT_LOOKBACK_YEARS)
     sector_rotation_view = _build_sector_rotation_view(project_root=root, regime_overview=regime_overview)
     sector_ml_view = build_sector_ml_view(project_root=root)
+    live_ml_view = _build_live_ml_allocation_view(
+        sector_rotation_view=sector_rotation_view,
+        sector_ml_view=sector_ml_view,
+    )
 
     report_dir = Path(output_dir)
     if not report_dir.is_absolute():
@@ -807,6 +1243,12 @@ def generate_sector_rotation_report(
     ml_yearly_path = report_dir / "sector_ml_yearly_performance.csv"
     ml_regime_path = report_dir / "sector_ml_regime_performance.csv"
     ml_cost_path = report_dir / "sector_ml_cost_sensitivity.csv"
+    ml_validation_quality_path = report_dir / "sector_ml_validation_quality.csv"
+    ml_holdout_summary_path = report_dir / "sector_ml_holdout_strategy_summary.csv"
+    ml_holdout_period_log_path = report_dir / "sector_ml_holdout_period_log.csv"
+    ml_holdout_yearly_path = report_dir / "sector_ml_holdout_yearly_summary.csv"
+    ml_holdout_regime_path = report_dir / "sector_ml_holdout_regime_summary.csv"
+    ml_live_allocation_path = report_dir / "sector_ml_live_allocation.csv"
 
     summary_payload: dict[str, Any] = {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -819,6 +1261,7 @@ def generate_sector_rotation_report(
             "available": bool(sector_ml_view.get("available")),
             "boosting_backend": sector_ml_view.get("boosting_backend"),
             "data_note": sector_ml_view.get("data_note"),
+            "live_allocation_available": bool(live_ml_view.get("available")),
         },
     }
 
@@ -843,6 +1286,7 @@ def generate_sector_rotation_report(
         sector_ml_view["yearly_performance_frame"].to_csv(ml_yearly_path, index=False)
         sector_ml_view["regime_performance_frame"].to_csv(ml_regime_path, index=False)
         sector_ml_view["cost_sensitivity_frame"].to_csv(ml_cost_path, index=False)
+        sector_ml_view["validation_quality_frame"].to_csv(ml_validation_quality_path, index=False)
         summary_payload["ml"].update(
             {
                 "config": sector_ml_view.get("config"),
@@ -853,8 +1297,30 @@ def generate_sector_rotation_report(
                 "robust_cost_sector_count": int(sector_ml_view.get("robust_cost_sector_count", 0)),
             }
         )
+        rotation_view = sector_ml_view.get("holdout_rotation_view")
+        if isinstance(rotation_view, dict) and rotation_view.get("available"):
+            rotation_view["strategy_summary_frame"].to_csv(ml_holdout_summary_path, index=False)
+            rotation_view["period_log_frame"].to_csv(ml_holdout_period_log_path, index=False)
+            rotation_view["yearly_summary_frame"].to_csv(ml_holdout_yearly_path, index=False)
+            rotation_view["regime_summary_frame"].to_csv(ml_holdout_regime_path, index=False)
+            summary_payload["ml"]["holdout_rotation"] = {
+                "available": True,
+                "current_signal_date": str(rotation_view.get("current_signal_date")),
+                "method_note": rotation_view.get("method_note"),
+                "strategy_summary": json.loads(rotation_view["strategy_summary_frame"].to_json(orient="records")),
+            }
     else:
         summary_payload["ml"]["message"] = str(sector_ml_view.get("message") or "Sector ML study unavailable.")
+
+    if live_ml_view.get("available"):
+        live_ml_view["allocation_frame"].to_csv(ml_live_allocation_path, index=False)
+        summary_payload["ml"]["live_allocation"] = {
+            "signal_date": str(live_ml_view.get("signal_date")),
+            "top_pick": json.loads(pd.DataFrame([live_ml_view.get("top_pick")]).to_json(orient="records"))[0],
+            "allocation": json.loads(live_ml_view["allocation_frame"].to_json(orient="records")),
+        }
+    else:
+        summary_payload["ml"]["live_allocation_message"] = str(live_ml_view.get("message") or "Live ML allocation unavailable.")
 
     summary_path.write_text(json.dumps(summary_payload, indent=2), encoding="utf-8")
 
@@ -864,6 +1330,7 @@ def generate_sector_rotation_report(
         regime_overview=regime_overview,
         sector_rotation_view=sector_rotation_view,
         sector_ml_view=sector_ml_view,
+        live_ml_view=live_ml_view,
     )
     report_path = report_dir / "index.html"
     report_path.write_text(html_text, encoding="utf-8")
@@ -878,6 +1345,12 @@ def generate_sector_rotation_report(
         "ml_yearly": str(ml_yearly_path) if ml_yearly_path.exists() else None,
         "ml_regime": str(ml_regime_path) if ml_regime_path.exists() else None,
         "ml_cost": str(ml_cost_path) if ml_cost_path.exists() else None,
+        "ml_validation_quality": str(ml_validation_quality_path) if ml_validation_quality_path.exists() else None,
+        "ml_holdout_summary": str(ml_holdout_summary_path) if ml_holdout_summary_path.exists() else None,
+        "ml_holdout_period_log": str(ml_holdout_period_log_path) if ml_holdout_period_log_path.exists() else None,
+        "ml_holdout_yearly": str(ml_holdout_yearly_path) if ml_holdout_yearly_path.exists() else None,
+        "ml_holdout_regime": str(ml_holdout_regime_path) if ml_holdout_regime_path.exists() else None,
+        "ml_live_allocation": str(ml_live_allocation_path) if ml_live_allocation_path.exists() else None,
     }
 
 

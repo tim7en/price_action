@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import brier_score_loss, precision_score, recall_score, roc_auc_score
 
-from .data import resolve_project_root
+from .data import load_asset_daily, resolve_project_root
 from .macro_report import REPORT_LOOKBACK_YEARS, SECTOR_BUCKETS, _build_regime_overview, load_model_macro_frame
 from .train import apply_trade_schedule, build_base_models, run_walk_forward_experiment
 
@@ -49,6 +49,8 @@ DEFAULT_SECTOR_ML_CONFIG: dict[str, Any] = {
     "slippage_bps_base": 5.0,
     "fee_scenarios_bps": (5.0, 10.0, 20.0),
     "slippage_scenarios_bps": (0.0, 5.0, 10.0),
+    "top_n": 3,
+    "quality_weight": 0.25,
 }
 
 CRISIS_REGIMES: frozenset[str] = frozenset(
@@ -66,6 +68,13 @@ def _safe_float(value: Any) -> float | None:
     if value is None or pd.isna(value):
         return None
     return float(value)
+
+
+def _normalised_rank(series: pd.Series) -> pd.Series:
+    numeric = pd.to_numeric(series, errors="coerce")
+    if numeric.dropna().nunique() <= 1:
+        return pd.Series(0.5, index=numeric.index, dtype="float64")
+    return numeric.rank(pct=True, method="average").fillna(0.5)
 
 
 def _segment_years(index: pd.Index) -> float:
@@ -166,6 +175,335 @@ def _strategy_summary(frame: pd.DataFrame) -> dict[str, float | int | None]:
         "trade_rate": float(frame["take_trade"].mean()),
         "trade_count": trade_count,
         "turnover_per_year": float(trade_count / years) if years > 0.0 else 0.0,
+    }
+
+
+def _periodic_strategy_summary(
+    frame: pd.DataFrame,
+    return_column: str,
+    turnover_column: str | None = None,
+) -> dict[str, float | int | None]:
+    if frame.empty:
+        return {
+            "total_return": 0.0,
+            "cagr": None,
+            "sharpe": None,
+            "sortino": None,
+            "max_drawdown": 0.0,
+            "calmar": None,
+            "profit_factor": None,
+            "hit_rate": None,
+            "average_trade_return": None,
+            "average_win": None,
+            "average_loss": None,
+            "trade_count": 0,
+            "turnover_per_year": 0.0,
+        }
+
+    returns = frame[return_column].astype(float)
+    equity_curve = (1.0 + returns).cumprod()
+    years = _segment_years(frame.index)
+    periods_per_year = max(len(frame.index) / years, 1.0)
+    final_equity = float(equity_curve.iloc[-1]) if not equity_curve.empty else 1.0
+    total_return = final_equity - 1.0
+    cagr = final_equity ** (1.0 / years) - 1.0 if final_equity > 0.0 else None
+
+    volatility = float(returns.std(ddof=0))
+    sharpe = float(returns.mean() / volatility * np.sqrt(periods_per_year)) if volatility > 0.0 else None
+
+    downside = returns[returns < 0.0]
+    downside_volatility = float(downside.std(ddof=0)) if not downside.empty else 0.0
+    sortino = (
+        float(returns.mean() / downside_volatility * np.sqrt(periods_per_year))
+        if downside_volatility > 0.0
+        else None
+    )
+
+    drawdown = equity_curve / equity_curve.cummax() - 1.0
+    max_drawdown = float(drawdown.min()) if not drawdown.empty else 0.0
+    calmar = float(cagr / abs(max_drawdown)) if cagr is not None and max_drawdown < 0.0 else None
+
+    gross_profit = float(returns[returns > 0.0].sum())
+    gross_loss = float(-returns[returns < 0.0].sum())
+    profit_factor = gross_profit / gross_loss if gross_loss > 0.0 else None
+
+    turnover = (
+        float(frame[turnover_column].sum())
+        if turnover_column is not None and turnover_column in frame.columns
+        else 0.0
+    )
+
+    return {
+        "total_return": total_return,
+        "cagr": cagr,
+        "sharpe": sharpe,
+        "sortino": sortino,
+        "max_drawdown": max_drawdown,
+        "calmar": calmar,
+        "profit_factor": profit_factor,
+        "hit_rate": float((returns > 0.0).mean()) if not returns.empty else None,
+        "average_trade_return": float(returns.mean()) if not returns.empty else None,
+        "average_win": float(returns[returns > 0.0].mean()) if (returns > 0.0).any() else None,
+        "average_loss": float(returns[returns < 0.0].mean()) if (returns < 0.0).any() else None,
+        "trade_count": int(len(frame.index)),
+        "turnover_per_year": float(turnover / years) if years > 0.0 else 0.0,
+    }
+
+
+def _validation_quality_frame(sector_summary_frame: pd.DataFrame) -> pd.DataFrame:
+    frame = sector_summary_frame[
+        [
+            "symbol",
+            "sector_label",
+            "family",
+            "ensemble_validation_roc_auc",
+            "ensemble_validation_brier_score",
+            "ensemble_validation_sharpe",
+            "ensemble_validation_cagr",
+        ]
+    ].copy()
+    frame["rank_validation_auc"] = _normalised_rank(frame["ensemble_validation_roc_auc"])
+    frame["rank_validation_brier"] = _normalised_rank(-frame["ensemble_validation_brier_score"])
+    frame["rank_validation_sharpe"] = _normalised_rank(frame["ensemble_validation_sharpe"])
+    frame["rank_validation_cagr"] = _normalised_rank(frame["ensemble_validation_cagr"])
+    frame["validation_quality_score"] = (
+        0.35 * frame["rank_validation_auc"]
+        + 0.25 * frame["rank_validation_brier"]
+        + 0.25 * frame["rank_validation_sharpe"]
+        + 0.15 * frame["rank_validation_cagr"]
+    )
+    return frame.sort_values("validation_quality_score", ascending=False).reset_index(drop=True)
+
+
+def _load_price_panel(symbols: list[str], project_root: Path) -> pd.DataFrame:
+    close_frames: list[pd.Series] = []
+    for symbol in symbols:
+        close = pd.to_numeric(
+            load_asset_daily(symbol, project_root=project_root)["close"],
+            errors="coerce",
+        ).rename(symbol)
+        close_frames.append(close)
+    prices = pd.concat(close_frames, axis=1).sort_index().ffill().dropna(how="all")
+    return prices
+
+
+def _weights_from_scores(scores: pd.Series, top_n: int) -> tuple[dict[str, float], str]:
+    valid = pd.to_numeric(scores, errors="coerce").dropna()
+    if valid.empty:
+        return {}, "Cash"
+    selected = valid.sort_values(ascending=False).head(top_n)
+    if selected.empty or float(selected.sum()) <= 0.0:
+        return {}, "Cash"
+    weights = (selected / selected.sum()).to_dict()
+    return {str(symbol): float(weight) for symbol, weight in weights.items()}, ", ".join(selected.index.tolist())
+
+
+def _turnover_cost(previous: dict[str, float], current: dict[str, float], cost_rate: float) -> tuple[float, float]:
+    symbols = set(previous) | set(current)
+    turnover = float(sum(abs(current.get(symbol, 0.0) - previous.get(symbol, 0.0)) for symbol in symbols))
+    return turnover, turnover * cost_rate
+
+
+def _weighted_return(weights: dict[str, float], period_returns: pd.Series) -> float:
+    if not weights:
+        return 0.0
+    return float(sum(weight * float(period_returns.get(symbol, 0.0)) for symbol, weight in weights.items()))
+
+
+def _summarize_period_groups(
+    period_frame: pd.DataFrame,
+    strategy_column: str,
+    group_column: str,
+    turnover_column: str,
+) -> pd.DataFrame:
+    rows: list[dict[str, Any]] = []
+    for group_value, group in period_frame.groupby(group_column, dropna=False):
+        summary = _periodic_strategy_summary(group.set_index("exit_date"), strategy_column, turnover_column=turnover_column)
+        rows.append({group_column: group_value, **summary})
+    summary_frame = pd.DataFrame(rows)
+    if not summary_frame.empty:
+        summary_frame = summary_frame.sort_values(group_column).reset_index(drop=True)
+    return summary_frame
+
+
+def _build_holdout_rotation_view(
+    holdout_signal_frame: pd.DataFrame,
+    validation_quality_frame: pd.DataFrame,
+    project_root: Path,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    if holdout_signal_frame.empty:
+        return {"available": False, "message": "No untouched holdout predictions were available for the sector rotation backtest."}
+
+    holdout_signal_frame = holdout_signal_frame.copy()
+    holdout_signal_frame["date"] = pd.to_datetime(holdout_signal_frame["date"])
+    quality_map = validation_quality_frame.set_index("symbol")["validation_quality_score"]
+    holdout_signal_frame["validation_quality_score"] = holdout_signal_frame["symbol"].map(quality_map).fillna(0.5)
+    quality_weight = float(config["quality_weight"])
+    holdout_signal_frame["quality_weighted_score"] = (
+        (1.0 - quality_weight) * holdout_signal_frame["ensemble_probability"].astype(float)
+        + quality_weight * holdout_signal_frame["validation_quality_score"].astype(float)
+    )
+
+    symbols = sorted(holdout_signal_frame["symbol"].unique().tolist())
+    price_panel = _load_price_panel(symbols + ["SPY"], project_root=project_root)
+    trading_index = price_panel.index
+    signal_dates = sorted(date for date in holdout_signal_frame["date"].unique() if date in trading_index)
+    if len(signal_dates) < 3:
+        return {"available": False, "message": "Not enough holdout signal dates were available to build a rotation benchmark."}
+
+    top_n = int(config["top_n"])
+    threshold = float(config["signal_threshold"])
+    holding_period = int(config["label_horizon"])
+    cost_rate = float(config["cost_bps"]) / 10_000.0
+
+    previous_weights = {
+        "probability": {},
+        "quality": {},
+    }
+    period_rows: list[dict[str, Any]] = []
+    signal_pointer = 0
+
+    while signal_pointer < len(signal_dates):
+        signal_date = signal_dates[signal_pointer]
+        signal_slice = holdout_signal_frame.loc[holdout_signal_frame["date"] == signal_date].copy()
+        signal_slice = signal_slice.loc[signal_slice["ensemble_probability"].astype(float) >= threshold].copy()
+
+        entry_pos = trading_index.searchsorted(signal_date, side="right")
+        if entry_pos >= len(trading_index):
+            break
+        exit_pos = min(entry_pos + holding_period, len(trading_index) - 1)
+        entry_date = trading_index[entry_pos]
+        exit_date = trading_index[exit_pos]
+        if exit_date <= entry_date:
+            break
+
+        if signal_slice.empty:
+            probability_weights, probability_labels = {}, "Cash"
+            quality_weights, quality_labels = {}, "Cash"
+        else:
+            probability_weights, probability_labels = _weights_from_scores(
+                signal_slice.set_index("symbol")["ensemble_probability"],
+                top_n=top_n,
+            )
+            quality_weights, quality_labels = _weights_from_scores(
+                signal_slice.set_index("symbol")["quality_weighted_score"],
+                top_n=top_n,
+            )
+
+        period_returns = price_panel.loc[exit_date, symbols] / price_panel.loc[entry_date, symbols] - 1.0
+        spy_return = float(price_panel.loc[exit_date, "SPY"] / price_panel.loc[entry_date, "SPY"] - 1.0)
+
+        probability_turnover, probability_cost = _turnover_cost(previous_weights["probability"], probability_weights, cost_rate)
+        quality_turnover, quality_cost = _turnover_cost(previous_weights["quality"], quality_weights, cost_rate)
+        probability_return = _weighted_return(probability_weights, period_returns) - probability_cost
+        quality_return = _weighted_return(quality_weights, period_returns) - quality_cost
+
+        regime_label = str(signal_slice["regime_label"].mode().iloc[0]) if not signal_slice.empty else "Cash"
+        selected_slice = signal_slice.sort_values("quality_weighted_score", ascending=False).head(top_n)
+        period_rows.append(
+            {
+                "signal_date": signal_date,
+                "entry_date": entry_date,
+                "exit_date": exit_date,
+                "regime_label": regime_label,
+                "probability_selection": probability_labels,
+                "quality_selection": quality_labels,
+                "probability_return": probability_return,
+                "quality_return": quality_return,
+                "spy_return": spy_return,
+                "probability_turnover": probability_turnover,
+                "quality_turnover": quality_turnover,
+                "top_probability": float(signal_slice["ensemble_probability"].max()) if not signal_slice.empty else None,
+                "top_quality_score": float(signal_slice["quality_weighted_score"].max()) if not signal_slice.empty else None,
+                "selected_count": int(len(selected_slice.index)),
+            }
+        )
+
+        previous_weights["probability"] = probability_weights
+        previous_weights["quality"] = quality_weights
+        signal_pointer += holding_period
+
+    period_log_frame = pd.DataFrame(period_rows)
+    if period_log_frame.empty:
+        return {"available": False, "message": "Holdout signals existed, but the rebalance schedule produced no completed rotation windows."}
+
+    period_log_frame["equity_probability"] = (1.0 + period_log_frame["probability_return"]).cumprod()
+    period_log_frame["equity_quality"] = (1.0 + period_log_frame["quality_return"]).cumprod()
+    period_log_frame["equity_spy"] = (1.0 + period_log_frame["spy_return"]).cumprod()
+
+    strategy_rows = []
+    for label, return_column, turnover_column in (
+        ("ML Probability Rotation", "probability_return", "probability_turnover"),
+        ("ML Quality-Weighted Rotation", "quality_return", "quality_turnover"),
+        ("SPY Buy And Hold", "spy_return", None),
+    ):
+        summary = _periodic_strategy_summary(
+            period_log_frame.set_index("exit_date"),
+            return_column,
+            turnover_column=turnover_column,
+        )
+        strategy_rows.append({"strategy_label": label, **summary})
+    strategy_summary_frame = pd.DataFrame(strategy_rows)
+
+    yearly_rows: list[dict[str, Any]] = []
+    regime_rows: list[dict[str, Any]] = []
+    for label, return_column, turnover_column in (
+        ("ML Probability Rotation", "probability_return", "probability_turnover"),
+        ("ML Quality-Weighted Rotation", "quality_return", "quality_turnover"),
+        ("SPY Buy And Hold", "spy_return", None),
+    ):
+        yearly = _summarize_period_groups(
+            period_log_frame.assign(year=pd.to_datetime(period_log_frame["exit_date"]).dt.year),
+            strategy_column=return_column,
+            group_column="year",
+            turnover_column=turnover_column or "probability_turnover",
+        )
+        if not yearly.empty:
+            yearly.insert(0, "strategy_label", label)
+            yearly_rows.extend(yearly.to_dict(orient="records"))
+
+        regime = _summarize_period_groups(
+            period_log_frame,
+            strategy_column=return_column,
+            group_column="regime_label",
+            turnover_column=turnover_column or "probability_turnover",
+        )
+        if not regime.empty:
+            regime.insert(0, "strategy_label", label)
+            regime_rows.extend(regime.to_dict(orient="records"))
+
+    current_signal_date = max(signal_dates)
+    current_signal_frame = holdout_signal_frame.loc[holdout_signal_frame["date"] == current_signal_date].copy()
+    current_signal_frame = current_signal_frame.sort_values("quality_weighted_score", ascending=False).reset_index(drop=True)
+    current_signal_frame["recommended_probability"] = False
+    current_signal_frame["recommended_quality"] = False
+    probability_live, _ = _weights_from_scores(
+        current_signal_frame.set_index("symbol")["ensemble_probability"],
+        top_n=top_n,
+    )
+    quality_live, _ = _weights_from_scores(
+        current_signal_frame.set_index("symbol")["quality_weighted_score"],
+        top_n=top_n,
+    )
+    current_signal_frame["probability_weight"] = current_signal_frame["symbol"].map(probability_live).fillna(0.0)
+    current_signal_frame["quality_weight"] = current_signal_frame["symbol"].map(quality_live).fillna(0.0)
+    current_signal_frame["recommended_probability"] = current_signal_frame["probability_weight"] > 0.0
+    current_signal_frame["recommended_quality"] = current_signal_frame["quality_weight"] > 0.0
+
+    return {
+        "available": True,
+        "period_log_frame": period_log_frame,
+        "strategy_summary_frame": strategy_summary_frame,
+        "yearly_summary_frame": pd.DataFrame(yearly_rows),
+        "regime_summary_frame": pd.DataFrame(regime_rows),
+        "current_signal_frame": current_signal_frame,
+        "current_signal_date": pd.Timestamp(current_signal_date),
+        "benchmark_symbol": "SPY",
+        "method_note": (
+            "The benchmark uses only final holdout dates. Signals are generated from walk-forward out-of-sample sector predictions, executed one bar after the signal date, and held for five bars before the next rebalance. "
+            "The quality-weighted variant mixes live ensemble probability with a sector quality prior estimated only from the pre-holdout validation window."
+        ),
     }
 
 
@@ -334,6 +672,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
     regime_rows: list[dict[str, Any]] = []
     cost_rows: list[dict[str, Any]] = []
     failures: list[dict[str, str]] = []
+    holdout_signal_frames: list[pd.DataFrame] = []
 
     for sector in SECTOR_BUCKETS:
         try:
@@ -367,6 +706,23 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         predictions = _join_daily_regimes(predictions=predictions, regime_daily_map=regime_daily_map)
         validation_predictions = predictions.loc[predictions["fold_label"].astype(str) != "holdout"].copy()
         holdout_predictions = predictions.loc[predictions["fold_label"].astype(str) == "holdout"].copy()
+        if not holdout_predictions.empty:
+            holdout_frame = holdout_predictions[
+                [
+                    "prob_elastic_net",
+                    "prob_extra_trees",
+                    "prob_lightgbm",
+                    "ensemble_probability",
+                    "target",
+                    "forward_return",
+                    "regime_label",
+                    "quadrant_label",
+                    "fold_label",
+                ]
+            ].copy()
+            holdout_frame.insert(0, "sector_label", sector["label"])
+            holdout_frame.insert(0, "symbol", sector["symbol"])
+            holdout_signal_frames.append(holdout_frame.reset_index(names="date"))
 
         model_frame_rows: list[dict[str, Any]] = []
         ensemble_all_summary: dict[str, Any] | None = None
@@ -475,6 +831,15 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
                 "ensemble_validation_brier_score": comparison_frame.loc[
                     comparison_frame["model_key"] == "average_ensemble", "validation_brier_score"
                 ].iloc[0],
+                "ensemble_validation_sharpe": comparison_frame.loc[
+                    comparison_frame["model_key"] == "average_ensemble", "validation_sharpe"
+                ].iloc[0],
+                "ensemble_validation_cagr": comparison_frame.loc[
+                    comparison_frame["model_key"] == "average_ensemble", "validation_cagr"
+                ].iloc[0],
+                "ensemble_validation_max_drawdown": comparison_frame.loc[
+                    comparison_frame["model_key"] == "average_ensemble", "validation_max_drawdown"
+                ].iloc[0],
                 "ensemble_holdout_roc_auc": comparison_frame.loc[
                     comparison_frame["model_key"] == "average_ensemble", "holdout_roc_auc"
                 ].iloc[0],
@@ -544,6 +909,18 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         & (cost_sensitivity_frame["scenario_bps"] == max(config["slippage_scenarios_bps"]))
     ]
     robust_cost_sector_count = int((robust_cost_rows["cagr"].fillna(-1.0) > 0.0).sum()) if not robust_cost_rows.empty else 0
+    validation_quality_frame = _validation_quality_frame(sector_summary_frame)
+    holdout_signal_frame = (
+        pd.concat(holdout_signal_frames, ignore_index=True)
+        if holdout_signal_frames
+        else pd.DataFrame()
+    )
+    holdout_rotation_view = _build_holdout_rotation_view(
+        holdout_signal_frame=holdout_signal_frame,
+        validation_quality_frame=validation_quality_frame,
+        project_root=root,
+        config=config,
+    )
 
     return {
         "available": True,
@@ -558,8 +935,11 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         "yearly_performance_frame": yearly_performance_frame,
         "regime_performance_frame": regime_performance_frame,
         "cost_sensitivity_frame": cost_sensitivity_frame,
+        "validation_quality_frame": validation_quality_frame,
         "winner_counts_frame": winner_counts,
         "failures_frame": failures_frame,
         "holdout_leader": holdout_leader,
         "robust_cost_sector_count": robust_cost_sector_count,
+        "holdout_signal_frame": holdout_signal_frame,
+        "holdout_rotation_view": holdout_rotation_view,
     }
