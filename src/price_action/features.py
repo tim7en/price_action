@@ -22,9 +22,12 @@ def build_feature_frame(
     market_frame: pd.DataFrame,
     label_horizon: int = 5,
     cost_bps: float = 15.0,
+    feature_lag: int = 0,
 ) -> tuple[pd.DataFrame, list[str]]:
     if "close" not in market_frame.columns:
         raise ValueError("Expected a 'close' column in the market frame.")
+    if feature_lag < 0:
+        raise ValueError("feature_lag must be non-negative.")
 
     frame = market_frame.copy().sort_index()
     frame["close"] = pd.to_numeric(frame["close"], errors="coerce")
@@ -139,6 +142,9 @@ def build_feature_frame(
         if feature_frame[column].notna().sum() >= min_coverage
     ]
 
+    if feature_lag:
+        frame.loc[:, feature_columns] = frame.loc[:, feature_columns].shift(feature_lag)
+
     return frame, feature_columns
 
 
@@ -146,11 +152,13 @@ def engineer_daily_features(
     market_frame: pd.DataFrame,
     label_horizon: int = 5,
     cost_bps: float = 15.0,
+    feature_lag: int = 0,
 ) -> tuple[pd.DataFrame, list[str]]:
     frame, feature_columns = build_feature_frame(
         market_frame=market_frame,
         label_horizon=label_horizon,
         cost_bps=cost_bps,
+        feature_lag=feature_lag,
     )
 
     dataset = frame[feature_columns + ["target", "forward_return", "net_forward_return"]].dropna()

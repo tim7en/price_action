@@ -7,9 +7,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from lightgbm import LGBMClassifier
 from sklearn.base import clone
-from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.ensemble import ExtraTreesClassifier, HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, precision_score, recall_score, roc_auc_score
 from sklearn.pipeline import Pipeline
@@ -18,6 +17,11 @@ from sklearn.preprocessing import StandardScaler
 from .data import build_market_frame, discover_symbols, resolve_project_root
 from .features import engineer_daily_features
 
+try:
+    from lightgbm import LGBMClassifier
+except (ImportError, OSError):
+    LGBMClassifier = None
+
 
 def expanding_walk_forward_splits(
     n_obs: int,
@@ -25,17 +29,21 @@ def expanding_walk_forward_splits(
     test_size: int,
     step_size: int | None = None,
     embargo_size: int = 5,
+    purge_size: int = 0,
 ) -> list[tuple[np.ndarray, np.ndarray]]:
     if n_obs <= 0:
         return []
+    if embargo_size < 0 or purge_size < 0:
+        raise ValueError("embargo_size and purge_size must be non-negative.")
 
     step = step_size or test_size
     train_end = min_train_size
+    gap_size = embargo_size + purge_size
     splits: list[tuple[np.ndarray, np.ndarray]] = []
 
-    while train_end + embargo_size + test_size <= n_obs:
+    while train_end + gap_size + test_size <= n_obs:
         train_idx = np.arange(0, train_end)
-        test_start = train_end + embargo_size
+        test_start = train_end + gap_size
         test_end = test_start + test_size
         test_idx = np.arange(test_start, test_end)
         splits.append((train_idx, test_idx))
@@ -49,17 +57,20 @@ def calendar_walk_forward_splits(
     train_years: int,
     validation_years: int,
     embargo_size: int = 5,
+    purge_size: int = 0,
     holdout_start: str | None = None,
     expanding_train: bool = True,
 ) -> tuple[list[tuple[np.ndarray, np.ndarray, str]], tuple[np.ndarray, np.ndarray, str] | None]:
     if index.empty:
         return [], None
+    if embargo_size < 0 or purge_size < 0:
+        raise ValueError("embargo_size and purge_size must be non-negative.")
 
     sorted_index = pd.DatetimeIndex(index).sort_values()
     years = sorted(sorted_index.year.unique())
     first_validation_year = years[0] + train_years
     holdout_timestamp = pd.Timestamp(holdout_start) if holdout_start else None
-    embargo_delta = pd.Timedelta(days=embargo_size)
+    gap_delta = pd.Timedelta(days=embargo_size + purge_size)
 
     splits: list[tuple[np.ndarray, np.ndarray, str]] = []
     for year in years:
@@ -72,7 +83,7 @@ def calendar_walk_forward_splits(
 
         validation_end = validation_start + pd.DateOffset(years=validation_years)
         train_start = sorted_index.min() if expanding_train else validation_start - pd.DateOffset(years=train_years)
-        train_end = validation_start - embargo_delta
+        train_end = validation_start - gap_delta
 
         train_idx = np.flatnonzero((sorted_index >= train_start) & (sorted_index < train_end))
         test_idx = np.flatnonzero((sorted_index >= validation_start) & (sorted_index < validation_end))
@@ -83,7 +94,7 @@ def calendar_walk_forward_splits(
 
     holdout_split: tuple[np.ndarray, np.ndarray, str] | None = None
     if holdout_timestamp is not None:
-        train_idx = np.flatnonzero(sorted_index < (holdout_timestamp - embargo_delta))
+        train_idx = np.flatnonzero(sorted_index < (holdout_timestamp - gap_delta))
         test_idx = np.flatnonzero(sorted_index >= holdout_timestamp)
         if len(train_idx) and len(test_idx):
             holdout_split = (train_idx, test_idx, "holdout")
@@ -92,7 +103,7 @@ def calendar_walk_forward_splits(
 
 
 def build_base_models(random_state: int) -> dict[str, Any]:
-    return {
+    models: dict[str, Any] = {
         "elastic_net": Pipeline(
             steps=[
                 ("scaler", StandardScaler()),
@@ -118,7 +129,10 @@ def build_base_models(random_state: int) -> dict[str, Any]:
             random_state=random_state,
             n_jobs=-1,
         ),
-        "lightgbm": LGBMClassifier(
+    }
+
+    if LGBMClassifier is not None:
+        models["lightgbm"] = LGBMClassifier(
             objective="binary",
             n_estimators=300,
             learning_rate=0.03,
@@ -134,8 +148,19 @@ def build_base_models(random_state: int) -> dict[str, Any]:
             random_state=random_state,
             n_jobs=-1,
             verbosity=-1,
-        ),
-    }
+        )
+    else:
+        models["lightgbm"] = HistGradientBoostingClassifier(
+            learning_rate=0.03,
+            max_depth=4,
+            max_leaf_nodes=15,
+            min_samples_leaf=40,
+            l2_regularization=5.0,
+            max_iter=300,
+            random_state=random_state,
+        )
+
+    return models
 
 
 def _gate_feature_columns(frame: pd.DataFrame) -> list[str]:
@@ -220,12 +245,15 @@ def fit_gate_model(
 def run_walk_forward_experiment(
     symbol: str,
     project_root: str | Path | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
     label_horizon: int = 5,
     cost_bps: float = 15.0,
     min_train_size: int = 160,
     test_size: int = 40,
     step_size: int | None = None,
     embargo_size: int = 5,
+    purge_size: int = 0,
     signal_threshold: float = 0.55,
     random_state: int = 42,
     validation_mode: str = "row",
@@ -233,13 +261,23 @@ def run_walk_forward_experiment(
     validation_years: int = 1,
     holdout_start: str | None = None,
     expanding_train: bool = True,
+    feature_lag: int = 0,
+    use_gate_model: bool = True,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     market_frame = build_market_frame(symbol=symbol, project_root=project_root)
     dataset, feature_columns = engineer_daily_features(
         market_frame=market_frame,
         label_horizon=label_horizon,
         cost_bps=cost_bps,
+        feature_lag=feature_lag,
     )
+
+    if start_date is not None:
+        dataset = dataset.loc[dataset.index >= pd.Timestamp(start_date)]
+    if end_date is not None:
+        dataset = dataset.loc[dataset.index <= pd.Timestamp(end_date)]
+    if dataset.empty:
+        raise ValueError("No rows remain after applying the requested date filters.")
 
     x = dataset[feature_columns]
     y = dataset["target"]
@@ -250,6 +288,7 @@ def run_walk_forward_experiment(
             train_years=train_years,
             validation_years=validation_years,
             embargo_size=embargo_size,
+            purge_size=purge_size,
             holdout_start=holdout_start,
             expanding_train=expanding_train,
         )
@@ -257,7 +296,7 @@ def run_walk_forward_experiment(
             raise ValueError("No calendar walk-forward splits were produced. Relax the year settings.")
         labeled_splits = splits + ([holdout_split] if holdout_split is not None else [])
     else:
-        if len(dataset) < min_train_size + embargo_size + test_size:
+        if len(dataset) < min_train_size + embargo_size + purge_size + test_size:
             raise ValueError(
                 "Not enough rows after feature engineering for the requested walk-forward setup."
             )
@@ -268,6 +307,7 @@ def run_walk_forward_experiment(
             test_size=test_size,
             step_size=step_size,
             embargo_size=embargo_size,
+            purge_size=purge_size,
         )
         if not row_splits:
             raise ValueError("No walk-forward splits were produced. Relax the split settings.")
@@ -286,7 +326,9 @@ def run_walk_forward_experiment(
         if y_train.nunique() < 2:
             continue
 
-        gate_model = fit_gate_model(x_train=x_train, y_train=y_train, random_state=random_state)
+        gate_model = None
+        if use_gate_model:
+            gate_model = fit_gate_model(x_train=x_train, y_train=y_train, random_state=random_state)
         probability_frame = pd.DataFrame(index=x_test.index)
 
         for name, model in build_base_models(random_state=random_state).items():
@@ -331,6 +373,11 @@ def run_walk_forward_experiment(
     summary["rows"] = int(len(predictions))
     summary["label_horizon"] = label_horizon
     summary["cost_bps"] = cost_bps
+    summary["start_date"] = start_date
+    summary["end_date"] = end_date
+    summary["purge_size"] = purge_size
+    summary["feature_lag"] = feature_lag
+    summary["use_gate_model"] = use_gate_model
     summary["validation_mode"] = validation_mode
     if validation_mode == "calendar":
         summary["train_years"] = train_years
@@ -451,12 +498,16 @@ def save_outputs(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a starter walk-forward ML experiment.")
     parser.add_argument("--symbol", required=True, choices=discover_symbols(), help="Ticker symbol to train on.")
+    parser.add_argument("--start-date", default=None, help="Optional earliest date to keep after feature engineering, in YYYY-MM-DD.")
+    parser.add_argument("--end-date", default=None, help="Optional latest date to keep after feature engineering, in YYYY-MM-DD.")
     parser.add_argument("--horizon", type=int, default=5, help="Forward return horizon in bars.")
     parser.add_argument("--cost-bps", type=float, default=15.0, help="Combined fees and slippage in basis points.")
     parser.add_argument("--min-train-size", type=int, default=160, help="Minimum observations in the first train window.")
     parser.add_argument("--test-size", type=int, default=40, help="Observations in each out-of-sample fold.")
     parser.add_argument("--step-size", type=int, default=40, help="Rows to advance after each fold.")
     parser.add_argument("--embargo-size", type=int, default=5, help="Rows to skip between train and test.")
+    parser.add_argument("--purge-size", type=int, default=0, help="Additional rows or days to purge before each test window.")
+    parser.add_argument("--feature-lag", type=int, default=0, help="Bars to lag all features before modeling.")
     parser.add_argument("--signal-threshold", type=float, default=0.55, help="Minimum probability to take a trade.")
     parser.add_argument(
         "--validation-mode",
@@ -481,6 +532,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Use a rolling instead of expanding training window in calendar validation mode.",
     )
+    parser.add_argument(
+        "--no-gate-model",
+        action="store_true",
+        help="Disable the logistic gate model and use plain probability averaging instead.",
+    )
     return parser
 
 
@@ -488,18 +544,23 @@ def main() -> None:
     args = build_parser().parse_args()
     predictions, summary = run_walk_forward_experiment(
         symbol=args.symbol,
+        start_date=args.start_date,
+        end_date=args.end_date,
         label_horizon=args.horizon,
         cost_bps=args.cost_bps,
         min_train_size=args.min_train_size,
         test_size=args.test_size,
         step_size=args.step_size,
         embargo_size=args.embargo_size,
+        purge_size=args.purge_size,
+        feature_lag=args.feature_lag,
         signal_threshold=args.signal_threshold,
         validation_mode=args.validation_mode,
         train_years=args.train_years,
         validation_years=args.validation_years,
         holdout_start=args.holdout_start,
         expanding_train=not args.rolling_train_window,
+        use_gate_model=not args.no_gate_model,
     )
     predictions_path, summary_path = save_outputs(predictions=predictions, summary=summary, symbol=args.symbol)
 

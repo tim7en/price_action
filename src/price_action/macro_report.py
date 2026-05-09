@@ -698,6 +698,569 @@ def _build_regime_overview(frame: pd.DataFrame, lookback_years: int = REPORT_LOO
     }
 
 
+def _format_return_pct(value: float | int | None) -> str:
+    if value is None or pd.isna(value):
+        return "n/a"
+    return f"{float(value) * 100:+.1f}%"
+
+
+def _format_probability_pct(value: float | int | None) -> str:
+    if value is None or pd.isna(value):
+        return "n/a"
+    return f"{float(value) * 100:.0f}%"
+
+
+def _format_weight_pct(value: float | int | None) -> str:
+    if value is None or pd.isna(value):
+        return "n/a"
+    return f"{float(value) * 100:.1f}%"
+
+
+def _confidence_label(score: float) -> str:
+    if score >= 75.0:
+        return "High"
+    if score >= 60.0:
+        return "Moderate"
+    return "Low"
+
+
+def _future_window_extreme(series: pd.Series, months: int, mode: str) -> pd.Series:
+    values = pd.to_numeric(series, errors="coerce").to_numpy(dtype=float)
+    result = np.full(len(values), np.nan, dtype=float)
+    for index in range(len(values)):
+        window = values[index + 1 : index + 1 + months]
+        window = window[np.isfinite(window)]
+        if window.size == 0:
+            continue
+        result[index] = float(window.max()) if mode == "max" else float(window.min())
+    return pd.Series(result, index=series.index, dtype="float64")
+
+
+def _annualize_total_return(total_return: pd.Series, months: int) -> pd.Series:
+    numeric = pd.to_numeric(total_return, errors="coerce")
+    base = 1.0 + numeric
+    base = base.where(base > 0.0)
+    return np.power(base, 12.0 / months) - 1.0
+
+
+def _normalised_rank(series: pd.Series) -> pd.Series:
+    numeric = pd.to_numeric(series, errors="coerce")
+    if numeric.dropna().nunique() <= 1:
+        return pd.Series(0.5, index=numeric.index, dtype="float64")
+    return numeric.rank(pct=True, method="average").fillna(0.5)
+
+
+def _render_data_table(headers: tuple[str, ...], rows: list[tuple[str, ...]]) -> str:
+    if not rows:
+        return ""
+    header_html = "".join(f"<th>{html.escape(header)}</th>" for header in headers)
+    body_html = []
+    for row in rows:
+        body_html.append("<tr>" + "".join(f"<td>{html.escape(cell)}</td>" for cell in row) + "</tr>")
+    return "\n".join(
+        [
+            '<div class="table-shell">',
+            '  <table class="data-table">',
+            f'    <thead><tr>{header_html}</tr></thead>',
+            f'    <tbody>{"".join(body_html)}</tbody>',
+            '  </table>',
+            '</div>',
+        ]
+    )
+
+
+def _build_sector_rotation_view(
+    project_root: str | Path | None,
+    regime_overview: dict[str, Any],
+) -> dict[str, Any]:
+    regime_history = regime_overview.get("history_frame")
+    if not isinstance(regime_history, pd.DataFrame) or regime_history.empty:
+        return {
+            "available": False,
+            "message": "Regime history is unavailable, so sector rotation analytics were skipped.",
+            "missing_symbols": [],
+        }
+
+    close_frames: list[pd.Series] = []
+    available_cards: list[dict[str, str]] = []
+    missing_symbols: list[str] = []
+    for sector in SECTOR_BUCKETS:
+        symbol = sector["symbol"]
+        try:
+            asset_frame = load_asset_daily(symbol, project_root=project_root)
+        except FileNotFoundError:
+            missing_symbols.append(symbol)
+            continue
+
+        close = pd.to_numeric(asset_frame.get("close"), errors="coerce").dropna()
+        if close.empty:
+            missing_symbols.append(symbol)
+            continue
+
+        monthly_close = close.resample("ME").last().rename(symbol).dropna()
+        if monthly_close.empty:
+            missing_symbols.append(symbol)
+            continue
+
+        close_frames.append(monthly_close)
+        available_cards.append(dict(sector))
+
+    if not close_frames:
+        return {
+            "available": False,
+            "message": "No sector ETF histories were available in the local cache.",
+            "missing_symbols": missing_symbols,
+        }
+
+    sector_prices = pd.concat(close_frames, axis=1).sort_index().ffill()
+    common_index = regime_history.index.intersection(sector_prices.index)
+    regime_history = regime_history.loc[common_index].copy()
+    sector_prices = sector_prices.loc[common_index].copy()
+
+    rows: list[dict[str, Any]] = []
+    for sector in available_cards:
+        symbol = sector["symbol"]
+        series = pd.to_numeric(sector_prices[symbol], errors="coerce").dropna()
+        if len(series) < 60:
+            continue
+
+        sector_frame = regime_history.join(series.rename("close"), how="inner")
+        if sector_frame.empty:
+            continue
+
+        sector_frame["forward_return_12m"] = sector_frame["close"].shift(-12) / sector_frame["close"] - 1.0
+        sector_frame["forward_return_36m"] = sector_frame["close"].shift(-36) / sector_frame["close"] - 1.0
+        sector_frame["expected_return_12m"] = _annualize_total_return(sector_frame["forward_return_12m"], months=12)
+        sector_frame["expected_return_36m"] = _annualize_total_return(sector_frame["forward_return_36m"], months=36)
+        sector_frame["prior_high_12m"] = sector_frame["close"].rolling(12, min_periods=6).max().shift(1)
+        sector_frame["future_high_12m"] = _future_window_extreme(sector_frame["close"], months=12, mode="max")
+        sector_frame["future_low_12m"] = _future_window_extreme(sector_frame["close"], months=12, mode="min")
+        sector_frame["higher_high_12m"] = sector_frame["future_high_12m"] > sector_frame["prior_high_12m"]
+        sector_frame["future_drawdown_12m"] = sector_frame["future_low_12m"] / sector_frame["close"] - 1.0
+
+        for regime_label, group in sector_frame.groupby("regime_label"):
+            expected_12m = group["expected_return_12m"].dropna()
+            expected_36m = group["expected_return_36m"].dropna()
+            forward_12m = group["forward_return_12m"].dropna()
+            forward_36m = group["forward_return_36m"].dropna()
+            higher_high = group["higher_high_12m"].dropna()
+            drawdown = group["future_drawdown_12m"].dropna()
+            sample_months = int(min(len(expected_12m), len(drawdown)))
+            if sample_months < 6:
+                continue
+
+            win_rate_12m = float((forward_12m > 0.0).mean()) if not forward_12m.empty else 0.0
+            win_rate_36m = float((forward_36m > 0.0).mean()) if not forward_36m.empty else 0.0
+            higher_high_rate_12m = float(higher_high.mean()) if not higher_high.empty else 0.0
+            mean_drawdown_12m = float(drawdown.mean()) if not drawdown.empty else 0.0
+            worst_drawdown_12m = float(drawdown.min()) if not drawdown.empty else 0.0
+            sample_strength = min(sample_months / 24.0, 1.0)
+            consistency_strength = 0.50 * win_rate_12m + 0.20 * win_rate_36m + 0.30 * higher_high_rate_12m
+            risk_strength = 1.0 - min(abs(mean_drawdown_12m) / 0.35, 1.0)
+            confidence_score = float(np.clip(100.0 * (0.35 * sample_strength + 0.45 * consistency_strength + 0.20 * risk_strength), 0.0, 100.0))
+            dominant_quadrant = str(group["quadrant_label"].mode().iloc[0])
+
+            rows.append(
+                {
+                    "symbol": symbol,
+                    "sector_label": sector["label"],
+                    "family": sector["family"],
+                    "earnings_proxy": sector["earnings_proxy"],
+                    "role": sector["role"],
+                    "regime_label": str(regime_label),
+                    "quadrant_label": dominant_quadrant,
+                    "sample_months": sample_months,
+                    "expected_return_12m": float(expected_12m.mean()) if not expected_12m.empty else float("nan"),
+                    "expected_return_36m": float(expected_36m.mean()) if not expected_36m.empty else float("nan"),
+                    "win_rate_12m": win_rate_12m,
+                    "win_rate_36m": win_rate_36m,
+                    "higher_high_rate_12m": higher_high_rate_12m,
+                    "mean_drawdown_12m": mean_drawdown_12m,
+                    "worst_drawdown_12m": worst_drawdown_12m,
+                    "confidence_score": confidence_score,
+                    "confidence_label": _confidence_label(confidence_score),
+                }
+            )
+
+    matrix_frame = pd.DataFrame(rows)
+    if matrix_frame.empty:
+        return {
+            "available": False,
+            "message": "Sector ETF histories were present, but there were not enough matching regime observations to build rotation analytics.",
+            "missing_symbols": missing_symbols,
+        }
+
+    current_regime = str(regime_overview["current"]["regime_label"])
+    current_matrix = matrix_frame.loc[matrix_frame["regime_label"] == current_regime].copy()
+    if current_matrix.empty:
+        current_matrix = matrix_frame.copy()
+
+    current_matrix["rank_return_12m"] = _normalised_rank(current_matrix["expected_return_12m"])
+    current_matrix["rank_return_36m"] = _normalised_rank(current_matrix["expected_return_36m"])
+    current_matrix["rank_higher_high"] = _normalised_rank(current_matrix["higher_high_rate_12m"])
+    current_matrix["rank_drawdown"] = _normalised_rank(current_matrix["mean_drawdown_12m"])
+    current_matrix["rank_confidence"] = _normalised_rank(current_matrix["confidence_score"])
+    current_matrix["entry_score"] = (
+        0.30 * current_matrix["rank_return_12m"]
+        + 0.20 * current_matrix["rank_return_36m"]
+        + 0.20 * current_matrix["rank_higher_high"]
+        + 0.15 * current_matrix["rank_drawdown"]
+        + 0.15 * current_matrix["rank_confidence"]
+    )
+    current_matrix.loc[current_matrix["expected_return_12m"] < 0.0, "entry_score"] *= 0.70
+    current_matrix.loc[current_matrix["expected_return_36m"] < 0.0, "entry_score"] *= 0.85
+    current_matrix = current_matrix.sort_values(
+        ["entry_score", "confidence_score", "expected_return_12m"],
+        ascending=[False, False, False],
+    ).reset_index(drop=True)
+
+    allocation_frame = current_matrix.head(5).copy()
+    if current_regime in DEFENSIVE_REGIMES and not allocation_frame["symbol"].isin(DEFENSIVE_SECTOR_SYMBOLS).any():
+        defensive_candidate = current_matrix.loc[current_matrix["symbol"].isin(DEFENSIVE_SECTOR_SYMBOLS)].head(1)
+        if not defensive_candidate.empty:
+            allocation_frame = pd.concat([allocation_frame, defensive_candidate], ignore_index=True)
+            allocation_frame = allocation_frame.drop_duplicates(subset=["symbol"]).head(5)
+
+    if len(allocation_frame.index) < 4:
+        allocation_frame = current_matrix.head(min(4, len(current_matrix.index))).copy()
+
+    weight_base = allocation_frame["entry_score"] - allocation_frame["entry_score"].min() + 0.05
+    allocation_frame["sleeve_weight"] = weight_base / weight_base.sum()
+    allocation_frame["portfolio_weight"] = allocation_frame["sleeve_weight"] * 0.60
+    allocation_frame = allocation_frame.sort_values("portfolio_weight", ascending=False).reset_index(drop=True)
+    allocation_symbols = set(allocation_frame["symbol"].tolist())
+    current_matrix["recommended"] = current_matrix["symbol"].isin(allocation_symbols)
+
+    top_pick = allocation_frame.iloc[0].to_dict() if not allocation_frame.empty else None
+    defensive_pick_frame = allocation_frame.loc[allocation_frame["symbol"].isin(DEFENSIVE_SECTOR_SYMBOLS)]
+    defensive_pick = defensive_pick_frame.iloc[0].to_dict() if not defensive_pick_frame.empty else None
+
+    regime_summary = (
+        matrix_frame.groupby("regime_label", as_index=False)
+        .agg(
+            sectors_covered=("symbol", "count"),
+            avg_expected_return_12m=("expected_return_12m", "mean"),
+            avg_expected_return_36m=("expected_return_36m", "mean"),
+            avg_higher_high_rate_12m=("higher_high_rate_12m", "mean"),
+            avg_mean_drawdown_12m=("mean_drawdown_12m", "mean"),
+            avg_confidence_score=("confidence_score", "mean"),
+        )
+    )
+
+    top_sector_map = (
+        matrix_frame.sort_values(
+            ["regime_label", "expected_return_12m", "higher_high_rate_12m"],
+            ascending=[True, False, False],
+        )
+        .groupby("regime_label")
+        .head(3)
+        .groupby("regime_label")["sector_label"]
+        .apply(lambda items: ", ".join(items))
+        .to_dict()
+    )
+    regime_summary["top_sectors"] = regime_summary["regime_label"].map(top_sector_map).fillna("n/a")
+
+    worst_drawdown_regimes = []
+    for row in regime_summary.sort_values("avg_mean_drawdown_12m").head(3).itertuples(index=False):
+        worst_drawdown_regimes.append(
+            {
+                "label": str(row.regime_label),
+                "drawdown": float(row.avg_mean_drawdown_12m),
+                "higher_high": float(row.avg_higher_high_rate_12m),
+                "top_sectors": str(row.top_sectors),
+            }
+        )
+
+    breakout_regimes = []
+    for row in regime_summary.sort_values(
+        ["avg_higher_high_rate_12m", "avg_expected_return_12m"],
+        ascending=[False, False],
+    ).head(3).itertuples(index=False):
+        breakout_regimes.append(
+            {
+                "label": str(row.regime_label),
+                "drawdown": float(row.avg_mean_drawdown_12m),
+                "higher_high": float(row.avg_higher_high_rate_12m),
+                "top_sectors": str(row.top_sectors),
+            }
+        )
+
+    note = (
+        "No point-in-time analyst EPS feed exists in this repo. The sector entry calls below therefore use earnings-sensitivity proxies plus realized 1-year and 3-year forward returns from historically similar macro regimes."
+    )
+
+    return {
+        "available": True,
+        "message": "",
+        "missing_symbols": missing_symbols,
+        "sector_cards": available_cards,
+        "current_regime": current_regime,
+        "current_matrix": current_matrix,
+        "allocation_frame": allocation_frame,
+        "matrix_frame": matrix_frame,
+        "regime_summary_frame": regime_summary,
+        "top_pick": top_pick,
+        "defensive_pick": defensive_pick,
+        "cash_weight": 0.40,
+        "worst_drawdown_regimes": worst_drawdown_regimes,
+        "breakout_regimes": breakout_regimes,
+        "note": note,
+    }
+
+
+def _render_sector_bucket_section(sector_rotation_view: dict[str, Any]) -> str:
+    if not sector_rotation_view.get("available"):
+        message = str(sector_rotation_view.get("message") or "Sector rotation analytics are unavailable.")
+        return "\n".join(
+            [
+                '<section id="sector_buckets" class="framework-section">',
+                '  <p class="eyebrow">Sector Mapping</p>',
+                '  <h2>Equity Types Mapped To ETF Proxies</h2>',
+                f'  <p>{html.escape(message)}</p>',
+                '</section>',
+            ]
+        )
+
+    cards = []
+    for sector in sector_rotation_view["sector_cards"]:
+        cards.append(
+            "\n".join(
+                [
+                    '<article class="rotation-card">',
+                    f'  <p class="regime-tag">{html.escape(sector["symbol"])} · {html.escape(sector["family"])} </p>',
+                    f'  <h3>{html.escape(sector["label"])}</h3>',
+                    f'  <p>{html.escape(sector["earnings_proxy"])}</p>',
+                    f'  <p class="regime-subcopy">{html.escape(sector["role"])}</p>',
+                    '</article>',
+                ]
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section id="sector_buckets" class="framework-section">',
+            '  <p class="eyebrow">Sector Mapping</p>',
+            '  <h2>Equity Types Used For Rotation</h2>',
+            '  <p>The sector layer uses liquid ETF proxies for the equity groups you asked about, plus a defensive sleeve for hostile regimes.</p>',
+            '  <div class="rotation-grid">',
+            "\n".join(cards),
+            '  </div>',
+            '</section>',
+        ]
+    )
+
+
+def _render_sector_rotation_section(sector_rotation_view: dict[str, Any]) -> str:
+    if not sector_rotation_view.get("available"):
+        message = str(sector_rotation_view.get("message") or "Sector rotation analytics are unavailable.")
+        return "\n".join(
+            [
+                '<section id="sector_rotation" class="framework-section">',
+                '  <p class="eyebrow">Rotation Call</p>',
+                '  <h2>Current Sector Rotation</h2>',
+                f'  <p>{html.escape(message)}</p>',
+                '</section>',
+            ]
+        )
+
+    allocation_frame = sector_rotation_view["allocation_frame"]
+    top_pick = sector_rotation_view.get("top_pick")
+    defensive_pick = sector_rotation_view.get("defensive_pick")
+    note = str(sector_rotation_view.get("note") or "")
+
+    allocation_rows: list[tuple[str, ...]] = []
+    for row in allocation_frame.itertuples(index=False):
+        allocation_rows.append(
+            (
+                f"{row.sector_label} ({row.symbol})",
+                _format_weight_pct(row.sleeve_weight),
+                _format_weight_pct(row.portfolio_weight),
+                _format_return_pct(row.expected_return_12m),
+                _format_return_pct(row.expected_return_36m),
+                _format_probability_pct(row.higher_high_rate_12m),
+                _format_return_pct(row.mean_drawdown_12m),
+                f"{row.confidence_label} ({row.confidence_score:.0f})",
+            )
+        )
+
+    cash_card = "\n".join(
+        [
+            '<article class="rotation-card rotation-card-highlight">',
+            '  <p class="regime-tag">Portfolio rule</p>',
+            f'  <h3>Cash {html.escape(_format_weight_pct(sector_rotation_view["cash_weight"]))}</h3>',
+            '  <p>The cash sleeve stays fixed so the sector model only decides how the 60% equity risk bucket rotates.</p>',
+            '</article>',
+        ]
+    )
+
+    top_pick_card = ""
+    if isinstance(top_pick, dict):
+        top_pick_card = "\n".join(
+            [
+                '<article class="rotation-card rotation-card-highlight">',
+                '  <p class="regime-tag">Most probable entry</p>',
+                f'  <h3>{html.escape(str(top_pick["sector_label"]))}</h3>',
+                f'  <p>{html.escape(str(top_pick["earnings_proxy"]))}</p>',
+                f'  <p class="regime-subcopy">Expected 1Y {html.escape(_format_return_pct(float(top_pick["expected_return_12m"])))}, 3Y {html.escape(_format_return_pct(float(top_pick["expected_return_36m"])))}, higher-high hit rate {html.escape(_format_probability_pct(float(top_pick["higher_high_rate_12m"])))}, confidence {html.escape(_confidence_label(float(top_pick["confidence_score"]))) } ({float(top_pick["confidence_score"]):.0f}).</p>',
+                '</article>',
+            ]
+        )
+
+    defensive_card = ""
+    if isinstance(defensive_pick, dict):
+        defensive_card = "\n".join(
+            [
+                '<article class="rotation-card">',
+                '  <p class="regime-tag">Defensive sleeve</p>',
+                f'  <h3>{html.escape(str(defensive_pick["sector_label"]))}</h3>',
+                f'  <p>{html.escape(str(defensive_pick["role"]))}</p>',
+                f'  <p class="regime-subcopy">Portfolio weight {html.escape(_format_weight_pct(float(defensive_pick["portfolio_weight"])))}, average future drawdown {html.escape(_format_return_pct(float(defensive_pick["mean_drawdown_12m"])))}, confidence {html.escape(_confidence_label(float(defensive_pick["confidence_score"]))) }.</p>',
+                '</article>',
+            ]
+        )
+
+    note_card = "\n".join(
+        [
+            '<article class="rotation-card">',
+            '  <p class="regime-tag">Earnings note</p>',
+            f'  <p>{html.escape(note)}</p>',
+            '</article>',
+        ]
+    )
+
+    return "\n".join(
+        [
+            '<section id="sector_rotation" class="framework-section">',
+            '  <p class="eyebrow">Rotation Call</p>',
+            '  <h2>Current Sector Rotation For The Active Regime</h2>',
+            f'  <p>The active macro regime is {html.escape(str(sector_rotation_view["current_regime"]))}. The equity sleeve below distributes 60% of the portfolio across sectors using historically similar regime months, while keeping 40% in cash.</p>',
+            '  <div class="rotation-grid">',
+            cash_card,
+            top_pick_card,
+            defensive_card,
+            note_card,
+            '  </div>',
+            _render_data_table(
+                headers=(
+                    'Sector',
+                    'Sleeve Weight',
+                    'Portfolio Weight',
+                    'Expected 1Y',
+                    'Expected 3Y',
+                    'Higher High 12M',
+                    'Avg Drawdown 12M',
+                    'Confidence',
+                ),
+                rows=allocation_rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
+def _render_sector_regime_section(sector_rotation_view: dict[str, Any]) -> str:
+    if not sector_rotation_view.get("available"):
+        return ""
+
+    current_rows: list[tuple[str, ...]] = []
+    for row in sector_rotation_view["current_matrix"].itertuples(index=False):
+        flag = "Yes" if bool(row.recommended) else "No"
+        current_rows.append(
+            (
+                f"{row.sector_label} ({row.symbol})",
+                row.family,
+                _format_return_pct(row.expected_return_12m),
+                _format_return_pct(row.expected_return_36m),
+                _format_probability_pct(row.higher_high_rate_12m),
+                _format_return_pct(row.mean_drawdown_12m),
+                f"{row.confidence_label} ({row.confidence_score:.0f})",
+                flag,
+            )
+        )
+
+    regime_summary_rows: list[tuple[str, ...]] = []
+    for row in sector_rotation_view["regime_summary_frame"].sort_values("avg_expected_return_12m", ascending=False).itertuples(index=False):
+        regime_summary_rows.append(
+            (
+                str(row.regime_label),
+                _format_return_pct(row.avg_expected_return_12m),
+                _format_return_pct(row.avg_expected_return_36m),
+                _format_probability_pct(row.avg_higher_high_rate_12m),
+                _format_return_pct(row.avg_mean_drawdown_12m),
+                f"{float(row.avg_confidence_score):.0f}",
+                str(row.top_sectors),
+            )
+        )
+
+    drawdown_cards = []
+    for item in sector_rotation_view["worst_drawdown_regimes"]:
+        drawdown_cards.append(
+            "\n".join(
+                [
+                    '<article class="rotation-card">',
+                    '  <p class="regime-tag">Worst drawdown regime</p>',
+                    f'  <h3>{html.escape(item["label"])}</h3>',
+                    f'  <p>Average sector drawdown over the next 12 months: {html.escape(_format_return_pct(item["drawdown"]))}. Higher-high hit rate: {html.escape(_format_probability_pct(item["higher_high"]))}.</p>',
+                    f'  <p class="regime-subcopy">Historically least-damaged sectors: {html.escape(item["top_sectors"])}.</p>',
+                    '</article>',
+                ]
+            )
+        )
+
+    breakout_cards = []
+    for item in sector_rotation_view["breakout_regimes"]:
+        breakout_cards.append(
+            "\n".join(
+                [
+                    '<article class="rotation-card">',
+                    '  <p class="regime-tag">Higher-high regime</p>',
+                    f'  <h3>{html.escape(item["label"])}</h3>',
+                    f'  <p>Average higher-high hit rate over the next 12 months: {html.escape(_format_probability_pct(item["higher_high"]))}. Average drawdown: {html.escape(_format_return_pct(item["drawdown"]))}.</p>',
+                    f'  <p class="regime-subcopy">Most frequent leaders: {html.escape(item["top_sectors"])}.</p>',
+                    '</article>',
+                ]
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section id="sector_regimes" class="framework-section">',
+            '  <p class="eyebrow">Sector Evidence</p>',
+            '  <h2>Drawdown Regimes, Breakout Regimes, And Sector Evidence</h2>',
+            '  <p>The cards below identify which regimes historically produced the broadest sector drawdowns and which ones most often led to higher highs. The tables underneath show the current-regime evidence used for the allocation call.</p>',
+            '  <div class="rotation-grid">',
+            "\n".join(drawdown_cards + breakout_cards),
+            '  </div>',
+            _render_data_table(
+                headers=(
+                    'Sector',
+                    'Type',
+                    'Expected 1Y',
+                    'Expected 3Y',
+                    'Higher High 12M',
+                    'Avg Drawdown 12M',
+                    'Confidence',
+                    'In 60% Sleeve',
+                ),
+                rows=current_rows,
+            ),
+            _render_data_table(
+                headers=(
+                    'Regime',
+                    'Avg 1Y Sector Return',
+                    'Avg 3Y Sector Return',
+                    'Higher High 12M',
+                    'Avg Drawdown 12M',
+                    'Avg Confidence',
+                    'Most Frequent Leaders',
+                ),
+                rows=regime_summary_rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
 def _render_chip_list_html(items: tuple[str, ...] | list[str], extra_class: str = "") -> str:
     class_attr = f' class="chip-list {extra_class}"' if extra_class else ' class="chip-list"'
     return f"<ul{class_attr}>{_render_chip_list(tuple(items))}</ul>"
@@ -1209,6 +1772,7 @@ def _render_html(
     generated_at: str,
     group_plot_paths: dict[str, str],
     regime_overview: dict[str, Any],
+    sector_rotation_view: dict[str, Any],
 ) -> str:
     group_sections: list[str] = []
     toc_links: list[str] = [
@@ -1216,6 +1780,9 @@ def _render_html(
         '<a href="#quadrant_map">Growth And Inflation Quadrants</a>',
         '<a href="#regime_taxonomy">Regime Taxonomy</a>',
         '<a href="#regime_timeline">Twenty-Year Timeline</a>',
+        '<a href="#sector_buckets">Sector Buckets</a>',
+        '<a href="#sector_rotation">Current Rotation</a>',
+        '<a href="#sector_regimes">Sector Evidence</a>',
     ]
     regime_text = " | ".join(
         f"{window['label']}: {window['start'][:4]}-{window['end'][:4]}" for window in MACRO_REGIME_WINDOWS
@@ -1234,6 +1801,9 @@ def _render_html(
     quadrant_section = _render_quadrant_section(regime_overview)
     taxonomy_section = _render_regime_taxonomy_section(regime_overview)
     regime_timeline_section = _render_regime_timeline_section(regime_overview)
+    sector_bucket_section = _render_sector_bucket_section(sector_rotation_view)
+    sector_rotation_section = _render_sector_rotation_section(sector_rotation_view)
+    sector_regime_section = _render_sector_regime_section(sector_rotation_view)
 
     for group in MACRO_REPORT_GROUPS:
         slug = str(group["slug"])
@@ -1351,6 +1921,49 @@ def _render_html(
       padding: 26px 28px;
       margin-bottom: 28px;
     }}
+        .rotation-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+        }}
+        .rotation-card {{
+            background: var(--panel);
+            border-radius: 18px;
+            border: 1px solid rgba(213, 207, 197, 0.95);
+            padding: 18px;
+            min-height: 100%;
+        }}
+        .rotation-card-highlight {{
+            background: linear-gradient(180deg, rgba(244, 237, 225, 0.92), rgba(255, 253, 248, 0.94));
+        }}
+        .table-shell {{
+            margin-top: 18px;
+            overflow-x: auto;
+            border-radius: 18px;
+            border: 1px solid rgba(213, 207, 197, 0.9);
+            background: rgba(255, 253, 248, 0.88);
+        }}
+        .data-table {{
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 780px;
+        }}
+        .data-table th,
+        .data-table td {{
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid rgba(213, 207, 197, 0.65);
+            vertical-align: top;
+        }}
+        .data-table th {{
+            background: rgba(244, 237, 225, 0.82);
+            color: var(--ink);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }}
+        .data-table tr:last-child td {{ border-bottom: none; }}
         .regime-grid, .quadrant-grid, .taxonomy-grid, .window-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1576,6 +2189,12 @@ def _render_html(
 
         {regime_timeline_section}
 
+        {sector_bucket_section}
+
+        {sector_rotation_section}
+
+        {sector_regime_section}
+
         {architecture_section}
 
         {principles_section}
@@ -1603,6 +2222,7 @@ def generate_macro_report(
     report_start = frame.index.max() - pd.DateOffset(years=REPORT_LOOKBACK_YEARS)
     report_frame = frame.loc[frame.index >= report_start].copy()
     regime_overview = _build_regime_overview(frame=frame, lookback_years=REPORT_LOOKBACK_YEARS)
+    sector_rotation_view = _build_sector_rotation_view(project_root=root, regime_overview=regime_overview)
 
     report_dir = Path(output_dir)
     if not report_dir.is_absolute():
@@ -1612,6 +2232,23 @@ def generate_macro_report(
 
     filtered_inventory = inventory.loc[[column for column in report_frame.columns if column in inventory.index]].copy()
     filtered_inventory.to_csv(report_dir / "model_macro_inventory.csv", index=False)
+
+    sector_matrix_path = report_dir / "sector_regime_matrix.csv"
+    current_sector_path = report_dir / "sector_current_regime.csv"
+    sector_allocation_path = report_dir / "sector_allocation.json"
+    if sector_rotation_view.get("available"):
+        sector_rotation_view["matrix_frame"].to_csv(sector_matrix_path, index=False)
+        sector_rotation_view["current_matrix"].to_csv(current_sector_path, index=False)
+        allocation_records = json.loads(sector_rotation_view["allocation_frame"].to_json(orient="records"))
+        top_pick = allocation_records[0] if allocation_records else None
+        allocation_payload = {
+            "cash_weight": float(sector_rotation_view["cash_weight"]),
+            "current_regime": str(sector_rotation_view["current_regime"]),
+            "note": str(sector_rotation_view["note"]),
+            "top_pick": top_pick,
+            "allocation": allocation_records,
+        }
+        sector_allocation_path.write_text(json.dumps(allocation_payload, indent=2), encoding="utf-8")
 
     group_plot_paths: dict[str, str] = {}
     for group in MACRO_REPORT_GROUPS:
@@ -1627,6 +2264,7 @@ def generate_macro_report(
         generated_at=generated_at,
         group_plot_paths=group_plot_paths,
         regime_overview=regime_overview,
+        sector_rotation_view=sector_rotation_view,
     )
     report_path = report_dir / "index.html"
     report_path.write_text(html_text, encoding="utf-8")
@@ -1635,6 +2273,9 @@ def generate_macro_report(
         "report": str(report_path),
         "plots_dir": str(plots_dir),
         "inventory": str(report_dir / "model_macro_inventory.csv"),
+        "sector_matrix": str(sector_matrix_path) if sector_matrix_path.exists() else None,
+        "sector_current": str(current_sector_path) if current_sector_path.exists() else None,
+        "sector_allocation": str(sector_allocation_path) if sector_allocation_path.exists() else None,
     }
 
 
