@@ -28,6 +28,7 @@ MODEL_MACRO_CONTEXT_COLUMNS: tuple[str, ...] = (
     "epu_20d_change",
     "epu_zscore_252d",
     "epu_spike_flag",
+    "consumer_sentiment_release_level",
 )
 
 MACRO_REPORT_GROUPS: tuple[dict[str, str | tuple[str, ...]], ...] = (
@@ -76,12 +77,12 @@ MACRO_REPORT_GROUPS: tuple[dict[str, str | tuple[str, ...]], ...] = (
     {
         "slug": "uncertainty_sentiment",
         "title": "Policy Uncertainty And Sentiment",
-        "summary": "Policy uncertainty and household sentiment are context gauges. They help distinguish noisy slowdowns from genuine stress, but sentiment should stay contextual unless first-release timestamps are tracked explicitly.",
+        "summary": "Policy uncertainty and household sentiment help distinguish noisy slowdowns from genuine stress. The active sentiment series is aligned to ALFRED revision dates so the model only sees readings after they were publicly available.",
         "series": (
             "epu_level",
             "epu_20d_change",
             "epu_zscore_252d",
-            "consumer_sentiment_level",
+            "consumer_sentiment_release_level",
         ),
     },
     {
@@ -145,6 +146,7 @@ MACRO_SERIES_BRIEFS: dict[str, str] = {
     "epu_zscore_252d": "The trailing one-year EPU z-score asks whether uncertainty is merely elevated or genuinely abnormal versus the last year of observations.",
     "epu_spike_flag": "The spike flag marks unusually large EPU stress relative to trailing history and is designed as a regime-warning feature, not a standalone trade signal.",
     "consumer_sentiment_level": "Consumer sentiment is a slow household-demand context gauge. It helps frame confidence and recession risk, but without point-in-time release timestamps it should stay contextual rather than drive precise daily timing.",
+    "consumer_sentiment_release_level": "The release-aware sentiment series uses ALFRED revision dates so the model only sees the latest UMCSENT reading after it was publicly available. It is still slow-moving, but it is now safe to use as a daily step feature.",
 }
 
 MACRO_SERIES_DETAILS: dict[str, dict[str, str | tuple[str, ...]]] = {
@@ -444,6 +446,18 @@ MACRO_SERIES_DETAILS: dict[str, dict[str, str | tuple[str, ...]]] = {
     },
     "consumer_sentiment_level": {
         "role": "Household confidence context gauge",
+        "engineering": (
+            "consumer_sentiment_3m_change",
+            "consumer_sentiment_percentile_3y",
+            "sentiment_drawdown_flag",
+        ),
+        "interactions": (
+            "low_sentiment x widening_credit_spreads",
+            "low_sentiment x rising_unemployment",
+        ),
+    },
+    "consumer_sentiment_release_level": {
+        "role": "Point-in-time household confidence gauge",
         "engineering": (
             "consumer_sentiment_3m_change",
             "consumer_sentiment_percentile_3y",

@@ -22,7 +22,7 @@ The current macro stack now exposes per-feature histories for:
 - NFCI
 - 10Y minus 3M curve
 - daily U.S. Economic Policy Uncertainty and trailing EPU shock features
-- University of Michigan consumer sentiment as contextual FRED survey input
+- University of Michigan consumer sentiment as both raw FRED context and an ALFRED revision-date-aligned model feature
 
 ## High-value features still missing
 
@@ -44,7 +44,7 @@ The main quality gaps visible in the current cache are:
 
 - `market_cap_to_gdp_pct` is stale relative to the rest of the macro set and currently ends far earlier than 2026.
 - Monthly and quarterly macro series are aligned by observation date, not by publication date or first availability date.
-- `consumer_sentiment_level` is available for context, but it still shares the same observation-date versus first-release-date limitation as the other monthly FRED series.
+- `consumer_sentiment_level` is still observation-date context only; the model now uses `consumer_sentiment_release_level`, which is aligned to ALFRED revision dates instead.
 - The asset universe is very small and mostly contains currently tradable symbols.
 - The universe is not yet point-in-time; it is defined by today’s file list.
 
@@ -55,7 +55,7 @@ The current setup is still exposed to survivorship bias because:
 - it mostly trains on symbols that are still around today
 - delisted, acquired, bankrupt, and long-dead names are absent
 - current symbol selection can leak future knowledge into the historical universe
-- macro series are not yet lagged to their first release timestamps
+- most macro series are not yet lagged to their first release timestamps; consumer sentiment is the current exception via the ALFRED-backed release-aware cache
 
 ## Minimum controls to reduce survivorship bias
 

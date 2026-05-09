@@ -4,6 +4,7 @@ import argparse
 import json
 import time
 from datetime import UTC, datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -14,6 +15,28 @@ import pandas as pd
 from .data import discover_symbols, resolve_project_root
 from .macro_features import write_macro_feature_store
 from .universe import DEFAULT_PANEL_SYMBOLS, expand_symbol_selection
+
+ALFRED_GRAPH_SERIES_URL = "https://alfred.stlouisfed.org/graph/api/series/"
+ALFRED_GRAPH_CSV_URL = "https://alfred.stlouisfed.org/graph/alfredgraph.csv"
+REQUEST_HEADERS = {
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "application/json",
+}
+
+
+def _read_url_bytes(request: Request, timeout: int, attempts: int = 3) -> bytes:
+    last_error: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                return response.read()
+        except Exception as exc:  # noqa: BLE001
+            last_error = exc
+            if attempt + 1 == attempts:
+                raise
+            time.sleep(float(attempt + 1))
+
+    raise RuntimeError(f"Failed to read URL after {attempts} attempts: {request.full_url}") from last_error
 
 
 def fetch_yahoo_chart(symbol: str, start_date: str, end_date: str) -> pd.DataFrame:
@@ -64,6 +87,84 @@ def fetch_yahoo_chart(symbol: str, start_date: str, end_date: str) -> pd.DataFra
     frame["adj_volume"] = frame["volume"] / adjustment_ratio.replace(0.0, pd.NA)
     frame = frame.drop(columns=["timestamp"])
     return frame.sort_values("date").reset_index(drop=True)
+
+
+def fetch_release_aware_consumer_sentiment_cache(
+    project_root: str | Path | None = None,
+    batch_size: int = 40,
+) -> dict[str, Any]:
+    root = resolve_project_root(project_root)
+    output_path = root / "fred" / "UMCSENT_RELEASE_AWARE.csv"
+
+    metadata_request = Request(
+        f"{ALFRED_GRAPH_SERIES_URL}?{urlencode({'id': 'UMCSENT', 'mode': 'alfred', 'firstRequest': 'seriesPage', 'width': 631})}",
+        headers=REQUEST_HEADERS,
+    )
+    payload = json.loads(_read_url_bytes(metadata_request, timeout=60).decode("utf-8"))
+
+    chart_series = payload.get("chart_series") or []
+    if not chart_series:
+        raise RuntimeError("ALFRED returned no chart series for UMCSENT.")
+
+    series_objects = chart_series[0].get("series_objects") or {}
+    if not series_objects:
+        raise RuntimeError("ALFRED did not expose series metadata for UMCSENT.")
+
+    series_object = next(iter(series_objects.values()))
+    revision_dates = list(series_object.get("available_revision_dates") or [])
+    if not revision_dates:
+        raise RuntimeError("ALFRED did not expose revision dates for UMCSENT.")
+
+    observation_start = revision_dates[0]
+    release_rows: list[dict[str, Any]] = []
+
+    for batch_start in range(0, len(revision_dates), batch_size):
+        batch = revision_dates[batch_start : batch_start + batch_size]
+        csv_request = Request(
+            f"{ALFRED_GRAPH_CSV_URL}?{urlencode({'id': ','.join(['UMCSENT'] * len(batch)), 'vintage_date': ','.join(batch), 'cosd': observation_start})}",
+            headers={**REQUEST_HEADERS, "Accept": "text/csv"},
+        )
+        batch_frame = pd.read_csv(
+            BytesIO(_read_url_bytes(csv_request, timeout=90)),
+            parse_dates=["observation_date"],
+        )
+
+        if "observation_date" not in batch_frame.columns:
+            raise RuntimeError("ALFRED CSV response for UMCSENT did not include observation_date.")
+
+        batch_frame = batch_frame.set_index("observation_date").sort_index()
+        for revision_date in batch:
+            column_name = f"UMCSENT_{revision_date.replace('-', '')}"
+            if column_name not in batch_frame.columns:
+                continue
+
+            vintage_series = pd.to_numeric(batch_frame[column_name], errors="coerce").dropna()
+            if vintage_series.empty:
+                continue
+
+            release_rows.append(
+                {
+                    "date": pd.Timestamp(revision_date),
+                    "consumer_sentiment_release_level": float(vintage_series.iloc[-1]),
+                }
+            )
+
+    if not release_rows:
+        raise RuntimeError("Failed to derive any release-aware UMCSENT rows from ALFRED vintages.")
+
+    release_frame = pd.DataFrame(release_rows).drop_duplicates(subset=["date"], keep="last")
+    release_frame = release_frame.sort_values("date").reset_index(drop=True)
+    release_frame.to_csv(output_path, index=False, date_format="%Y-%m-%d")
+
+    return {
+        "status": "refreshed",
+        "path": str(output_path),
+        "rows": int(release_frame.shape[0]),
+        "first_date": release_frame["date"].min().strftime("%Y-%m-%d"),
+        "last_date": release_frame["date"].max().strftime("%Y-%m-%d"),
+        "latest_value": float(release_frame["consumer_sentiment_release_level"].iloc[-1]),
+        "revision_dates": len(revision_dates),
+    }
 
 
 def compute_asset_feature_frame(price_frame: pd.DataFrame) -> pd.DataFrame:
@@ -153,10 +254,25 @@ def run_refresh(
             failed.append({"ticker": symbol, "error": str(exc)})
         time.sleep(0.5)
 
+    macro_refresh: dict[str, Any] = {}
     if build_macro_store:
-        write_macro_feature_store(project_root=project_root)
+        sentiment_cache_path = resolve_project_root(project_root) / "fred" / "UMCSENT_RELEASE_AWARE.csv"
+        try:
+            macro_refresh["consumer_sentiment_release_cache"] = fetch_release_aware_consumer_sentiment_cache(
+                project_root=project_root
+            )
+        except Exception as exc:  # noqa: BLE001
+            if not sentiment_cache_path.exists():
+                raise
+            macro_refresh["consumer_sentiment_release_cache"] = {
+                "status": "using_existing_cache",
+                "path": str(sentiment_cache_path),
+                "error": str(exc),
+            }
 
-    return {"refreshed": refreshed, "failed": failed}
+        macro_refresh["feature_store"] = str(write_macro_feature_store(project_root=project_root))
+
+    return {"refreshed": refreshed, "failed": failed, "macro_refresh": macro_refresh}
 
 
 def build_parser() -> argparse.ArgumentParser:

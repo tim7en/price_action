@@ -208,6 +208,17 @@ EXTRA_SERIES_METADATA: dict[str, dict[str, Any]] = {
             "Kept as contextual macro information rather than a primary daily trading trigger because the repo does not store first-release vintage timestamps.",
         ],
     },
+    "consumer_sentiment_release_level": {
+        "name": "University of Michigan Consumer Sentiment (Release-Aware)",
+        "source": "ALFRED",
+        "source_url": "https://alfred.stlouisfed.org/series?seid=UMCSENT",
+        "units": "index level",
+        "combined_col": "consumer_sentiment_release_level",
+        "notes": [
+            "Release-aware daily step series built from the latest UMCSENT value available on each ALFRED revision date.",
+            "This is the no-lookahead sentiment input used by the model; repo-wide feature_lag=1 still delays it one more bar before trading decisions.",
+        ],
+    },
     "yield_curve_10y_2y": {
         "name": "10Y minus 2Y Treasury yield spread",
         "source": "derived",
@@ -284,6 +295,11 @@ def build_uncertainty_and_sentiment_derivatives(combined: pd.DataFrame) -> pd.Da
 
     if "UMCSENT" in combined.columns:
         combined["consumer_sentiment_level"] = pd.to_numeric(combined["UMCSENT"], errors="coerce")
+
+    if "consumer_sentiment_release_level" in combined.columns:
+        combined["consumer_sentiment_release_level"] = pd.to_numeric(
+            combined["consumer_sentiment_release_level"], errors="coerce"
+        )
 
     return combined
 
