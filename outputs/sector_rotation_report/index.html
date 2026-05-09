@@ -119,11 +119,11 @@
   <h1>Macro-Regime Equity Rotation</h1>
   <p>This report isolates the sector rotation layer from the broader macro atlas. It focuses on which equity types have historically held up best, made higher highs most often, and offered the strongest 1-year to 3-year forward return profile inside similar macro regimes.</p>
   <div class="hero-meta">
-    <span>Generated 2026-05-09 17:22 UTC</span>
+    <span>Generated 2026-05-09 17:44 UTC</span>
     <span>Current regime: Fragile Late-Cycle Watch</span>
     <span>Quadrant: Growth Down / Inflation Down</span>
     <span>Cash rule: 40.0%</span>
-    <span>Top entry: Information Technology · 1Y +17.1% · confidence High</span>
+    <span>Top entry: Consumer Staples · 1Y +11.3% · confidence High</span>
   </div>
 </section>
     <section class="section methodology">
@@ -151,13 +151,13 @@
 </article>
 <article class="stat-card">
   <p class="card-tag">Most probable entry</p>
-  <h3>Information Technology</h3>
-  <p>Expected 1Y +17.1%, expected 3Y +15.1%, higher-high hit rate 91%, confidence 93.</p>
+  <h3>Consumer Staples</h3>
+  <p>Expected 1Y +11.3%, expected 3Y +10.5%, higher-high hit rate 92%, confidence 96.</p>
 </article>
 <article class="stat-card">
   <p class="card-tag">Defensive sleeve</p>
   <h3>Consumer Staples</h3>
-  <p>Defensive sleeve candidate with portfolio weight 13.5% and average future drawdown -2.3%.</p>
+  <p>Defensive sleeve candidate with portfolio weight 18.9% and average future drawdown -2.3%.</p>
 </article>
   </div>
 </section>
@@ -196,7 +196,7 @@
         <section class="section">
   <p class="eyebrow">Live Rotation</p>
   <h2>Current ML-Adjusted Rotation</h2>
-  <p>This allocation blends the current regime prior with the latest complete ML holdout signal and validation-derived sector quality.</p>
+  <p>This allocation blends the current regime prior with the latest complete ML holdout signal, validation-derived sector quality, and a trailing run-up guardrail so sectors that already advanced sharply into the signal date are less likely to dominate the recommendation.</p>
   <div class="card-grid">
 <article class="stat-card">
   <p class="card-tag">Timing</p>
@@ -205,14 +205,14 @@
 </article>
 <article class="stat-card">
   <p class="card-tag">Top combined pick</p>
-  <h3>Manufacturing / Industrials</h3>
-  <p>Combined score 0.700, live probability 59%, portfolio weight 35.2%.</p>
+  <h3>Consumer Staples</h3>
+  <p>Combined score 0.665, live probability 57%, 20D advance +2.2%, run-up guardrail 1.00x, portfolio weight 28.6%.</p>
 </article>
   </div>
 <div class="table-shell">
   <table class="data-table">
-    <thead><tr><th>Sector</th><th>Regime Score</th><th>ML Probability</th><th>Validation Quality</th><th>Stability</th><th>Combined Score</th><th>Sleeve Weight</th><th>Portfolio Weight</th></tr></thead>
-    <tbody><tr><td>Manufacturing / Industrials (XLI)</td><td>0.500</td><td>59%</td><td>0.825</td><td>96.1</td><td>0.700</td><td>58.6%</td><td>35.2%</td></tr><tr><td>Consumer Staples (XLP)</td><td>0.750</td><td>57%</td><td>0.275</td><td>86.3</td><td>0.588</td><td>27.6%</td><td>16.6%</td></tr><tr><td>Utilities (XLU)</td><td>0.481</td><td>66%</td><td>0.206</td><td>92.6</td><td>0.538</td><td>13.8%</td><td>8.3%</td></tr></tbody>
+    <thead><tr><th>Sector</th><th>Regime Score</th><th>ML Probability</th><th>Advance 20D</th><th>Advance 60D</th><th>Guardrail</th><th>Validation Quality</th><th>Stability</th><th>Combined Score</th><th>Sleeve Weight</th><th>Portfolio Weight</th></tr></thead>
+    <tbody><tr><td>Consumer Staples (XLP)</td><td>0.750</td><td>57%</td><td>+2.2%</td><td>-4.2%</td><td>1.00x</td><td>0.275</td><td>86.3</td><td>0.665</td><td>47.7%</td><td>28.6%</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>0.471</td><td>59%</td><td>+1.0%</td><td>-0.7%</td><td>0.94x</td><td>0.825</td><td>96.1</td><td>0.626</td><td>31.8%</td><td>19.1%</td></tr><tr><td>Utilities (XLU)</td><td>0.481</td><td>66%</td><td>-4.8%</td><td>+1.0%</td><td>1.00x</td><td>0.206</td><td>92.6</td><td>0.599</td><td>20.5%</td><td>12.3%</td></tr></tbody>
   </table>
 </div>
 </section>
@@ -690,7 +690,7 @@
 <div class="table-shell">
   <table class="data-table">
     <thead><tr><th>Sector</th><th>Sleeve Weight</th><th>Portfolio Weight</th><th>Expected 1Y</th><th>Expected 3Y</th><th>Higher High 12M</th><th>Avg Drawdown 12M</th><th>Confidence</th></tr></thead>
-    <tbody><tr><td>Information Technology (XLK)</td><td>33.8%</td><td>20.3%</td><td>+17.1%</td><td>+15.1%</td><td>91%</td><td>-4.3%</td><td>High (93)</td></tr><tr><td>Consumer Staples (XLP)</td><td>22.5%</td><td>13.5%</td><td>+11.3%</td><td>+10.5%</td><td>92%</td><td>-2.3%</td><td>High (96)</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>22.5%</td><td>13.5%</td><td>+14.9%</td><td>+14.0%</td><td>87%</td><td>-5.0%</td><td>High (92)</td></tr><tr><td>Health Care (XLV)</td><td>17.4%</td><td>10.4%</td><td>+13.8%</td><td>+13.7%</td><td>84%</td><td>-3.6%</td><td>High (91)</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>3.8%</td><td>2.3%</td><td>+12.0%</td><td>+11.8%</td><td>80%</td><td>-7.3%</td><td>High (88)</td></tr></tbody>
+    <tbody><tr><td>Consumer Staples (XLP)</td><td>31.5%</td><td>18.9%</td><td>+11.3%</td><td>+10.5%</td><td>92%</td><td>-2.3%</td><td>High (96)</td></tr><tr><td>Health Care (XLV)</td><td>24.7%</td><td>14.8%</td><td>+13.8%</td><td>+13.7%</td><td>84%</td><td>-3.6%</td><td>High (91)</td></tr><tr><td>Information Technology (XLK)</td><td>19.7%</td><td>11.8%</td><td>+17.1%</td><td>+15.1%</td><td>91%</td><td>-4.3%</td><td>High (93)</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>19.2%</td><td>11.5%</td><td>+14.9%</td><td>+14.0%</td><td>87%</td><td>-5.0%</td><td>High (92)</td></tr><tr><td>Utilities (XLU)</td><td>4.9%</td><td>3.0%</td><td>+9.2%</td><td>+8.7%</td><td>88%</td><td>-3.8%</td><td>High (91)</td></tr></tbody>
   </table>
 </div>
 </section>
@@ -700,7 +700,7 @@
 <div class="table-shell">
   <table class="data-table">
     <thead><tr><th>Sector</th><th>Type</th><th>Expected 1Y</th><th>Expected 3Y</th><th>Higher High 12M</th><th>Avg Drawdown 12M</th><th>Confidence</th><th>Selected</th></tr></thead>
-    <tbody><tr><td>Information Technology (XLK)</td><td>Duration and innovation</td><td>+17.1%</td><td>+15.1%</td><td>91%</td><td>-4.3%</td><td>High (93)</td><td>Yes</td></tr><tr><td>Consumer Staples (XLP)</td><td>Defensive cash flow</td><td>+11.3%</td><td>+10.5%</td><td>92%</td><td>-2.3%</td><td>High (96)</td><td>Yes</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>Consumer cyclical</td><td>+14.9%</td><td>+14.0%</td><td>87%</td><td>-5.0%</td><td>High (92)</td><td>Yes</td></tr><tr><td>Health Care (XLV)</td><td>Defensive quality</td><td>+13.8%</td><td>+13.7%</td><td>84%</td><td>-3.6%</td><td>High (91)</td><td>Yes</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>Growth and capex cyclical</td><td>+12.0%</td><td>+11.8%</td><td>80%</td><td>-7.3%</td><td>High (88)</td><td>Yes</td></tr><tr><td>Utilities (XLU)</td><td>Rate-sensitive defense</td><td>+9.2%</td><td>+8.7%</td><td>88%</td><td>-3.8%</td><td>High (91)</td><td>No</td></tr><tr><td>Commodity / Materials (XLB)</td><td>Cyclical inflation beta</td><td>+10.2%</td><td>+8.7%</td><td>77%</td><td>-9.1%</td><td>High (84)</td><td>No</td></tr><tr><td>Energy (XLE)</td><td>Real asset cyclical</td><td>+8.9%</td><td>+8.1%</td><td>55%</td><td>-12.6%</td><td>Moderate (75)</td><td>No</td></tr></tbody>
+    <tbody><tr><td>Consumer Staples (XLP)</td><td>Defensive cash flow</td><td>+11.3%</td><td>+10.5%</td><td>92%</td><td>-2.3%</td><td>High (96)</td><td>Yes</td></tr><tr><td>Health Care (XLV)</td><td>Defensive quality</td><td>+13.8%</td><td>+13.7%</td><td>84%</td><td>-3.6%</td><td>High (91)</td><td>Yes</td></tr><tr><td>Information Technology (XLK)</td><td>Duration and innovation</td><td>+17.1%</td><td>+15.1%</td><td>91%</td><td>-4.3%</td><td>High (93)</td><td>Yes</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>Consumer cyclical</td><td>+14.9%</td><td>+14.0%</td><td>87%</td><td>-5.0%</td><td>High (92)</td><td>Yes</td></tr><tr><td>Utilities (XLU)</td><td>Rate-sensitive defense</td><td>+9.2%</td><td>+8.7%</td><td>88%</td><td>-3.8%</td><td>High (91)</td><td>Yes</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>Growth and capex cyclical</td><td>+12.0%</td><td>+11.8%</td><td>80%</td><td>-7.3%</td><td>High (88)</td><td>No</td></tr><tr><td>Commodity / Materials (XLB)</td><td>Cyclical inflation beta</td><td>+10.2%</td><td>+8.7%</td><td>77%</td><td>-9.1%</td><td>High (84)</td><td>No</td></tr><tr><td>Energy (XLE)</td><td>Real asset cyclical</td><td>+8.9%</td><td>+8.1%</td><td>55%</td><td>-12.6%</td><td>Moderate (75)</td><td>No</td></tr></tbody>
   </table>
 </div>
 </section>

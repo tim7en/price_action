@@ -130,7 +130,7 @@
                     <h1>What To Rotate Into, And When</h1>
                     <p>This page translates the sector rotation model into operating rules. It tells you the current destination for the rotating equity sleeve, the conditions that trigger a change, and the separate reserve-cash drawdown rule.</p>
                     <div class="hero-meta">
-                        <span>Generated 2026-05-09 17:22 UTC</span>
+                        <span>Generated 2026-05-09 17:44 UTC</span>
                         <span>Current regime: Fragile Late-Cycle Watch</span>
                         <span>Quadrant: Growth Down / Inflation Down</span>
                         <span>Latest complete signal: 2026-03-03</span>
@@ -139,7 +139,7 @@
                 <aside class="focus-box">
                     <p class="eyebrow">Plain English</p>
                     <h3>Current instruction</h3>
-                    <p>Rotate 35.2% of the full portfolio into Manufacturing / Industrials (XLI). Rotate 16.6% of the full portfolio into Consumer Staples (XLP). Rotate 8.3% of the full portfolio into Utilities (XLU).</p>
+                    <p>Rotate 28.6% of the full portfolio into Consumer Staples (XLP). Rotate 19.1% of the full portfolio into Manufacturing / Industrials (XLI). Rotate 12.3% of the full portfolio into Utilities (XLU).</p>
                     <ul class="simple">
                         <li>Keep 40.0% in cash by rule.</li>
                         <li>Rotate only the 60.0% equity sleeve.</li>
@@ -177,7 +177,7 @@
 <article class="stat-card">
   <p class="card-tag">Action</p>
   <h3>Where to rotate now</h3>
-  <p>Rotate 35.2% of the full portfolio into Manufacturing / Industrials (XLI). Rotate 16.6% of the full portfolio into Consumer Staples (XLP). Rotate 8.3% of the full portfolio into Utilities (XLU).</p>
+  <p>Rotate 28.6% of the full portfolio into Consumer Staples (XLP). Rotate 19.1% of the full portfolio into Manufacturing / Industrials (XLI). Rotate 12.3% of the full portfolio into Utilities (XLU).</p>
 </article>
 <article class="stat-card">
   <p class="card-tag">Breadth</p>
@@ -188,7 +188,7 @@
             <div class="table-shell">
   <table class="data-table">
     <thead><tr><th>Step</th><th>Rule</th><th>What it means</th></tr></thead>
-    <tbody><tr><td>Step 1</td><td>Classify the macro regime</td><td>Use the current regime and quadrant as the macro prior. Right now that is Fragile Late-Cycle Watch in Growth Down / Inflation Down.</td></tr><tr><td>Step 2</td><td>Read the latest complete ML signal</td><td>Only the fully known signal dated 2026-03-03 is allowed into the live basket. There is no intraperiod look-ahead refresh.</td></tr><tr><td>Step 3</td><td>Filter sectors by live probability</td><td>Require ensemble probability &gt;= 55% before a sector can enter the live basket.</td></tr><tr><td>Step 4</td><td>Rank the eligible sectors</td><td>Score sectors with 40% macro regime rank, 20% live probability rank, 15% quality-weighted ML rank, 10% validation quality, 10% model stability, and 5% holdout Sharpe.</td></tr><tr><td>Step 5</td><td>Allocate the equity sleeve</td><td>Spread the 60.0% equity sleeve across the highest combined scores. The rest stays in cash by design.</td></tr><tr><td>Step 6</td><td>Use reserve deployment only in drawdowns</td><td>The reserve rule is separate from the sector basket. It reacts only to visible SPY drawdowns and moves back to cash after a new high.</td></tr></tbody>
+    <tbody><tr><td>Step 1</td><td>Classify the macro regime</td><td>Use the current regime and quadrant as the macro prior. Right now that is Fragile Late-Cycle Watch in Growth Down / Inflation Down.</td></tr><tr><td>Step 2</td><td>Read the latest complete ML signal</td><td>Only the fully known signal dated 2026-03-03 is allowed into the live basket. There is no intraperiod look-ahead refresh.</td></tr><tr><td>Step 3</td><td>Filter sectors by live probability</td><td>Require ensemble probability &gt;= 55% before a sector can enter the live basket.</td></tr><tr><td>Step 4</td><td>Rank the eligible sectors</td><td>Score sectors with 35% macro regime rank, 18% live probability rank, 13% quality-weighted ML rank, 10% validation quality, 9% model stability, 5% holdout Sharpe, and 10% run-up headroom so already-extended sectors are less likely to dominate the basket.</td></tr><tr><td>Step 5</td><td>Allocate the equity sleeve</td><td>Spread the 60.0% equity sleeve across the highest combined scores. The rest stays in cash by design.</td></tr><tr><td>Step 6</td><td>Use reserve deployment only in drawdowns</td><td>The reserve rule is separate from the sector basket. It reacts only to visible SPY drawdowns and moves back to cash after a new high.</td></tr></tbody>
   </table>
 </div>
         </section>
@@ -199,8 +199,8 @@
             <p>The live basket only includes sectors that clear the probability filter on the latest complete signal. If the filter is tight, the basket can shrink below the normal target breadth rather than forcing weak ideas into the portfolio.</p>
             <div class="table-shell">
   <table class="data-table">
-    <thead><tr><th>Current sector</th><th>Role</th><th>Portfolio weight</th><th>Within 60% sleeve</th><th>ML probability</th><th>Combined score</th><th>Regime score</th><th>Validation quality</th></tr></thead>
-    <tbody><tr><td>Manufacturing / Industrials (XLI)</td><td>Growth and capex cyclical</td><td>35.2%</td><td>58.6%</td><td>59%</td><td>0.700</td><td>0.500</td><td>0.825</td></tr><tr><td>Consumer Staples (XLP)</td><td>Defensive cash flow</td><td>16.6%</td><td>27.6%</td><td>57%</td><td>0.588</td><td>0.750</td><td>0.275</td></tr><tr><td>Utilities (XLU)</td><td>Rate-sensitive defense</td><td>8.3%</td><td>13.8%</td><td>66%</td><td>0.538</td><td>0.481</td><td>0.206</td></tr></tbody>
+    <thead><tr><th>Current sector</th><th>Role</th><th>Portfolio weight</th><th>Within 60% sleeve</th><th>ML probability</th><th>Advance 20D</th><th>Advance 60D</th><th>Guardrail</th><th>Combined score</th><th>Regime score</th><th>Validation quality</th></tr></thead>
+    <tbody><tr><td>Consumer Staples (XLP)</td><td>Defensive cash flow</td><td>28.6%</td><td>47.7%</td><td>57%</td><td>+2.2%</td><td>-4.2%</td><td>1.00x</td><td>0.665</td><td>0.750</td><td>0.275</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>Growth and capex cyclical</td><td>19.1%</td><td>31.8%</td><td>59%</td><td>+1.0%</td><td>-0.7%</td><td>0.94x</td><td>0.626</td><td>0.471</td><td>0.825</td></tr><tr><td>Utilities (XLU)</td><td>Rate-sensitive defense</td><td>12.3%</td><td>20.5%</td><td>66%</td><td>-4.8%</td><td>+1.0%</td><td>1.00x</td><td>0.599</td><td>0.481</td><td>0.206</td></tr></tbody>
   </table>
 </div>
         </section>
@@ -211,8 +211,8 @@
             <p>These are the highest-scoring sectors after applying the macro prior and the ML overlays. A sector can rank well and still stay out of the live basket if it does not clear the probability threshold.</p>
             <div class="table-shell">
   <table class="data-table">
-    <thead><tr><th>Sector</th><th>In live basket</th><th>ML probability</th><th>Combined score</th><th>Regime score</th><th>Stability</th><th>Holdout Sharpe</th></tr></thead>
-    <tbody><tr><td>Retail / Consumer Discretionary (XLY)</td><td>No</td><td>53%</td><td>0.713</td><td>0.750</td><td>99.9</td><td>1.14</td></tr><tr><td>Information Technology (XLK)</td><td>No</td><td>43%</td><td>0.706</td><td>0.900</td><td>96.4</td><td>1.68</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>Yes</td><td>59%</td><td>0.700</td><td>0.500</td><td>96.1</td><td>1.66</td></tr><tr><td>Consumer Staples (XLP)</td><td>Yes</td><td>57%</td><td>0.588</td><td>0.750</td><td>86.3</td><td>-0.18</td></tr><tr><td>Commodity / Materials (XLB)</td><td>No</td><td>48%</td><td>0.544</td><td>0.312</td><td>99.9</td><td>3.63</td></tr><tr><td>Utilities (XLU)</td><td>Yes</td><td>66%</td><td>0.538</td><td>0.481</td><td>92.6</td><td>1.03</td></tr></tbody>
+    <thead><tr><th>Sector</th><th>In live basket</th><th>ML probability</th><th>Advance 20D</th><th>Guardrail</th><th>Combined score</th><th>Regime score</th><th>Stability</th><th>Holdout Sharpe</th></tr></thead>
+    <tbody><tr><td>Consumer Staples (XLP)</td><td>Yes</td><td>57%</td><td>+2.2%</td><td>1.00x</td><td>0.665</td><td>0.750</td><td>86.3</td><td>-0.18</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>Yes</td><td>59%</td><td>+1.0%</td><td>0.94x</td><td>0.626</td><td>0.471</td><td>96.1</td><td>1.66</td></tr><tr><td>Utilities (XLU)</td><td>Yes</td><td>66%</td><td>-4.8%</td><td>1.00x</td><td>0.599</td><td>0.481</td><td>92.6</td><td>1.03</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>No</td><td>53%</td><td>+6.5%</td><td>0.83x</td><td>0.598</td><td>0.625</td><td>99.9</td><td>1.14</td></tr><tr><td>Commodity / Materials (XLB)</td><td>No</td><td>48%</td><td>-0.7%</td><td>1.00x</td><td>0.573</td><td>0.312</td><td>99.9</td><td>3.63</td></tr><tr><td>Information Technology (XLK)</td><td>No</td><td>43%</td><td>+23.1%</td><td>0.70x</td><td>0.560</td><td>0.630</td><td>96.4</td><td>1.68</td></tr></tbody>
   </table>
 </div>
         </section>

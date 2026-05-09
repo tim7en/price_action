@@ -107,6 +107,9 @@ def _build_live_ml_allocation_view(
     frame["validation_quality_score"] = pd.to_numeric(frame["validation_quality_score"], errors="coerce").fillna(0.5)
     frame["best_overfit_stability_score"] = pd.to_numeric(frame["best_overfit_stability_score"], errors="coerce").fillna(50.0)
     frame["ensemble_holdout_sharpe"] = pd.to_numeric(frame["ensemble_holdout_sharpe"], errors="coerce").fillna(0.0)
+    frame["recent_advance_20d"] = pd.to_numeric(frame.get("recent_advance_20d"), errors="coerce")
+    frame["recent_advance_60d"] = pd.to_numeric(frame.get("recent_advance_60d"), errors="coerce")
+    frame["runup_penalty"] = pd.to_numeric(frame.get("runup_penalty"), errors="coerce").fillna(1.0)
 
     frame["rank_regime"] = _normalised_rank(frame["entry_score"])
     frame["rank_live_probability"] = _normalised_rank(frame["ensemble_probability"])
@@ -114,13 +117,15 @@ def _build_live_ml_allocation_view(
     frame["rank_validation_quality"] = _normalised_rank(frame["validation_quality_score"])
     frame["rank_stability"] = _normalised_rank(frame["best_overfit_stability_score"])
     frame["rank_holdout_sharpe"] = _normalised_rank(frame["ensemble_holdout_sharpe"])
+    frame["rank_runup_headroom"] = _normalised_rank(frame["runup_penalty"])
     frame["combined_live_score"] = (
-        0.40 * frame["rank_regime"]
-        + 0.20 * frame["rank_live_probability"]
-        + 0.15 * frame["rank_quality_weighted"]
+        0.35 * frame["rank_regime"]
+        + 0.18 * frame["rank_live_probability"]
+        + 0.13 * frame["rank_quality_weighted"]
         + 0.10 * frame["rank_validation_quality"]
-        + 0.10 * frame["rank_stability"]
+        + 0.09 * frame["rank_stability"]
         + 0.05 * frame["rank_holdout_sharpe"]
+        + 0.10 * frame["rank_runup_headroom"]
     )
 
     threshold = float(sector_ml_view["config"].get("signal_threshold", 0.55))
@@ -129,8 +134,8 @@ def _build_live_ml_allocation_view(
         candidates = frame.copy()
 
     allocation_frame = candidates.sort_values(
-        ["combined_live_score", "entry_score", "ensemble_probability"],
-        ascending=[False, False, False],
+        ["combined_live_score", "runup_penalty", "entry_score", "ensemble_probability"],
+        ascending=[False, False, False, False],
     ).head(5).copy()
     weight_base = allocation_frame["combined_live_score"] - allocation_frame["combined_live_score"].min() + 0.05
     allocation_frame["sleeve_weight"] = weight_base / weight_base.sum()
@@ -142,7 +147,7 @@ def _build_live_ml_allocation_view(
     return {
         "available": True,
         "signal_date": rotation_view.get("current_signal_date"),
-        "message": "This allocation blends the current regime prior with the latest complete ML holdout signal and validation-derived sector quality.",
+        "message": "This allocation blends the current regime prior with the latest complete ML holdout signal, validation-derived sector quality, and a trailing run-up guardrail so sectors that already advanced sharply into the signal date are less likely to dominate the recommendation.",
         "allocation_frame": allocation_frame,
         "full_frame": frame.sort_values("combined_live_score", ascending=False).reset_index(drop=True),
         "top_pick": allocation_frame.iloc[0].to_dict() if not allocation_frame.empty else None,
@@ -1043,7 +1048,7 @@ def _render_live_ml_allocation_section(live_ml_view: dict[str, Any]) -> str:
             _render_stat_card(
                 title=str(top_pick["sector_label"]),
                 body=(
-                    f"Combined score {_format_decimal(top_pick['combined_live_score'], 3)}, live probability {_format_probability_pct(top_pick['ensemble_probability'])}, portfolio weight {_format_weight_pct(top_pick['portfolio_weight'])}."
+                    f"Combined score {_format_decimal(top_pick['combined_live_score'], 3)}, live probability {_format_probability_pct(top_pick['ensemble_probability'])}, 20D advance {_format_return_pct(top_pick['recent_advance_20d'])}, run-up guardrail {float(top_pick['runup_penalty']):.2f}x, portfolio weight {_format_weight_pct(top_pick['portfolio_weight'])}."
                 ),
                 tag="Top combined pick",
             )
@@ -1056,6 +1061,9 @@ def _render_live_ml_allocation_section(live_ml_view: dict[str, Any]) -> str:
                 f"{row.sector_label} ({row.symbol})",
                 _format_decimal(row.entry_score, 3),
                 _format_probability_pct(row.ensemble_probability),
+                _format_return_pct(row.recent_advance_20d),
+                _format_return_pct(row.recent_advance_60d),
+                f"{float(row.runup_penalty):.2f}x",
                 _format_decimal(row.validation_quality_score, 3),
                 _format_decimal(row.best_overfit_stability_score, 1),
                 _format_decimal(row.combined_live_score, 3),
@@ -1078,6 +1086,9 @@ def _render_live_ml_allocation_section(live_ml_view: dict[str, Any]) -> str:
                     'Sector',
                     'Regime Score',
                     'ML Probability',
+                    'Advance 20D',
+                    'Advance 60D',
+                    'Guardrail',
                     'Validation Quality',
                     'Stability',
                     'Combined Score',
@@ -3217,6 +3228,9 @@ def _render_rotation_playbook_html(
                                         _format_weight_pct(row.portfolio_weight),
                                         _format_weight_pct(row.sleeve_weight),
                                         _format_probability_pct(row.ensemble_probability),
+                                    _format_return_pct(row.recent_advance_20d),
+                                    _format_return_pct(row.recent_advance_60d),
+                                    f"{float(row.runup_penalty):.2f}x",
                                         _format_decimal(row.combined_live_score, 3),
                                         _format_decimal(row.entry_score, 3),
                                         _format_decimal(row.validation_quality_score, 3),
@@ -3264,6 +3278,8 @@ def _render_rotation_playbook_html(
                                         f"{row.sector_label} ({row.symbol})",
                                         "Yes" if bool(row.recommended_live) else "No",
                                         _format_probability_pct(row.ensemble_probability),
+                                    _format_return_pct(row.recent_advance_20d),
+                                    f"{float(row.runup_penalty):.2f}x",
                                         _format_decimal(row.combined_live_score, 3),
                                         _format_decimal(row.entry_score, 3),
                                         _format_decimal(row.best_overfit_stability_score, 1),
@@ -3313,7 +3329,7 @@ def _render_rotation_playbook_html(
                 (
                         "Step 4",
                         "Rank the eligible sectors",
-                        "Score sectors with 40% macro regime rank, 20% live probability rank, 15% quality-weighted ML rank, 10% validation quality, 10% model stability, and 5% holdout Sharpe.",
+                        "Score sectors with 35% macro regime rank, 18% live probability rank, 13% quality-weighted ML rank, 10% validation quality, 9% model stability, 5% holdout Sharpe, and 10% run-up headroom so already-extended sectors are less likely to dominate the basket.",
                 ),
                 (
                         "Step 5",
@@ -3336,6 +3352,9 @@ def _render_rotation_playbook_html(
                                 "Portfolio weight",
                                 "Within 60% sleeve",
                                 "ML probability",
+                            "Advance 20D",
+                            "Advance 60D",
+                            "Guardrail",
                                 "Combined score",
                                 "Regime score",
                                 "Validation quality",
@@ -3350,6 +3369,8 @@ def _render_rotation_playbook_html(
                                 "Sector",
                                 "In live basket",
                                 "ML probability",
+                            "Advance 20D",
+                            "Guardrail",
                                 "Combined score",
                                 "Regime score",
                                 "Stability",

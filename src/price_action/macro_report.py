@@ -750,6 +750,35 @@ def _normalised_rank(series: pd.Series) -> pd.Series:
     return numeric.rank(pct=True, method="average").fillna(0.5)
 
 
+def _latest_sector_extension_metrics(close: pd.Series) -> dict[str, float]:
+    daily_close = pd.to_numeric(close, errors="coerce").dropna().sort_index()
+    if daily_close.empty:
+        return {
+            "recent_advance_20d": float("nan"),
+            "recent_advance_60d": float("nan"),
+            "drawdown_from_252d_high": float("nan"),
+            "rebound_from_252d_low": float("nan"),
+        }
+
+    recent_advance_20d = daily_close.pct_change(20)
+    recent_advance_60d = daily_close.pct_change(60)
+    rolling_high_252d = daily_close.rolling(252, min_periods=63).max()
+    rolling_low_252d = daily_close.rolling(252, min_periods=63).min()
+    latest_close = float(daily_close.iloc[-1])
+    latest_high = rolling_high_252d.iloc[-1]
+    latest_low = rolling_low_252d.iloc[-1]
+
+    drawdown_from_252d_high = float(latest_close / latest_high - 1.0) if pd.notna(latest_high) and latest_high else float("nan")
+    rebound_from_252d_low = float(latest_close / latest_low - 1.0) if pd.notna(latest_low) and latest_low else float("nan")
+
+    return {
+        "recent_advance_20d": float(recent_advance_20d.iloc[-1]) if pd.notna(recent_advance_20d.iloc[-1]) else float("nan"),
+        "recent_advance_60d": float(recent_advance_60d.iloc[-1]) if pd.notna(recent_advance_60d.iloc[-1]) else float("nan"),
+        "drawdown_from_252d_high": drawdown_from_252d_high,
+        "rebound_from_252d_low": rebound_from_252d_low,
+    }
+
+
 def _render_data_table(headers: tuple[str, ...], rows: list[tuple[str, ...]]) -> str:
     if not rows:
         return ""
@@ -824,6 +853,8 @@ def _build_sector_rotation_view(
         if len(series) < 60:
             continue
 
+        latest_extension_metrics = _latest_sector_extension_metrics(close=load_asset_daily(symbol, project_root=project_root)["close"])
+
         sector_frame = regime_history.join(series.rename("close"), how="inner")
         if sector_frame.empty:
             continue
@@ -879,6 +910,7 @@ def _build_sector_rotation_view(
                     "worst_drawdown_12m": worst_drawdown_12m,
                     "confidence_score": confidence_score,
                     "confidence_label": _confidence_label(confidence_score),
+                    **latest_extension_metrics,
                 }
             )
 
@@ -900,18 +932,35 @@ def _build_sector_rotation_view(
     current_matrix["rank_higher_high"] = _normalised_rank(current_matrix["higher_high_rate_12m"])
     current_matrix["rank_drawdown"] = _normalised_rank(current_matrix["mean_drawdown_12m"])
     current_matrix["rank_confidence"] = _normalised_rank(current_matrix["confidence_score"])
-    current_matrix["entry_score"] = (
+    current_matrix["rank_recent_advance_20d"] = _normalised_rank(current_matrix["recent_advance_20d"])
+    current_matrix["rank_recent_advance_60d"] = _normalised_rank(current_matrix["recent_advance_60d"])
+    current_matrix["rank_drawdown_from_252d_high"] = _normalised_rank(current_matrix["drawdown_from_252d_high"])
+    current_matrix["rank_rebound_from_252d_low"] = _normalised_rank(current_matrix["rebound_from_252d_low"])
+    current_matrix["overextension_score"] = (
+        0.35 * current_matrix["rank_recent_advance_20d"]
+        + 0.35 * current_matrix["rank_recent_advance_60d"]
+        + 0.15 * current_matrix["rank_drawdown_from_252d_high"]
+        + 0.15 * current_matrix["rank_rebound_from_252d_low"]
+    )
+    current_matrix["runup_penalty"] = 1.0 - 0.30 * np.clip(
+        (current_matrix["overextension_score"] - 0.55) / 0.45,
+        0.0,
+        1.0,
+    )
+    current_matrix["entry_score_raw"] = (
         0.30 * current_matrix["rank_return_12m"]
         + 0.20 * current_matrix["rank_return_36m"]
         + 0.20 * current_matrix["rank_higher_high"]
         + 0.15 * current_matrix["rank_drawdown"]
         + 0.15 * current_matrix["rank_confidence"]
     )
+    current_matrix["entry_score"] = current_matrix["entry_score_raw"]
     current_matrix.loc[current_matrix["expected_return_12m"] < 0.0, "entry_score"] *= 0.70
     current_matrix.loc[current_matrix["expected_return_36m"] < 0.0, "entry_score"] *= 0.85
+    current_matrix["entry_score"] *= current_matrix["runup_penalty"]
     current_matrix = current_matrix.sort_values(
-        ["entry_score", "confidence_score", "expected_return_12m"],
-        ascending=[False, False, False],
+        ["entry_score", "runup_penalty", "confidence_score", "expected_return_12m"],
+        ascending=[False, False, False, False],
     ).reset_index(drop=True)
 
     allocation_frame = current_matrix.head(5).copy()
@@ -1075,6 +1124,9 @@ def _render_sector_rotation_section(sector_rotation_view: dict[str, Any]) -> str
                 f"{row.sector_label} ({row.symbol})",
                 _format_weight_pct(row.sleeve_weight),
                 _format_weight_pct(row.portfolio_weight),
+                _format_return_pct(row.recent_advance_20d),
+                _format_return_pct(row.recent_advance_60d),
+                f"{float(row.runup_penalty):.2f}x",
                 _format_return_pct(row.expected_return_12m),
                 _format_return_pct(row.expected_return_36m),
                 _format_probability_pct(row.higher_high_rate_12m),
@@ -1101,7 +1153,7 @@ def _render_sector_rotation_section(sector_rotation_view: dict[str, Any]) -> str
                 '  <p class="regime-tag">Most probable entry</p>',
                 f'  <h3>{html.escape(str(top_pick["sector_label"]))}</h3>',
                 f'  <p>{html.escape(str(top_pick["earnings_proxy"]))}</p>',
-                f'  <p class="regime-subcopy">Expected 1Y {html.escape(_format_return_pct(float(top_pick["expected_return_12m"])))}, 3Y {html.escape(_format_return_pct(float(top_pick["expected_return_36m"])))}, higher-high hit rate {html.escape(_format_probability_pct(float(top_pick["higher_high_rate_12m"])))}, confidence {html.escape(_confidence_label(float(top_pick["confidence_score"]))) } ({float(top_pick["confidence_score"]):.0f}).</p>',
+                f'  <p class="regime-subcopy">Expected 1Y {html.escape(_format_return_pct(float(top_pick["expected_return_12m"])))}, 3Y {html.escape(_format_return_pct(float(top_pick["expected_return_36m"])))}, 20D advance {html.escape(_format_return_pct(float(top_pick["recent_advance_20d"])))}, run-up guardrail {float(top_pick["runup_penalty"]):.2f}x, confidence {html.escape(_confidence_label(float(top_pick["confidence_score"]))) } ({float(top_pick["confidence_score"]):.0f}).</p>',
                 '</article>',
             ]
         )
@@ -1133,7 +1185,7 @@ def _render_sector_rotation_section(sector_rotation_view: dict[str, Any]) -> str
             '<section id="sector_rotation" class="framework-section">',
             '  <p class="eyebrow">Rotation Call</p>',
             '  <h2>Current Sector Rotation For The Active Regime</h2>',
-            f'  <p>The active macro regime is {html.escape(str(sector_rotation_view["current_regime"]))}. The equity sleeve below distributes 60% of the portfolio across sectors using historically similar regime months, while keeping 40% in cash.</p>',
+            f'  <p>The active macro regime is {html.escape(str(sector_rotation_view["current_regime"]))}. The equity sleeve below distributes 60% of the portfolio across sectors using historically similar regime months, while keeping 40% in cash. A trailing run-up guardrail now cuts a sector score when the sector has already advanced sharply into the signal date.</p>',
             '  <div class="rotation-grid">',
             cash_card,
             top_pick_card,
@@ -1145,6 +1197,9 @@ def _render_sector_rotation_section(sector_rotation_view: dict[str, Any]) -> str
                     'Sector',
                     'Sleeve Weight',
                     'Portfolio Weight',
+                    'Advance 20D',
+                    'Advance 60D',
+                    'Guardrail',
                     'Expected 1Y',
                     'Expected 3Y',
                     'Higher High 12M',
@@ -1169,6 +1224,9 @@ def _render_sector_regime_section(sector_rotation_view: dict[str, Any]) -> str:
             (
                 f"{row.sector_label} ({row.symbol})",
                 row.family,
+                _format_return_pct(row.recent_advance_20d),
+                _format_return_pct(row.recent_advance_60d),
+                f"{float(row.runup_penalty):.2f}x",
                 _format_return_pct(row.expected_return_12m),
                 _format_return_pct(row.expected_return_36m),
                 _format_probability_pct(row.higher_high_rate_12m),
@@ -1235,6 +1293,9 @@ def _render_sector_regime_section(sector_rotation_view: dict[str, Any]) -> str:
                 headers=(
                     'Sector',
                     'Type',
+                    'Advance 20D',
+                    'Advance 60D',
+                    'Guardrail',
                     'Expected 1Y',
                     'Expected 3Y',
                     'Higher High 12M',
