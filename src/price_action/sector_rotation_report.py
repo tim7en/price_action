@@ -293,9 +293,9 @@ def _render_rebalance_tradeoff_chart(sensitivity_frame: pd.DataFrame) -> str:
   <svg viewBox="0 0 960 320" role="img" aria-label="Rebalance cadence tradeoff chart">
     <rect x="0" y="0" width="960" height="320" rx="18" fill="rgba(255, 253, 248, 0.92)"></rect>
     {grid}
-    <line x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
-    <line x1="{left}" y1="{top}" x2="{left}" y2="{height - bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
-    <text x="{left}" y="{height - 10}" fill="#5f6b76" font-size="12">Turnover per year</text>
+        <line x1="{left}" y1="{axis_bottom}" x2="{axis_right}" y2="{axis_bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
+        <line x1="{left}" y1="{top}" x2="{left}" y2="{axis_bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
+        <text x="{left}" y="{label_bottom}" fill="#5f6b76" font-size="12">Turnover per year</text>
     <text x="12" y="14" fill="#5f6b76" font-size="12">CAGR</text>
     <text x="{left}" y="304" fill="#5f6b76" font-size="11">Lower-left means low turnover and low CAGR. Upper-left is the efficient corner.</text>
     {legend}
@@ -310,6 +310,9 @@ def _render_rebalance_tradeoff_chart(sensitivity_frame: pd.DataFrame) -> str:
         bottom=f"{bottom:.1f}",
         width=f"{width:.1f}",
         height=f"{height:.1f}",
+        axis_bottom=f"{height - bottom:.1f}",
+        axis_right=f"{width - right:.1f}",
+        label_bottom=f"{height - 10:.1f}",
         legend="".join(legend_items),
         points="".join(points_markup),
     )
