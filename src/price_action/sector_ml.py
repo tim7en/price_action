@@ -34,8 +34,9 @@ MODEL_SPECS: tuple[dict[str, str], ...] = (
 )
 
 DEFAULT_SECTOR_ML_CONFIG: dict[str, Any] = {
-    "start_date": "2015-01-01",
+    "start_date": "2000-01-01",
     "holdout_start": "2025-01-01",
+    "historical_benchmark_start": "2006-01-01",
     "train_years": 5,
     "validation_years": 1,
     "label_horizon": 5,
@@ -207,6 +208,8 @@ def _periodic_strategy_summary(
             "average_win": None,
             "average_loss": None,
             "trade_count": 0,
+            "period_count": 0,
+            "entry_count": 0,
             "turnover_per_year": 0.0,
         }
 
@@ -237,11 +240,17 @@ def _periodic_strategy_summary(
     gross_loss = float(-returns[returns < 0.0].sum())
     profit_factor = gross_profit / gross_loss if gross_loss > 0.0 else None
 
-    turnover = (
-        float(frame[turnover_column].sum())
+    turnover_series = (
+        pd.to_numeric(frame[turnover_column], errors="coerce").fillna(0.0)
         if turnover_column is not None and turnover_column in frame.columns
-        else 0.0
+        else pd.Series(0.0, index=frame.index, dtype="float64")
     )
+    turnover = float(turnover_series.sum())
+    entry_count = 0
+    trade_count = int((turnover_series > 1e-12).sum())
+    if turnover_column is None:
+        entry_count = 1 if len(frame.index) > 0 else 0
+        trade_count = entry_count
 
     return {
         "total_return": total_return,
@@ -255,7 +264,9 @@ def _periodic_strategy_summary(
         "average_trade_return": float(returns.mean()) if not returns.empty else None,
         "average_win": float(returns[returns > 0.0].mean()) if (returns > 0.0).any() else None,
         "average_loss": float(returns[returns < 0.0].mean()) if (returns < 0.0).any() else None,
-        "trade_count": int(len(frame.index)),
+        "trade_count": trade_count,
+        "period_count": int(len(frame.index)),
+        "entry_count": entry_count,
         "turnover_per_year": float(turnover / years) if years > 0.0 else 0.0,
     }
 
@@ -385,31 +396,34 @@ def _summarize_period_groups(
     return summary_frame
 
 
-def _build_holdout_rotation_view(
-    holdout_signal_frame: pd.DataFrame,
+def _build_rotation_backtest_view(
+    signal_frame: pd.DataFrame,
     validation_quality_frame: pd.DataFrame,
     project_root: Path,
     config: dict[str, Any],
+    scope_label: str,
+    scope_kind: str,
+    scope_note: str,
 ) -> dict[str, Any]:
-    if holdout_signal_frame.empty:
-        return {"available": False, "message": "No untouched holdout predictions were available for the sector rotation backtest."}
+    if signal_frame.empty:
+        return {"available": False, "message": f"No predictions were available for {scope_label.lower()}."}
 
-    holdout_signal_frame = holdout_signal_frame.copy()
-    holdout_signal_frame["date"] = pd.to_datetime(holdout_signal_frame["date"])
+    signal_frame = signal_frame.copy()
+    signal_frame["date"] = pd.to_datetime(signal_frame["date"])
     quality_map = validation_quality_frame.set_index("symbol")["validation_quality_score"]
-    holdout_signal_frame["validation_quality_score"] = holdout_signal_frame["symbol"].map(quality_map).fillna(0.5)
+    signal_frame["validation_quality_score"] = signal_frame["symbol"].map(quality_map).fillna(0.5)
     quality_weight = float(config["quality_weight"])
-    holdout_signal_frame["quality_weighted_score"] = (
-        (1.0 - quality_weight) * holdout_signal_frame["ensemble_probability"].astype(float)
-        + quality_weight * holdout_signal_frame["validation_quality_score"].astype(float)
+    signal_frame["quality_weighted_score"] = (
+        (1.0 - quality_weight) * signal_frame["ensemble_probability"].astype(float)
+        + quality_weight * signal_frame["validation_quality_score"].astype(float)
     )
 
-    symbols = sorted(holdout_signal_frame["symbol"].unique().tolist())
+    symbols = sorted(signal_frame["symbol"].unique().tolist())
     price_panel = _load_price_panel(symbols + ["SPY"], project_root=project_root)
     trading_index = price_panel.index
-    signal_dates = sorted(date for date in holdout_signal_frame["date"].unique() if date in trading_index)
+    signal_dates = sorted(date for date in signal_frame["date"].unique() if date in trading_index)
     if len(signal_dates) < 3:
-        return {"available": False, "message": "Not enough holdout signal dates were available to build a rotation benchmark."}
+        return {"available": False, "message": f"Not enough signal dates were available to build {scope_label.lower()}."}
 
     top_n = int(config["top_n"])
     threshold = float(config["signal_threshold"])
@@ -433,7 +447,7 @@ def _build_holdout_rotation_view(
 
     while signal_pointer < len(signal_dates):
         signal_date = signal_dates[signal_pointer]
-        signal_slice = holdout_signal_frame.loc[holdout_signal_frame["date"] == signal_date].copy()
+        signal_slice = signal_frame.loc[signal_frame["date"] == signal_date].copy()
         signal_slice = signal_slice.loc[signal_slice["ensemble_probability"].astype(float) >= threshold].copy()
 
         entry_pos = trading_index.searchsorted(signal_date, side="right")
@@ -559,7 +573,7 @@ def _build_holdout_rotation_view(
 
     period_log_frame = pd.DataFrame(period_rows)
     if period_log_frame.empty:
-        return {"available": False, "message": "Holdout signals existed, but the rebalance schedule produced no completed rotation windows."}
+        return {"available": False, "message": f"Signals existed for {scope_label.lower()}, but the rebalance schedule produced no completed rotation windows."}
 
     period_log_frame["equity_probability"] = (1.0 + period_log_frame["probability_return"]).cumprod()
     period_log_frame["equity_quality"] = (1.0 + period_log_frame["quality_return"]).cumprod()
@@ -619,7 +633,7 @@ def _build_holdout_rotation_view(
             regime_rows.extend(regime.to_dict(orient="records"))
 
     current_signal_date = max(signal_dates)
-    current_signal_frame = holdout_signal_frame.loc[holdout_signal_frame["date"] == current_signal_date].copy()
+    current_signal_frame = signal_frame.loc[signal_frame["date"] == current_signal_date].copy()
     current_signal_frame = current_signal_frame.sort_values("quality_weighted_score", ascending=False).reset_index(drop=True)
     current_signal_frame["recommended_probability"] = False
     current_signal_frame["recommended_quality"] = False
@@ -635,9 +649,17 @@ def _build_holdout_rotation_view(
     current_signal_frame["quality_weight"] = current_signal_frame["symbol"].map(quality_live).fillna(0.0)
     current_signal_frame["recommended_probability"] = current_signal_frame["probability_weight"] > 0.0
     current_signal_frame["recommended_quality"] = current_signal_frame["quality_weight"] > 0.0
+    benchmark_start = pd.Timestamp(period_log_frame["signal_date"].min())
+    benchmark_end = pd.Timestamp(period_log_frame["exit_date"].max())
 
     return {
         "available": True,
+        "scope_label": scope_label,
+        "scope_kind": scope_kind,
+        "scope_note": scope_note,
+        "benchmark_start": benchmark_start,
+        "benchmark_end": benchmark_end,
+        "period_count": int(len(period_log_frame.index)),
         "period_log_frame": period_log_frame,
         "strategy_summary_frame": strategy_summary_frame,
         "yearly_summary_frame": pd.DataFrame(yearly_rows),
@@ -646,7 +668,7 @@ def _build_holdout_rotation_view(
         "current_signal_date": pd.Timestamp(current_signal_date),
         "benchmark_symbol": "SPY",
         "method_note": (
-            "The benchmark uses only final holdout dates. Signals are generated from walk-forward out-of-sample sector predictions, executed one bar after the signal date, and held for five bars before the next rebalance. "
+            f"{scope_note} Signals are generated from walk-forward out-of-sample sector predictions, executed one bar after the signal date, and held for five bars before the next rebalance. "
             "The quality-weighted variant mixes live ensemble probability with a sector quality prior estimated only from the pre-holdout validation window. "
             "The reserve-cash rule keeps 40% of the portfolio in cash earning 5% annually, deploys 10% of that reserve after a 5% SPY drawdown, another 10% after a 10% drawdown, and the rest after a 20% drawdown, then rebuilds the reserve only after SPY gets back to its prior high. "
             f"The leveraged scenario applies {leverage_multiple:.0f}x gross exposure and charges {annual_financing_rate:.0%} annual interest on the borrowed {max(leverage_multiple - 1.0, 0.0):.0f}x capital over each realized holding period."
@@ -819,6 +841,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
     regime_rows: list[dict[str, Any]] = []
     cost_rows: list[dict[str, Any]] = []
     failures: list[dict[str, str]] = []
+    oos_signal_frames: list[pd.DataFrame] = []
     holdout_signal_frames: list[pd.DataFrame] = []
 
     for sector in SECTOR_BUCKETS:
@@ -853,6 +876,22 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         predictions = _join_daily_regimes(predictions=predictions, regime_daily_map=regime_daily_map)
         validation_predictions = predictions.loc[predictions["fold_label"].astype(str) != "holdout"].copy()
         holdout_predictions = predictions.loc[predictions["fold_label"].astype(str) == "holdout"].copy()
+        oos_frame = predictions[
+            [
+                "prob_elastic_net",
+                "prob_extra_trees",
+                "prob_lightgbm",
+                "ensemble_probability",
+                "target",
+                "forward_return",
+                "regime_label",
+                "quadrant_label",
+                "fold_label",
+            ]
+        ].copy()
+        oos_frame.insert(0, "sector_label", sector["label"])
+        oos_frame.insert(0, "symbol", sector["symbol"])
+        oos_signal_frames.append(oos_frame.reset_index(names="date"))
         if not holdout_predictions.empty:
             holdout_frame = holdout_predictions[
                 [
@@ -1057,16 +1096,40 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
     ]
     robust_cost_sector_count = int((robust_cost_rows["cagr"].fillna(-1.0) > 0.0).sum()) if not robust_cost_rows.empty else 0
     validation_quality_frame = _validation_quality_frame(sector_summary_frame)
+    oos_signal_frame = (
+        pd.concat(oos_signal_frames, ignore_index=True)
+        if oos_signal_frames
+        else pd.DataFrame()
+    )
     holdout_signal_frame = (
         pd.concat(holdout_signal_frames, ignore_index=True)
         if holdout_signal_frames
         else pd.DataFrame()
     )
-    holdout_rotation_view = _build_holdout_rotation_view(
-        holdout_signal_frame=holdout_signal_frame,
+    holdout_rotation_view = _build_rotation_backtest_view(
+        signal_frame=holdout_signal_frame,
         validation_quality_frame=validation_quality_frame,
         project_root=root,
         config=config,
+        scope_label="Untouched 2025+ holdout",
+        scope_kind="holdout",
+        scope_note="This benchmark uses only the final untouched holdout dates after the validation years.",
+    )
+    historical_start = pd.Timestamp(str(config["historical_benchmark_start"]))
+    historical_signal_frame = oos_signal_frame.copy()
+    if not historical_signal_frame.empty:
+        historical_signal_frame["date"] = pd.to_datetime(historical_signal_frame["date"])
+        historical_signal_frame = historical_signal_frame.loc[
+            historical_signal_frame["date"] >= historical_start
+        ].copy()
+    historical_rotation_view = _build_rotation_backtest_view(
+        signal_frame=historical_signal_frame,
+        validation_quality_frame=validation_quality_frame,
+        project_root=root,
+        config=config,
+        scope_label="2006-2026 walk-forward history",
+        scope_kind="walkforward_history",
+        scope_note="This benchmark uses every walk-forward out-of-sample window from 2006 onward, including the 2008 financial crisis, the 2020 shock, and the 2022 rate-reset drawdown.",
     )
 
     return {
@@ -1075,6 +1138,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         "boosting_backend": boosting_backend,
         "data_note": (
             "Features are lagged by one bar and each validation window uses a five-bar purge plus a five-bar embargo. "
+            "The sector ML study now trains from 2000 onward so the walk-forward history can include 2008, 2020, and 2022 while preserving a separate untouched 2025+ holdout. "
             "Macro regime attribution comes from the local macro store and is useful for regime slicing, but it is not a point-in-time macro vintage database."
         ),
         "sector_summary_frame": sector_summary_frame,
@@ -1088,5 +1152,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         "holdout_leader": holdout_leader,
         "robust_cost_sector_count": robust_cost_sector_count,
         "holdout_signal_frame": holdout_signal_frame,
+        "oos_signal_frame": oos_signal_frame,
         "holdout_rotation_view": holdout_rotation_view,
+        "historical_rotation_view": historical_rotation_view,
     }

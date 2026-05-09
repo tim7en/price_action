@@ -605,15 +605,19 @@ def _render_live_ml_allocation_section(live_ml_view: dict[str, Any]) -> str:
     )
 
 
-def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
-    rotation_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
+def _render_rotation_backtest_section(
+    rotation_view: dict[str, Any] | None,
+    *,
+    eyebrow: str,
+    title: str,
+) -> str:
     if not isinstance(rotation_view, dict) or not rotation_view.get("available"):
-        message = str(rotation_view.get("message") if isinstance(rotation_view, dict) else "Holdout backtest unavailable.")
+        message = str(rotation_view.get("message") if isinstance(rotation_view, dict) else "Benchmark unavailable.")
         return "\n".join(
             [
                 '<section class="section">',
-                '  <p class="eyebrow">Holdout Benchmark</p>',
-                '  <h2>ML Rotation Vs SPY Buy And Hold</h2>',
+                f'  <p class="eyebrow">{html.escape(eyebrow)}</p>',
+                f'  <h2>{html.escape(title)}</h2>',
                 f'  <p>{html.escape(message)}</p>',
                 '</section>',
             ]
@@ -621,21 +625,30 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
 
     summary_frame = rotation_view["strategy_summary_frame"].copy()
     quality_row = summary_frame.loc[summary_frame["strategy_label"] == "ML Quality-Weighted Rotation"].iloc[0]
-    probability_row = summary_frame.loc[summary_frame["strategy_label"] == "ML Probability Rotation"].iloc[0]
     reserve_row = summary_frame.loc[summary_frame["strategy_label"] == "Sector Reserve Cash Rule"].iloc[0]
     spy_row = summary_frame.loc[summary_frame["strategy_label"] == "SPY Buy And Hold"].iloc[0]
     quality_x3_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith("ML Quality-Weighted Rotation x")].iloc[0]
     spy_x3_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith("SPY Buy And Hold x")].iloc[0]
     signal_date = pd.Timestamp(rotation_view["current_signal_date"]).strftime("%Y-%m-%d")
+    benchmark_start = pd.Timestamp(rotation_view["benchmark_start"]).strftime("%Y-%m-%d")
+    benchmark_end = pd.Timestamp(rotation_view["benchmark_end"]).strftime("%Y-%m-%d")
     reserve_peak_fraction = float(rotation_view["period_log_frame"]["reserve_deployed_fraction"].max()) if not rotation_view["period_log_frame"].empty else 0.0
     spy_worst_drawdown = float(rotation_view["period_log_frame"]["spy_drawdown_signal"].min()) if not rotation_view["period_log_frame"].empty else 0.0
-    reserve_tier_note = "Only the first 5% drawdown tier triggered in this holdout." if reserve_peak_fraction <= 0.10 else "Multiple reserve tiers triggered in this holdout."
+    scope_kind = str(rotation_view.get("scope_kind") or "")
+    scope_body = (
+        "This slice uses only the final untouched holdout dates after the validation years."
+        if scope_kind == "holdout"
+        else "This slice uses every walk-forward out-of-sample window from 2006 onward, so the major crisis regimes are visible."
+    )
+    reserve_tier_note = "Only the first 5% drawdown tier triggered in this slice." if reserve_peak_fraction <= 0.10 else "Multiple reserve tiers triggered in this slice."
 
     cards = [
         _render_stat_card(
-            title="Untouched 2025+ holdout",
-            body="All rotation performance below comes only from the final holdout window. No historical regime score built from future returns is used inside this benchmark.",
-            tag="Leakage control",
+            title=str(rotation_view.get("scope_label") or title),
+            body=(
+                f"{scope_body} Window range {benchmark_start} to {benchmark_end} across {int(rotation_view.get('period_count', 0) or 0)} realized five-bar holding windows."
+            ),
+            tag="Benchmark scope",
         ),
         _render_stat_card(
             title="ML Quality-Weighted Rotation",
@@ -647,7 +660,7 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
         _render_stat_card(
             title="SPY Buy And Hold",
             body=(
-                f"CAGR {_format_return_pct(spy_row.cagr)}, Sharpe {_format_decimal(spy_row.sharpe)}, max drawdown {_format_return_pct(spy_row.max_drawdown)} over the same holdout windows."
+                f"CAGR {_format_return_pct(spy_row.cagr)}, Sharpe {_format_decimal(spy_row.sharpe)}, max drawdown {_format_return_pct(spy_row.max_drawdown)} over the same benchmark windows."
             ),
             tag="Benchmark",
         ),
@@ -659,7 +672,7 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
             tag="Reserve rule",
         ),
         _render_stat_card(
-            title=f"Worst holdout SPY drawdown {_format_return_pct(spy_worst_drawdown)}",
+            title=f"Worst SPY signal drawdown {_format_return_pct(spy_worst_drawdown)}",
             body=(
                 f"Peak reserve deployment reached {_format_weight_pct(reserve_peak_fraction)} of the reserve sleeve. {reserve_tier_note}"
             ),
@@ -681,8 +694,10 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
         ),
         _render_stat_card(
             title=f"Latest complete signal {signal_date}",
-            body="The rotation book rebalances one bar after each signal and holds for five bars before the next rebalance cycle.",
-            tag="Execution",
+            body=(
+                f"Windows count realized five-bar evaluation periods. Trades count actual entries or rebalances. SPY buy-and-hold therefore shows {int(spy_row.trade_count)} entry across {int(spy_row.period_count)} evaluation windows."
+            ),
+            tag="Metric definition",
         ),
     ]
 
@@ -699,6 +714,8 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
                 _format_decimal(row.calmar),
                 _format_decimal(row.profit_factor),
                 _format_probability_pct(row.hit_rate),
+                str(int(getattr(row, "trade_count", 0) or 0)),
+                str(int(getattr(row, "period_count", 0) or 0)),
                 _format_turnover(row.turnover_per_year),
             )
         )
@@ -706,8 +723,8 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
     return "\n".join(
         [
             '<section class="section">',
-            '  <p class="eyebrow">Holdout Benchmark</p>',
-            '  <h2>ML Rotation, Reserve Cash Rule, And SPY</h2>',
+            f'  <p class="eyebrow">{html.escape(eyebrow)}</p>',
+            f'  <h2>{html.escape(title)}</h2>',
             f'  <p>{html.escape(str(rotation_view["method_note"]))}</p>',
             '  <div class="card-grid">',
             "\n".join(cards),
@@ -725,6 +742,8 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
                     'Calmar',
                     'Profit Factor',
                     'Hit Rate',
+                    'Trades',
+                    'Windows',
                     'Turnover',
                 ),
                 rows=summary_rows,
@@ -734,12 +753,38 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
     )
 
 
-def _render_holdout_period_log_section(sector_ml_view: dict[str, Any]) -> str:
+def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
     rotation_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
+    return _render_rotation_backtest_section(
+        rotation_view,
+        eyebrow="Holdout Benchmark",
+        title="Strict Holdout: ML Rotation, Reserve Cash Rule, And SPY",
+    )
+
+
+def _render_history_backtest_section(sector_ml_view: dict[str, Any]) -> str:
+    rotation_view = sector_ml_view.get("historical_rotation_view") if isinstance(sector_ml_view, dict) else None
+    return _render_rotation_backtest_section(
+        rotation_view,
+        eyebrow="Walk-Forward History",
+        title="Crisis-Inclusive History: ML Rotation, Reserve Cash Rule, And SPY",
+    )
+
+
+def _render_rotation_period_log_section(
+    rotation_view: dict[str, Any] | None,
+    *,
+    eyebrow: str,
+    title: str,
+    description: str,
+    sort_by: str,
+    ascending: bool,
+    max_rows: int,
+) -> str:
     if not isinstance(rotation_view, dict) or not rotation_view.get("available"):
         return ""
 
-    period_log = rotation_view["period_log_frame"].copy().sort_values("signal_date", ascending=False).head(12)
+    period_log = rotation_view["period_log_frame"].copy().sort_values(sort_by, ascending=ascending).head(max_rows)
     rows: list[tuple[str, ...]] = []
     for row in period_log.itertuples(index=False):
         rows.append(
@@ -766,9 +811,9 @@ def _render_holdout_period_log_section(sector_ml_view: dict[str, Any]) -> str:
     return "\n".join(
         [
             '<section class="section">',
-            '  <p class="eyebrow">Rebalance Log</p>',
-            '  <h2>Latest Holdout Rotation Decisions</h2>',
-            '  <p>The log below shows the most recent holdout rebalance windows, the sectors selected by the quality-weighted ML score, and the realized next-window return compared with SPY.</p>',
+            f'  <p class="eyebrow">{html.escape(eyebrow)}</p>',
+            f'  <h2>{html.escape(title)}</h2>',
+            f'  <p>{html.escape(description)}</p>',
             _render_data_table(
                 headers=(
                     'Signal Date',
@@ -795,8 +840,39 @@ def _render_holdout_period_log_section(sector_ml_view: dict[str, Any]) -> str:
     )
 
 
-def _render_holdout_year_regime_section(sector_ml_view: dict[str, Any]) -> str:
+def _render_holdout_period_log_section(sector_ml_view: dict[str, Any]) -> str:
     rotation_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
+    return _render_rotation_period_log_section(
+        rotation_view,
+        eyebrow="Rebalance Log",
+        title="Latest Holdout Rotation Decisions",
+        description="The log below shows the most recent holdout rebalance windows, the sectors selected by the quality-weighted ML score, and the realized next-window return compared with SPY.",
+        sort_by="signal_date",
+        ascending=False,
+        max_rows=12,
+    )
+
+
+def _render_history_drawdown_section(sector_ml_view: dict[str, Any]) -> str:
+    rotation_view = sector_ml_view.get("historical_rotation_view") if isinstance(sector_ml_view, dict) else None
+    return _render_rotation_period_log_section(
+        rotation_view,
+        eyebrow="Stress Windows",
+        title="Deep Drawdown Windows And Reserve Triggers",
+        description="This table isolates the worst SPY drawdown signals inside the full 2006-2026 walk-forward history so you can see how the reserve rule behaved in the key stress episodes.",
+        sort_by="spy_drawdown_signal",
+        ascending=True,
+        max_rows=15,
+    )
+
+
+def _render_rotation_year_regime_section(
+    rotation_view: dict[str, Any] | None,
+    *,
+    eyebrow: str,
+    title: str,
+    description: str,
+) -> str:
     if not isinstance(rotation_view, dict) or not rotation_view.get("available"):
         return ""
 
@@ -811,6 +887,8 @@ def _render_holdout_year_regime_section(sector_ml_view: dict[str, Any]) -> str:
                 _format_return_pct(row.cagr),
                 _format_decimal(row.sharpe),
                 _format_return_pct(row.max_drawdown),
+                str(int(getattr(row, "trade_count", 0) or 0)),
+                str(int(getattr(row, "period_count", 0) or 0)),
                 _format_turnover(row.turnover_per_year),
             )
         )
@@ -827,14 +905,17 @@ def _render_holdout_year_regime_section(sector_ml_view: dict[str, Any]) -> str:
                 _format_decimal(row.sharpe),
                 _format_return_pct(row.max_drawdown),
                 _format_probability_pct(row.hit_rate),
+                str(int(getattr(row, "trade_count", 0) or 0)),
+                str(int(getattr(row, "period_count", 0) or 0)),
             )
         )
 
     return "\n".join(
         [
             '<section class="section">',
-            '  <p class="eyebrow">Benchmark Slices</p>',
-            '  <h2>Holdout Performance By Year And Signal Regime</h2>',
+            f'  <p class="eyebrow">{html.escape(eyebrow)}</p>',
+            f'  <h2>{html.escape(title)}</h2>',
+            f'  <p>{html.escape(description)}</p>',
             _render_data_table(
                 headers=(
                     'Strategy',
@@ -843,6 +924,8 @@ def _render_holdout_year_regime_section(sector_ml_view: dict[str, Any]) -> str:
                     'CAGR',
                     'Sharpe',
                     'Max DD',
+                    'Trades',
+                    'Windows',
                     'Turnover',
                 ),
                 rows=yearly_rows,
@@ -856,11 +939,33 @@ def _render_holdout_year_regime_section(sector_ml_view: dict[str, Any]) -> str:
                     'Sharpe',
                     'Max DD',
                     'Hit Rate',
+                    'Trades',
+                    'Windows',
                 ),
                 rows=regime_rows,
             ),
             '</section>',
         ]
+    )
+
+
+def _render_holdout_year_regime_section(sector_ml_view: dict[str, Any]) -> str:
+    rotation_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
+    return _render_rotation_year_regime_section(
+        rotation_view,
+        eyebrow="Benchmark Slices",
+        title="Holdout Performance By Year And Signal Regime",
+        description="These slices keep only the strict 2025+ holdout windows and break them down by calendar year and signal regime.",
+    )
+
+
+def _render_history_year_regime_section(sector_ml_view: dict[str, Any]) -> str:
+    rotation_view = sector_ml_view.get("historical_rotation_view") if isinstance(sector_ml_view, dict) else None
+    return _render_rotation_year_regime_section(
+        rotation_view,
+        eyebrow="History Slices",
+        title="2006-2026 Walk-Forward Performance By Year And Signal Regime",
+        description="These slices use the full walk-forward out-of-sample history, so the year and regime tables include the major stress periods that are absent from the strict holdout alone.",
     )
 
 
@@ -878,15 +983,18 @@ def _render_ml_overview_section(sector_ml_view: dict[str, Any]) -> str:
         )
 
     config = sector_ml_view["config"]
+    start_year = pd.Timestamp(str(config["start_date"])).year
+    holdout_year = pd.Timestamp(str(config["holdout_start"])).year
+    history_year = pd.Timestamp(str(config["historical_benchmark_start"])).year
     leader = sector_ml_view["holdout_leader"]
     winner_counts = sector_ml_view["winner_counts_frame"]
     sector_count = len(sector_ml_view["sector_summary_frame"])
     top_winner = winner_counts.iloc[0].to_dict() if not winner_counts.empty else {"model_label": "n/a", "winner_count": 0}
     cards = [
         _render_stat_card(
-            title="2015-2024 walk-forward, 2025+ holdout",
+            title=f"{start_year}-{holdout_year - 1} walk-forward, {holdout_year}+ holdout",
             body=(
-                f"Five-year expanding train windows, one-year validation windows, feature lag {int(config['feature_lag'])}, purge {int(config['purge_size'])} bars, embargo {int(config['embargo_size'])} bars."
+                f"Five-year expanding train windows, one-year validation windows, feature lag {int(config['feature_lag'])}, purge {int(config['purge_size'])} bars, embargo {int(config['embargo_size'])} bars. The broader benchmark section starts in {history_year} so crisis eras are visible."
             ),
             tag="Validation design",
         ),
@@ -1276,7 +1384,10 @@ def _render_html(
         {_render_ml_overview_section(sector_ml_view=sector_ml_view)}
         {_render_live_ml_allocation_section(live_ml_view=live_ml_view)}
         {_render_holdout_backtest_section(sector_ml_view=sector_ml_view)}
+        {_render_history_backtest_section(sector_ml_view=sector_ml_view)}
         {_render_holdout_year_regime_section(sector_ml_view=sector_ml_view)}
+        {_render_history_year_regime_section(sector_ml_view=sector_ml_view)}
+        {_render_history_drawdown_section(sector_ml_view=sector_ml_view)}
         {_render_holdout_period_log_section(sector_ml_view=sector_ml_view)}
     {_render_sector_mapping_section(sector_rotation_view=sector_rotation_view)}
     {_render_allocation_section(sector_rotation_view=sector_rotation_view)}
@@ -1324,6 +1435,10 @@ def generate_sector_rotation_report(
     ml_holdout_period_log_path = report_dir / "sector_ml_holdout_period_log.csv"
     ml_holdout_yearly_path = report_dir / "sector_ml_holdout_yearly_summary.csv"
     ml_holdout_regime_path = report_dir / "sector_ml_holdout_regime_summary.csv"
+    ml_history_summary_path = report_dir / "sector_ml_history_strategy_summary.csv"
+    ml_history_period_log_path = report_dir / "sector_ml_history_period_log.csv"
+    ml_history_yearly_path = report_dir / "sector_ml_history_yearly_summary.csv"
+    ml_history_regime_path = report_dir / "sector_ml_history_regime_summary.csv"
     ml_live_allocation_path = report_dir / "sector_ml_live_allocation.csv"
 
     summary_payload: dict[str, Any] = {
@@ -1385,6 +1500,20 @@ def generate_sector_rotation_report(
                 "method_note": rotation_view.get("method_note"),
                 "strategy_summary": json.loads(rotation_view["strategy_summary_frame"].to_json(orient="records")),
             }
+        history_view = sector_ml_view.get("historical_rotation_view")
+        if isinstance(history_view, dict) and history_view.get("available"):
+            history_view["strategy_summary_frame"].to_csv(ml_history_summary_path, index=False)
+            history_view["period_log_frame"].to_csv(ml_history_period_log_path, index=False)
+            history_view["yearly_summary_frame"].to_csv(ml_history_yearly_path, index=False)
+            history_view["regime_summary_frame"].to_csv(ml_history_regime_path, index=False)
+            summary_payload["ml"]["historical_rotation"] = {
+                "available": True,
+                "scope_label": history_view.get("scope_label"),
+                "benchmark_start": str(history_view.get("benchmark_start")),
+                "benchmark_end": str(history_view.get("benchmark_end")),
+                "method_note": history_view.get("method_note"),
+                "strategy_summary": json.loads(history_view["strategy_summary_frame"].to_json(orient="records")),
+            }
     else:
         summary_payload["ml"]["message"] = str(sector_ml_view.get("message") or "Sector ML study unavailable.")
 
@@ -1426,6 +1555,10 @@ def generate_sector_rotation_report(
         "ml_holdout_period_log": str(ml_holdout_period_log_path) if ml_holdout_period_log_path.exists() else None,
         "ml_holdout_yearly": str(ml_holdout_yearly_path) if ml_holdout_yearly_path.exists() else None,
         "ml_holdout_regime": str(ml_holdout_regime_path) if ml_holdout_regime_path.exists() else None,
+        "ml_history_summary": str(ml_history_summary_path) if ml_history_summary_path.exists() else None,
+        "ml_history_period_log": str(ml_history_period_log_path) if ml_history_period_log_path.exists() else None,
+        "ml_history_yearly": str(ml_history_yearly_path) if ml_history_yearly_path.exists() else None,
+        "ml_history_regime": str(ml_history_regime_path) if ml_history_regime_path.exists() else None,
         "ml_live_allocation": str(ml_live_allocation_path) if ml_live_allocation_path.exists() else None,
     }
 
