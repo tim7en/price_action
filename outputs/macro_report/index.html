@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Macro Variables Used By The Models</title>
+    <title>Macro Regime Atlas</title>
   <style>
     :root {
       --bg: #f7f2e8;
@@ -83,6 +83,80 @@
       padding: 26px 28px;
       margin-bottom: 28px;
     }
+        .regime-grid, .quadrant-grid, .taxonomy-grid, .window-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+        }
+        .regime-card, .quadrant-card, .taxonomy-card, .window-card {
+            background: var(--panel);
+            border-radius: 18px;
+            border: 1px solid rgba(213, 207, 197, 0.95);
+            padding: 18px;
+            min-height: 100%;
+        }
+        .regime-card-primary {
+            background: linear-gradient(180deg, rgba(244, 237, 225, 0.92), rgba(255, 253, 248, 0.94));
+        }
+        .quadrant-card-active, .taxonomy-card-active, .window-card-current {
+            border-color: rgba(122, 62, 43, 0.35);
+            box-shadow: 0 12px 28px rgba(27, 36, 48, 0.07);
+        }
+        .regime-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.74rem;
+            color: var(--accent);
+        }
+        .swatch {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            display: inline-block;
+            flex: 0 0 auto;
+        }
+        .regime-subcopy { margin-top: 10px; color: var(--muted); }
+        .chip-list-tight { margin-top: 14px; }
+        .timeline-shell {
+            margin-top: 22px;
+            padding: 18px;
+            border-radius: 18px;
+            background: rgba(247, 242, 232, 0.78);
+            border: 1px solid rgba(213, 207, 197, 0.85);
+        }
+        .timeline-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 10px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+        .timeline-bar {
+            display: flex;
+            width: 100%;
+            min-height: 28px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(213, 207, 197, 0.55);
+        }
+        .timeline-segment { min-height: 28px; }
+        .timeline-legend { margin-top: 18px; }
+        .legend-list {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 18px;
+            color: var(--muted);
+        }
+        .legend-list li { display: inline-flex; align-items: center; gap: 8px; }
         .framework-section {
             background: rgba(255, 253, 248, 0.88);
             border-radius: 22px;
@@ -206,24 +280,369 @@
 <body>
   <main class="page">
     <section class="hero">
-      <p class="eyebrow">Model Macro Atlas</p>
-      <h1>Macro Variables Used By The Models</h1>
-                        <p>This document groups the macro variables currently fed into the price-action models into a cycle map: inflation breadth, real activity, policy, credit, volatility, real assets, and valuation fragility. The intent is closer to a macro playbook than a loose factor list, so each block is shown in the context where it matters rather than as an interchangeable input beside price action.</p>
+    <p class="eyebrow">Macro Regime Atlas</p>
+    <h1>Twenty Years Of Macro Regimes</h1>
+                <p>This report shifts the macro app from a flat variable inventory toward a Dalio-style regime map: growth and inflation quadrants, stress overlays, and the specific model inputs that matter inside each environment. The goal is to show how the macro machine has moved across the last twenty years, not just list the features beside price action.</p>
       <div class="hero-meta">
-        <span>Generated 2026-05-08 20:18 UTC</span>
+        <span>Generated 2026-05-09 08:30 UTC</span>
         <span>22 base macro series</span>
-                <span>Current live transforms: level, 63-day z-score, 5-day delta</span>
+            <span>Lookback window: Apr 2006 to Apr 2026</span>
+            <span>Current regime: Fragile Late-Cycle Watch</span>
       </div>
     </section>
 
     <nav class="toc">
-      <a href="#inflation_breadth">Inflation Breadth And Labor</a> <a href="#production_activity">Real Activity And Production</a> <a href="#rates_curve">Rates And The Curve</a> <a href="#credit_conditions">Credit And Conditions</a> <a href="#volatility_risk">Volatility And Risk Appetite</a> <a href="#dollar_real_assets">Dollar And Real Assets</a> <a href="#valuation_backdrop">Valuation And Debt-Cycle Backdrop</a>
+      <a href="#regime_overview">Current Diagnosis</a> <a href="#quadrant_map">Growth And Inflation Quadrants</a> <a href="#regime_taxonomy">Regime Taxonomy</a> <a href="#regime_timeline">Twenty-Year Timeline</a> <a href="#inflation_breadth">Inflation Breadth And Labor</a> <a href="#production_activity">Real Activity And Production</a> <a href="#rates_curve">Rates And The Curve</a> <a href="#credit_conditions">Credit And Conditions</a> <a href="#volatility_risk">Volatility And Risk Appetite</a> <a href="#dollar_real_assets">Dollar And Real Assets</a> <a href="#valuation_backdrop">Valuation And Debt-Cycle Backdrop</a>
     </nav>
 
     <section class="methodology">
       <p class="eyebrow">Method</p>
-        <p>The report rebuilds the macro feature store from raw inputs when it runs, then aligns each selected series to the daily market frame the same way the models consume it. Mixed-frequency indicators are derived before alignment, while patched VIX term-structure history and the daily market-cap-to-GDP proxy remove leading gaps from the regime-critical rows. Crisis windows are shaded to make cross-cycle comparisons easier: Dot-com unwind: 2000-2002 | GFC: 2007-2009 | Pandemic shock: 2020-2020 | Inflation tightening: 2021-2023. The cards below add model-role guidance so the report treats inflation breadth, production, valuation, credit, and volatility as distinct macro channels rather than a flat list.</p>
+        <p>The report rebuilds the macro feature store from raw inputs when it runs, then aligns each selected series to the daily market frame the same way the models consume it. For the regime engine, the page compresses the last 20 years into monthly growth, inflation, credit, volatility, rate-shock, and valuation composites. Those composites drive a rule-assisted quadrant map and regime labels. Crisis windows are still shaded on the raw macro charts for fast cross-cycle comparison: Dot-com unwind: 2000-2002 | GFC: 2007-2009 | Pandemic shock: 2020-2020 | Inflation tightening: 2021-2023.</p>
     </section>
+
+        <section id="regime_overview" class="framework-section">
+  <p class="eyebrow">Current Diagnosis</p>
+  <h2>Where The Macro Machine Sits Now</h2>
+  <p>This rule-assisted regime engine compresses the last 20 years of growth, inflation, credit, volatility, rates, and valuation into a current diagnosis and transition watchlist.</p>
+  <div class="regime-grid">
+    <article class="regime-card regime-card-primary">
+      <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Current regime</p>
+      <h3>Fragile Late-Cycle Watch</h3>
+      <p>Valuation is rich, volatility is elevated, and growth is no longer broad, but credit has not fully cracked yet.</p>
+      <p class="regime-subcopy">Active since Apr 2026 · current window 1 month.</p>
+      <ul class="chip-list chip-list-tight"><li>Growth +0.1 sigma</li><li>Inflation +0.0 sigma</li><li>Stress +0.2 sigma</li><li>Rates +0.2 sigma</li><li>Valuation +2.1 sigma</li></ul>
+    </article>
+    <article class="regime-card">
+      <p class="regime-tag">Dalio-style quadrant</p>
+      <h3>Growth Down / Inflation Down</h3>
+      <p class="regime-subcopy">Disinflationary slowdown</p>
+      <p>A slowdown without inflation pressure can become a recovery setup if stress variables ease, but credit and volatility have to confirm it.</p>
+      <ul class="chip-list chip-list-tight"><li>VIX 24.2</li><li>HY spread 3.05%</li><li>2Y 3.81%</li><li>Oil $114</li><li>CAPE 39.1x</li></ul>
+    </article>
+    <article class="regime-card">
+      <p class="regime-tag">Macro read</p>
+      <p>Growth is soft but not broken. Inflation is near balance. Valuation is rich. Credit is mixed rather than broken.</p>
+      <p class="regime-subcopy">Treat the market as conditionally risk-on: participate selectively, but let credit and volatility control exposure quality.</p>
+      <p class="regime-subcopy">Main risk: A spread blowout, oil shock, or new rate repricing can harden this into a much more hostile regime.</p>
+    </article>
+    <article class="regime-card">
+      <p class="regime-tag">Transition watch</p>
+      <ul class="plain-list">
+<li>Credit is still the confirmation variable. A fast spread widening would harden this into deleveraging.</li><li>An energy or shelter reacceleration would push the regime back toward inflation shock.</li><li>A falling VIX with stable credit would improve this regime faster than headline growth data alone.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+        <section id="quadrant_map" class="framework-section">
+  <p class="eyebrow">All-Weather Lens</p>
+  <h2>Dalio-Style Growth And Inflation Quadrants</h2>
+  <p>The quadrant view is a proxy, not a forecast-surprise model. Growth uses production and labor breadth, while inflation uses CPI breadth and recent inflation impulse from the cached feature store.</p>
+  <div class="quadrant-grid">
+<article class="quadrant-card">
+  <p class="regime-tag">22% of sample · 53 months</p>
+  <h3>Growth Up / Inflation Down</h3>
+  <p class="regime-subcopy">Disinflationary growth</p>
+  <p>The clean all-weather backdrop: real activity is improving while inflation pressure is easing, so equities and duration can both breathe.</p>
+</article>
+<article class="quadrant-card">
+  <p class="regime-tag">14% of sample · 33 months</p>
+  <h3>Growth Up / Inflation Up</h3>
+  <p class="regime-subcopy">Inflationary boom</p>
+  <p>Nominal growth is strong, but inflation is heating up fast enough that rates and real assets start to matter more than long duration.</p>
+</article>
+<article class="quadrant-card">
+  <p class="regime-tag">16% of sample · 39 months</p>
+  <h3>Growth Down / Inflation Up</h3>
+  <p class="regime-subcopy">Stagflation squeeze</p>
+  <p>The hardest quadrant for diversified risk: growth softens while inflation stays sticky, which pressures both margins and valuation multiples.</p>
+</article>
+<article class="quadrant-card quadrant-card-active">
+  <p class="regime-tag">48% of sample · 116 months</p>
+  <h3>Growth Down / Inflation Down</h3>
+  <p class="regime-subcopy">Disinflationary slowdown</p>
+  <p>A slowdown without inflation pressure can become a recovery setup if stress variables ease, but credit and volatility have to confirm it.</p>
+</article>
+  </div>
+</section>
+
+        <section id="regime_taxonomy" class="framework-section">
+  <p class="eyebrow">Regime Taxonomy</p>
+  <h2>The Labels This Macro App Watches</h2>
+  <div class="taxonomy-grid">
+<article class="taxonomy-card">
+  <p class="regime-tag"><span class="swatch" style="background:#5f8f5b"></span>Regime label</p>
+  <h3>Disinflationary Growth</h3>
+  <p>Growth is healthy enough to support risk assets while inflation pressure is easing or contained.</p>
+  <p class="regime-subcopy">Playbook: Trend-following and normal risk budgets can work when credit and volatility stay calm.</p>
+  <p class="regime-subcopy">Failure mode: The failure mode is complacency: rich valuation plus a fresh VIX or rate shock.</p>
+</article>
+<article class="taxonomy-card">
+  <p class="regime-tag"><span class="swatch" style="background:#d3a24c"></span>Regime label</p>
+  <h3>Liquidity Bubble Or Valuation Stretch</h3>
+  <p>Valuation and momentum are running ahead of the macro margin of safety while volatility and credit still look benign.</p>
+  <p class="regime-subcopy">Playbook: Do not short richness on its own, but react faster to failed breakouts, VIX turns, and front-end repricing.</p>
+  <p class="regime-subcopy">Failure mode: Once liquidity conditions change, valuation can turn from tailwind to vulnerability very quickly.</p>
+</article>
+<article class="taxonomy-card">
+  <p class="regime-tag"><span class="swatch" style="background:#b56b2d"></span>Regime label</p>
+  <h3>Inflationary Boom</h3>
+  <p>Nominal growth and inflation are both strong, which tends to help real assets and cash-flow-now businesses more than long duration.</p>
+  <p class="regime-subcopy">Playbook: Favor price action confirmed by real activity, commodities, and sturdy balance sheets.</p>
+  <p class="regime-subcopy">Failure mode: If production weakens while inflation stays elevated, the boom usually degrades into stagflation.</p>
+</article>
+<article class="taxonomy-card">
+  <p class="regime-tag"><span class="swatch" style="background:#9a4a35"></span>Regime label</p>
+  <h3>Stagflation Squeeze</h3>
+  <p>Inflation stays stubborn while production and labor momentum soften, squeezing both margins and multiples.</p>
+  <p class="regime-subcopy">Playbook: Reduce broad long exposure, demand stronger confirmation, and lean toward defensive or inflation-linked exposures.</p>
+  <p class="regime-subcopy">Failure mode: Policy has little room to rescue markets without worsening inflation credibility.</p>
+</article>
+<article class="taxonomy-card">
+  <p class="regime-tag"><span class="swatch" style="background:#4f698c"></span>Regime label</p>
+  <h3>Rate-Shock Regime</h3>
+  <p>Front-end or real-yield repricing is moving fast enough to hit long-duration assets before credit fully breaks.</p>
+  <p class="regime-subcopy">Playbook: Penalize duration sensitivity, reduce leverage, and watch rate-shock interactions with expensive valuation.</p>
+  <p class="regime-subcopy">Failure mode: A rate shock often becomes a credit shock with a lag.</p>
+</article>
+<article class="taxonomy-card">
+  <p class="regime-tag"><span class="swatch" style="background:#6f4e7c"></span>Regime label</p>
+  <h3>Credit Deleveraging</h3>
+  <p>Credit spreads and financial conditions are tightening enough that the market is starting to transmit stress into the real economy.</p>
+  <p class="regime-subcopy">Playbook: Trade less, lower risk budgets, and wait for credit stabilization before re-risking.</p>
+  <p class="regime-subcopy">Failure mode: Cross-asset diversification weakens when refinancing stress turns broad.</p>
+</article>
+<article class="taxonomy-card">
+  <p class="regime-tag"><span class="swatch" style="background:#2f3c4f"></span>Regime label</p>
+  <h3>Panic Or Forced Liquidation</h3>
+  <p>Immediate stress is overwhelming the system: VIX spikes, credit widens, and market liquidity thins out.</p>
+  <p class="regime-subcopy">Playbook: Survival matters more than signal frequency. Cut leverage and treat price moves in volatility-adjusted terms.</p>
+  <p class="regime-subcopy">Failure mode: Normal model assumptions break when price movement becomes discontinuous.</p>
+</article>
+<article class="taxonomy-card">
+  <p class="regime-tag"><span class="swatch" style="background:#3f7f78"></span>Regime label</p>
+  <h3>Recovery And Reflation</h3>
+  <p>Stress is still elevated, but the direction of stress is improving faster than the official macro data.</p>
+  <p class="regime-subcopy">Playbook: Allow recovery signals when VIX and credit improve together, even if growth data still looks ugly.</p>
+  <p class="regime-subcopy">Failure mode: Bear-market rallies fail when credit does not confirm the improvement.</p>
+</article>
+<article class="taxonomy-card">
+  <p class="regime-tag"><span class="swatch" style="background:#9b8f77"></span>Regime label</p>
+  <h3>Sideways Low-Volatility Regime</h3>
+  <p>Growth and inflation are stable enough that carry and mean reversion dominate while breakouts lose urgency.</p>
+  <p class="regime-subcopy">Playbook: Keep breakout confidence modest and watch for the first low-to-rising volatility transition.</p>
+  <p class="regime-subcopy">Failure mode: The first volatility expansion can invalidate months of low-vol assumptions.</p>
+</article>
+<article class="taxonomy-card taxonomy-card-active">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Regime label</p>
+  <h3>Fragile Late-Cycle Watch</h3>
+  <p>Valuation is rich, volatility is elevated, and growth is no longer broad, but credit has not fully cracked yet.</p>
+  <p class="regime-subcopy">Playbook: Treat the market as conditionally risk-on: participate selectively, but let credit and volatility control exposure quality.</p>
+  <p class="regime-subcopy">Failure mode: A spread blowout, oil shock, or new rate repricing can harden this into a much more hostile regime.</p>
+</article>
+  </div>
+</section>
+
+        <section id="regime_timeline" class="framework-section">
+  <p class="eyebrow">Twenty-Year Timeline</p>
+  <h2>How The Regime Engine Moved Across The Last Twenty Years</h2>
+  <p>The timeline compresses monthly regime calls into contiguous windows. The summary below keeps the major phases readable while still grounding them in the underlying macro composites.</p>
+  <div class="timeline-shell">
+    <div class="timeline-meta">
+      <span>Apr 2006</span>
+      <span>Apr 2026</span>
+    </div>
+    <div class="timeline-bar"><span class="timeline-segment" style="width:1.66%; background:#b56b2d" title="Inflationary Boom: Jun 2006 to Sep 2006 (4 months)"></span><span class="timeline-segment" style="width:4.15%; background:#5f8f5b" title="Disinflationary Growth: Oct 2006 to Jul 2007 (10 months)"></span><span class="timeline-segment" style="width:2.49%; background:#8c5a43" title="Fragile Late-Cycle Watch: Aug 2007 to Jan 2008 (6 months)"></span><span class="timeline-segment" style="width:1.24%; background:#8c5a43" title="Fragile Late-Cycle Watch: Apr 2008 to Jun 2008 (3 months)"></span><span class="timeline-segment" style="width:2.49%; background:#2f3c4f" title="Panic Or Forced Liquidation: Sep 2008 to Feb 2009 (6 months)"></span><span class="timeline-segment" style="width:1.66%; background:#6f4e7c" title="Credit Deleveraging: Mar 2009 to Jun 2009 (4 months)"></span><span class="timeline-segment" style="width:2.07%; background:#3f7f78" title="Recovery And Reflation: Jul 2009 to Nov 2009 (5 months)"></span><span class="timeline-segment" style="width:1.24%; background:#8c5a43" title="Fragile Late-Cycle Watch: Dec 2009 to Feb 2010 (3 months)"></span><span class="timeline-segment" style="width:1.24%; background:#5f8f5b" title="Disinflationary Growth: Mar 2010 to May 2010 (3 months)"></span><span class="timeline-segment" style="width:7.88%; background:#8c5a43" title="Fragile Late-Cycle Watch: Jun 2010 to Dec 2011 (19 months)"></span><span class="timeline-segment" style="width:1.66%; background:#9b8f77" title="Sideways Low-Volatility Regime: Feb 2012 to May 2012 (4 months)"></span><span class="timeline-segment" style="width:9.54%; background:#8c5a43" title="Fragile Late-Cycle Watch: Jun 2012 to Apr 2014 (23 months)"></span><span class="timeline-segment" style="width:2.07%; background:#5f8f5b" title="Disinflationary Growth: May 2014 to Sep 2014 (5 months)"></span><span class="timeline-segment" style="width:6.64%; background:#8c5a43" title="Fragile Late-Cycle Watch: Feb 2015 to May 2016 (16 months)"></span><span class="timeline-segment" style="width:4.15%; background:#9b8f77" title="Sideways Low-Volatility Regime: Jun 2016 to Mar 2017 (10 months)"></span><span class="timeline-segment" style="width:9.13%; background:#5f8f5b" title="Disinflationary Growth: Apr 2017 to Jan 2019 (22 months)"></span><span class="timeline-segment" style="width:1.66%; background:#8c5a43" title="Fragile Late-Cycle Watch: Jun 2019 to Sep 2019 (4 months)"></span><span class="timeline-segment" style="width:1.24%; background:#9b8f77" title="Sideways Low-Volatility Regime: Oct 2019 to Dec 2019 (3 months)"></span><span class="timeline-segment" style="width:1.24%; background:#8c5a43" title="Fragile Late-Cycle Watch: Jan 2020 to Mar 2020 (3 months)"></span><span class="timeline-segment" style="width:3.73%; background:#8c5a43" title="Fragile Late-Cycle Watch: Jun 2020 to Feb 2021 (9 months)"></span><span class="timeline-segment" style="width:4.15%; background:#b56b2d" title="Inflationary Boom: May 2021 to Feb 2022 (10 months)"></span><span class="timeline-segment" style="width:1.66%; background:#4f698c" title="Rate-Shock Regime: Mar 2022 to Jun 2022 (4 months)"></span><span class="timeline-segment" style="width:9.54%; background:#b56b2d" title="Inflationary Boom: Jul 2022 to May 2024 (23 months)"></span><span class="timeline-segment" style="width:3.73%; background:#d3a24c" title="Liquidity Bubble Or Valuation Stretch: Jun 2024 to Feb 2025 (9 months)"></span><span class="timeline-segment" style="width:3.73%; background:#d3a24c" title="Liquidity Bubble Or Valuation Stretch: Jun 2025 to Feb 2026 (9 months)"></span><span class="timeline-segment" style="width:0.41%; background:#8c5a43" title="Fragile Late-Cycle Watch: Apr 2026 to Apr 2026 (1 month)"></span></div>
+  </div>
+  <div class="timeline-legend">
+    <p class="regime-tag">Dominant labels over the sample</p>
+    <ul class="legend-list"><li><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 39% of sample</li><li><span class="swatch" style="background:#5f8f5b"></span>Disinflationary Growth · 19% of sample</li><li><span class="swatch" style="background:#b56b2d"></span>Inflationary Boom · 15% of sample</li><li><span class="swatch" style="background:#d3a24c"></span>Liquidity Bubble Or Valuation Stretch · 8% of sample</li></ul>
+  </div>
+  <div class="window-grid">
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#b56b2d"></span>Inflationary Boom · 4 months </p>
+  <h3>Jun 2006 to Sep 2006</h3>
+  <p>growth mixed, inflation pressure elevated, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Up / Inflation Up.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.3 sigma</li><li>Inflation +0.5 sigma</li><li>Stress -0.2 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#5f8f5b"></span>Disinflationary Growth · 10 months </p>
+  <h3>Oct 2006 to Jul 2007</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Up / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.3 sigma</li><li>Inflation +0.0 sigma</li><li>Stress -0.2 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 6 months </p>
+  <h3>Aug 2007 to Jan 2008</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Up / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.3 sigma</li><li>Inflation +0.1 sigma</li><li>Stress +0.0 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 3 months </p>
+  <h3>Apr 2008 to Jun 2008</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -0.3 sigma</li><li>Inflation +0.1 sigma</li><li>Stress +0.4 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#2f3c4f"></span>Panic Or Forced Liquidation · 6 months </p>
+  <h3>Sep 2008 to Feb 2009</h3>
+  <p>growth fading, disinflation dominant, and stress elevated.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -1.6 sigma</li><li>Inflation -0.6 sigma</li><li>Stress +1.8 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#6f4e7c"></span>Credit Deleveraging · 4 months </p>
+  <h3>Mar 2009 to Jun 2009</h3>
+  <p>growth fading, disinflation dominant, and stress elevated.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -2.3 sigma</li><li>Inflation -1.0 sigma</li><li>Stress +1.0 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#3f7f78"></span>Recovery And Reflation · 5 months </p>
+  <h3>Jul 2009 to Nov 2009</h3>
+  <p>growth fading, disinflation dominant, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -1.4 sigma</li><li>Inflation -1.1 sigma</li><li>Stress +0.1 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 3 months </p>
+  <h3>Dec 2009 to Feb 2010</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -0.3 sigma</li><li>Inflation -0.2 sigma</li><li>Stress +0.0 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#5f8f5b"></span>Disinflationary Growth · 3 months </p>
+  <h3>Mar 2010 to May 2010</h3>
+  <p>growth mixed, disinflation dominant, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Up / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.4 sigma</li><li>Inflation -0.7 sigma</li><li>Stress +0.0 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 19 months </p>
+  <h3>Jun 2010 to Dec 2011</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.0 sigma</li><li>Inflation -0.3 sigma</li><li>Stress +0.1 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#9b8f77"></span>Sideways Low-Volatility Regime · 4 months </p>
+  <h3>Feb 2012 to May 2012</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.0 sigma</li><li>Inflation -0.2 sigma</li><li>Stress -0.2 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 23 months </p>
+  <h3>Jun 2012 to Apr 2014</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -0.1 sigma</li><li>Inflation -0.3 sigma</li><li>Stress -0.1 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#5f8f5b"></span>Disinflationary Growth · 5 months </p>
+  <h3>May 2014 to Sep 2014</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Up / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.2 sigma</li><li>Inflation -0.1 sigma</li><li>Stress -0.2 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 16 months </p>
+  <h3>Feb 2015 to May 2016</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -0.2 sigma</li><li>Inflation -0.4 sigma</li><li>Stress -0.0 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#9b8f77"></span>Sideways Low-Volatility Regime · 10 months </p>
+  <h3>Jun 2016 to Mar 2017</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -0.0 sigma</li><li>Inflation -0.1 sigma</li><li>Stress -0.2 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#5f8f5b"></span>Disinflationary Growth · 22 months </p>
+  <h3>Apr 2017 to Jan 2019</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Up / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.3 sigma</li><li>Inflation -0.1 sigma</li><li>Stress -0.1 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 4 months </p>
+  <h3>Jun 2019 to Sep 2019</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -0.1 sigma</li><li>Inflation -0.1 sigma</li><li>Stress -0.3 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#9b8f77"></span>Sideways Low-Volatility Regime · 3 months </p>
+  <h3>Oct 2019 to Dec 2019</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -0.1 sigma</li><li>Inflation -0.1 sigma</li><li>Stress -0.3 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 3 months </p>
+  <h3>Jan 2020 to Mar 2020</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -0.1 sigma</li><li>Inflation -0.0 sigma</li><li>Stress +0.1 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 9 months </p>
+  <h3>Jun 2020 to Feb 2021</h3>
+  <p>growth fading, disinflation dominant, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth -0.9 sigma</li><li>Inflation -0.6 sigma</li><li>Stress -0.2 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#b56b2d"></span>Inflationary Boom · 10 months </p>
+  <h3>May 2021 to Feb 2022</h3>
+  <p>growth broadening, inflation pressure elevated, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Up / Inflation Up.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.7 sigma</li><li>Inflation +1.3 sigma</li><li>Stress -0.2 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#4f698c"></span>Rate-Shock Regime · 4 months </p>
+  <h3>Mar 2022 to Jun 2022</h3>
+  <p>growth mixed, inflation pressure elevated, and stress elevated.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Up / Inflation Up.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.4 sigma</li><li>Inflation +2.0 sigma</li><li>Stress +0.5 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#b56b2d"></span>Inflationary Boom · 23 months </p>
+  <h3>Jul 2022 to May 2024</h3>
+  <p>growth mixed, inflation pressure elevated, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Up.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.1 sigma</li><li>Inflation +1.0 sigma</li><li>Stress +0.0 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#d3a24c"></span>Liquidity Bubble Or Valuation Stretch · 9 months </p>
+  <h3>Jun 2024 to Feb 2025</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Up.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.0 sigma</li><li>Inflation +0.2 sigma</li><li>Stress -0.2 sigma</li></ul>
+</article>
+<article class="window-card">
+  <p class="regime-tag"><span class="swatch" style="background:#d3a24c"></span>Liquidity Bubble Or Valuation Stretch · 9 months </p>
+  <h3>Jun 2025 to Feb 2026</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Up / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.2 sigma</li><li>Inflation +0.1 sigma</li><li>Stress -0.3 sigma</li></ul>
+</article>
+<article class="window-card window-card-current">
+  <p class="regime-tag"><span class="swatch" style="background:#8c5a43"></span>Fragile Late-Cycle Watch · 1 month </p>
+  <h3>Apr 2026 to Apr 2026</h3>
+  <p>growth mixed, inflation balanced, and stress mixed.</p>
+  <p class="regime-subcopy">Dominant quadrant: Growth Down / Inflation Down.</p>
+  <ul class="chip-list chip-list-tight"><li>Growth +0.1 sigma</li><li>Inflation +0.0 sigma</li><li>Stress +0.2 sigma</li></ul>
+</article>
+  </div>
+</section>
 
         <section class="framework-section">
   <p class="eyebrow">System Design</p>

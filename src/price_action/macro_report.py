@@ -8,9 +8,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
-from .data import MACRO_FEATURES_DIR, load_macro_context, resolve_project_root
+from .data import MACRO_FEATURES_DIR, load_asset_daily, load_macro_context, resolve_project_root
 from .macro_context import (
     MACRO_ARCHITECTURE_LAYERS,
     MACRO_DESIGN_PRINCIPLES,
@@ -45,6 +46,174 @@ SVG_TOP_MARGIN = 36
 SVG_BOTTOM_MARGIN = 54
 SVG_ROW_HEIGHT = 180
 SVG_ROW_GAP = 18
+REPORT_LOOKBACK_YEARS = 20
+
+REGIME_COLORS: dict[str, str] = {
+    "Disinflationary Growth": "#5f8f5b",
+    "Liquidity Bubble Or Valuation Stretch": "#d3a24c",
+    "Inflationary Boom": "#b56b2d",
+    "Stagflation Squeeze": "#9a4a35",
+    "Rate-Shock Regime": "#4f698c",
+    "Credit Deleveraging": "#6f4e7c",
+    "Panic Or Forced Liquidation": "#2f3c4f",
+    "Recovery And Reflation": "#3f7f78",
+    "Sideways Low-Volatility Regime": "#9b8f77",
+    "Fragile Late-Cycle Watch": "#8c5a43",
+}
+
+QUADRANT_LIBRARY: tuple[dict[str, str], ...] = (
+    {
+        "title": "Growth Up / Inflation Down",
+        "subtitle": "Disinflationary growth",
+        "body": "The clean all-weather backdrop: real activity is improving while inflation pressure is easing, so equities and duration can both breathe.",
+    },
+    {
+        "title": "Growth Up / Inflation Up",
+        "subtitle": "Inflationary boom",
+        "body": "Nominal growth is strong, but inflation is heating up fast enough that rates and real assets start to matter more than long duration.",
+    },
+    {
+        "title": "Growth Down / Inflation Up",
+        "subtitle": "Stagflation squeeze",
+        "body": "The hardest quadrant for diversified risk: growth softens while inflation stays sticky, which pressures both margins and valuation multiples.",
+    },
+    {
+        "title": "Growth Down / Inflation Down",
+        "subtitle": "Disinflationary slowdown",
+        "body": "A slowdown without inflation pressure can become a recovery setup if stress variables ease, but credit and volatility have to confirm it.",
+    },
+)
+
+REGIME_LIBRARY: tuple[dict[str, str], ...] = (
+    {
+        "title": "Disinflationary Growth",
+        "summary": "Growth is healthy enough to support risk assets while inflation pressure is easing or contained.",
+        "playbook": "Trend-following and normal risk budgets can work when credit and volatility stay calm.",
+        "risk": "The failure mode is complacency: rich valuation plus a fresh VIX or rate shock.",
+    },
+    {
+        "title": "Liquidity Bubble Or Valuation Stretch",
+        "summary": "Valuation and momentum are running ahead of the macro margin of safety while volatility and credit still look benign.",
+        "playbook": "Do not short richness on its own, but react faster to failed breakouts, VIX turns, and front-end repricing.",
+        "risk": "Once liquidity conditions change, valuation can turn from tailwind to vulnerability very quickly.",
+    },
+    {
+        "title": "Inflationary Boom",
+        "summary": "Nominal growth and inflation are both strong, which tends to help real assets and cash-flow-now businesses more than long duration.",
+        "playbook": "Favor price action confirmed by real activity, commodities, and sturdy balance sheets.",
+        "risk": "If production weakens while inflation stays elevated, the boom usually degrades into stagflation.",
+    },
+    {
+        "title": "Stagflation Squeeze",
+        "summary": "Inflation stays stubborn while production and labor momentum soften, squeezing both margins and multiples.",
+        "playbook": "Reduce broad long exposure, demand stronger confirmation, and lean toward defensive or inflation-linked exposures.",
+        "risk": "Policy has little room to rescue markets without worsening inflation credibility.",
+    },
+    {
+        "title": "Rate-Shock Regime",
+        "summary": "Front-end or real-yield repricing is moving fast enough to hit long-duration assets before credit fully breaks.",
+        "playbook": "Penalize duration sensitivity, reduce leverage, and watch rate-shock interactions with expensive valuation.",
+        "risk": "A rate shock often becomes a credit shock with a lag.",
+    },
+    {
+        "title": "Credit Deleveraging",
+        "summary": "Credit spreads and financial conditions are tightening enough that the market is starting to transmit stress into the real economy.",
+        "playbook": "Trade less, lower risk budgets, and wait for credit stabilization before re-risking.",
+        "risk": "Cross-asset diversification weakens when refinancing stress turns broad.",
+    },
+    {
+        "title": "Panic Or Forced Liquidation",
+        "summary": "Immediate stress is overwhelming the system: VIX spikes, credit widens, and market liquidity thins out.",
+        "playbook": "Survival matters more than signal frequency. Cut leverage and treat price moves in volatility-adjusted terms.",
+        "risk": "Normal model assumptions break when price movement becomes discontinuous.",
+    },
+    {
+        "title": "Recovery And Reflation",
+        "summary": "Stress is still elevated, but the direction of stress is improving faster than the official macro data.",
+        "playbook": "Allow recovery signals when VIX and credit improve together, even if growth data still looks ugly.",
+        "risk": "Bear-market rallies fail when credit does not confirm the improvement.",
+    },
+    {
+        "title": "Sideways Low-Volatility Regime",
+        "summary": "Growth and inflation are stable enough that carry and mean reversion dominate while breakouts lose urgency.",
+        "playbook": "Keep breakout confidence modest and watch for the first low-to-rising volatility transition.",
+        "risk": "The first volatility expansion can invalidate months of low-vol assumptions.",
+    },
+    {
+        "title": "Fragile Late-Cycle Watch",
+        "summary": "Valuation is rich, volatility is elevated, and growth is no longer broad, but credit has not fully cracked yet.",
+        "playbook": "Treat the market as conditionally risk-on: participate selectively, but let credit and volatility control exposure quality.",
+        "risk": "A spread blowout, oil shock, or new rate repricing can harden this into a much more hostile regime.",
+    },
+)
+
+SECTOR_BUCKETS: tuple[dict[str, str], ...] = (
+    {
+        "symbol": "XLE",
+        "label": "Energy",
+        "family": "Real asset cyclical",
+        "earnings_proxy": "High earnings leverage to oil, capex, and nominal GDP.",
+        "role": "Often benefits most when inflation and supply shocks dominate the tape.",
+    },
+    {
+        "symbol": "XLB",
+        "label": "Commodity / Materials",
+        "family": "Cyclical inflation beta",
+        "earnings_proxy": "Sensitive to industrial demand, pricing power, and commodity volumes.",
+        "role": "Usually improves when nominal growth and input scarcity rise together.",
+    },
+    {
+        "symbol": "XLI",
+        "label": "Manufacturing / Industrials",
+        "family": "Growth and capex cyclical",
+        "earnings_proxy": "Leverages industrial production, capex, and freight intensity.",
+        "role": "Tends to lead in recovery and reflation regimes when production broadens.",
+    },
+    {
+        "symbol": "XLY",
+        "label": "Retail / Consumer Discretionary",
+        "family": "Consumer cyclical",
+        "earnings_proxy": "Most exposed to real income, labor resilience, and disinflation relief.",
+        "role": "Usually wants falling input pressure, healthy labor, and calm credit.",
+    },
+    {
+        "symbol": "XLK",
+        "label": "Information Technology",
+        "family": "Duration and innovation",
+        "earnings_proxy": "Benefits from disinflation, lower discount rates, and enterprise capex strength.",
+        "role": "Typically strongest in disinflationary growth or liquidity-led melt-up regimes.",
+    },
+    {
+        "symbol": "XLP",
+        "label": "Consumer Staples",
+        "family": "Defensive cash flow",
+        "earnings_proxy": "Lower-volatility earnings with less macro beta than cyclical retail.",
+        "role": "Acts as a defensive buffer when growth is fading or rate stress rises.",
+    },
+    {
+        "symbol": "XLV",
+        "label": "Health Care",
+        "family": "Defensive quality",
+        "earnings_proxy": "Relatively stable earnings stream with lower sensitivity to the goods cycle.",
+        "role": "Useful when the portfolio needs defense without fully abandoning equity exposure.",
+    },
+    {
+        "symbol": "XLU",
+        "label": "Utilities",
+        "family": "Rate-sensitive defense",
+        "earnings_proxy": "Stable regulated cash flows, but still sensitive to rate and duration pressure.",
+        "role": "Can cushion drawdowns when stress rises, though not every inflation regime helps it.",
+    },
+)
+
+DEFENSIVE_SECTOR_SYMBOLS: tuple[str, ...] = ("XLP", "XLV", "XLU")
+DEFENSIVE_REGIMES: tuple[str, ...] = (
+    "Fragile Late-Cycle Watch",
+    "Stagflation Squeeze",
+    "Rate-Shock Regime",
+    "Credit Deleveraging",
+    "Panic Or Forced Liquidation",
+)
 
 
 def _ensure_macro_feature_store(project_root: str | Path | None = None) -> Path:
@@ -103,6 +272,587 @@ def _render_source_link(source: str | None, source_url: str | None) -> str:
     if isinstance(source_url, str) and source_url.strip():
         return f'<a href="{html.escape(source_url)}">{label}</a>'
     return label
+
+
+def _zscore(series: pd.Series) -> pd.Series:
+    numeric = pd.to_numeric(series, errors="coerce")
+    std = numeric.std(ddof=0)
+    if pd.isna(std) or std == 0:
+        return pd.Series(0.0, index=numeric.index)
+    return (numeric - numeric.mean()) / std
+
+
+def _format_sigma(value: float) -> str:
+    return f"{value:+.1f} sigma"
+
+
+def _format_duration(months: int) -> str:
+    if months >= 24:
+        years = months / 12.0
+        return f"{years:.1f} years"
+    if months == 1:
+        return "1 month"
+    return f"{months} months"
+
+
+def _score_direction(value: float, positive_text: str, negative_text: str, neutral_text: str) -> str:
+    if value >= 0.45:
+        return positive_text
+    if value <= -0.45:
+        return negative_text
+    return neutral_text
+
+
+def _current_regime_library_entry(label: str) -> dict[str, str]:
+    for item in REGIME_LIBRARY:
+        if item["title"] == label:
+            return dict(item)
+    return {
+        "title": label,
+        "summary": "Rule-assisted macro label derived from the current growth, inflation, rate, credit, and volatility mix.",
+        "playbook": "Use the stress variables to control exposure quality.",
+        "risk": "Transitions can happen faster than headline macro data suggests.",
+    }
+
+
+def _current_quadrant_entry(label: str) -> dict[str, str]:
+    for item in QUADRANT_LIBRARY:
+        if item["title"] == label:
+            return dict(item)
+    return {
+        "title": label,
+        "subtitle": "Macro quadrant",
+        "body": "Growth and inflation composite inferred from the cached macro store.",
+    }
+
+
+def _classify_quadrant(row: pd.Series) -> str:
+    growth_up = float(row["growth_axis"]) >= 0.15
+    inflation_up = float(row["inflation_axis"]) >= 0.15
+    if growth_up and not inflation_up:
+        return "Growth Up / Inflation Down"
+    if growth_up and inflation_up:
+        return "Growth Up / Inflation Up"
+    if not growth_up and inflation_up:
+        return "Growth Down / Inflation Up"
+    return "Growth Down / Inflation Down"
+
+
+def _classify_regime(row: pd.Series) -> str:
+    volatility_stress = float(row["volatility_stress"])
+    credit_stress = float(row["credit_stress"])
+    rate_shock = float(row["rate_shock"])
+    valuation_fragility = float(row["valuation_fragility"])
+    growth_axis = float(row["growth_axis"])
+    inflation_axis = float(row["inflation_axis"])
+    stress_improving = float(row["stress_improving"])
+    spot_vix = float(row["spot_vix"])
+    vix3m_level = float(row["vix3m_level"])
+
+    if volatility_stress > 1.1 and credit_stress > 0.9 and spot_vix > vix3m_level:
+        return "Panic Or Forced Liquidation"
+    if credit_stress > 0.85 and (volatility_stress > 0.55 or growth_axis < -0.45):
+        return "Credit Deleveraging"
+    if stress_improving > 0.5 and (volatility_stress > 0.4 or credit_stress > 0.3):
+        return "Recovery And Reflation"
+    if rate_shock > 0.9 and valuation_fragility > 0.45:
+        return "Rate-Shock Regime"
+    if valuation_fragility > 0.8 and volatility_stress > 0.25 and credit_stress < 0.2 and growth_axis < 0.1:
+        return "Fragile Late-Cycle Watch"
+    if inflation_axis > 0.35 and growth_axis < -0.15:
+        return "Stagflation Squeeze"
+    if inflation_axis > 0.35 and growth_axis >= -0.15 and credit_stress < 0.5:
+        return "Inflationary Boom"
+    if valuation_fragility > 0.8 and volatility_stress < 0.15 and credit_stress < 0.0 and growth_axis > -0.2:
+        return "Liquidity Bubble Or Valuation Stretch"
+    if growth_axis > 0.15 and inflation_axis < 0.2 and volatility_stress < 0.45 and credit_stress < 0.35:
+        return "Disinflationary Growth"
+    if abs(growth_axis) < 0.2 and abs(inflation_axis) < 0.25 and volatility_stress < -0.25 and credit_stress < 0.2:
+        return "Sideways Low-Volatility Regime"
+    return "Fragile Late-Cycle Watch"
+
+
+def _smooth_label_series(labels: pd.Series, passes: int = 2) -> pd.Series:
+    smoothed = labels.astype("object").tolist()
+    if len(smoothed) < 3:
+        return labels
+    for _ in range(passes):
+        for index in range(1, len(smoothed) - 1):
+            if smoothed[index - 1] == smoothed[index + 1] and smoothed[index] != smoothed[index - 1]:
+                smoothed[index] = smoothed[index - 1]
+    return pd.Series(smoothed, index=labels.index)
+
+
+def _window_macro_summary(window_frame: pd.DataFrame) -> str:
+    growth_text = _score_direction(
+        float(window_frame["growth_axis"].mean()),
+        positive_text="growth broadening",
+        negative_text="growth fading",
+        neutral_text="growth mixed",
+    )
+    inflation_text = _score_direction(
+        float(window_frame["inflation_axis"].mean()),
+        positive_text="inflation pressure elevated",
+        negative_text="disinflation dominant",
+        neutral_text="inflation balanced",
+    )
+    stress_text = _score_direction(
+        float(window_frame["stress_axis"].mean()),
+        positive_text="stress elevated",
+        negative_text="stress calm",
+        neutral_text="stress mixed",
+    )
+    return f"{growth_text}, {inflation_text}, and {stress_text}."
+
+
+def _build_regime_windows(regime_frame: pd.DataFrame) -> list[dict[str, Any]]:
+    if regime_frame.empty:
+        return []
+
+    windows: list[dict[str, Any]] = []
+    start_index = regime_frame.index[0]
+    current_label = str(regime_frame["regime_label"].iloc[0])
+
+    for timestamp, label in regime_frame["regime_label"].iloc[1:].items():
+        if str(label) == current_label:
+            continue
+        window_end = timestamp - pd.offsets.MonthEnd(1)
+        window_frame = regime_frame.loc[start_index:window_end]
+        if not window_frame.empty:
+            dominant_quadrant = str(window_frame["quadrant_label"].mode().iloc[0])
+            months = int(len(window_frame.index))
+            windows.append(
+                {
+                    "label": current_label,
+                    "color": REGIME_COLORS.get(current_label, ACCENT_COLORS[0]),
+                    "start_display": pd.Timestamp(window_frame.index[0]).strftime("%b %Y"),
+                    "end_display": pd.Timestamp(window_frame.index[-1]).strftime("%b %Y"),
+                    "months": months,
+                    "duration": _format_duration(months),
+                    "quadrant": dominant_quadrant,
+                    "summary": _window_macro_summary(window_frame),
+                    "score_chips": (
+                        f"Growth {_format_sigma(float(window_frame['growth_axis'].mean()))}",
+                        f"Inflation {_format_sigma(float(window_frame['inflation_axis'].mean()))}",
+                        f"Stress {_format_sigma(float(window_frame['stress_axis'].mean()))}",
+                    ),
+                }
+            )
+        start_index = timestamp
+        current_label = str(label)
+
+    final_window = regime_frame.loc[start_index:]
+    if not final_window.empty:
+        dominant_quadrant = str(final_window["quadrant_label"].mode().iloc[0])
+        months = int(len(final_window.index))
+        windows.append(
+            {
+                "label": current_label,
+                "color": REGIME_COLORS.get(current_label, ACCENT_COLORS[0]),
+                "start_display": pd.Timestamp(final_window.index[0]).strftime("%b %Y"),
+                "end_display": pd.Timestamp(final_window.index[-1]).strftime("%b %Y"),
+                "months": months,
+                "duration": _format_duration(months),
+                "quadrant": dominant_quadrant,
+                "summary": _window_macro_summary(final_window),
+                "score_chips": (
+                    f"Growth {_format_sigma(float(final_window['growth_axis'].mean()))}",
+                    f"Inflation {_format_sigma(float(final_window['inflation_axis'].mean()))}",
+                    f"Stress {_format_sigma(float(final_window['stress_axis'].mean()))}",
+                ),
+                "is_current": True,
+            }
+        )
+
+    filtered_windows = [window for window in windows if window["months"] >= 3 or window.get("is_current")]
+    return filtered_windows or windows
+
+
+def _build_current_watch_items(row: pd.Series) -> list[str]:
+    items: list[str] = []
+    if float(row["credit_stress"]) < 0.2:
+        items.append("Credit is still the confirmation variable. A fast spread widening would harden this into deleveraging.")
+    else:
+        items.append("Credit already shows pressure. Stabilization there matters more than a single equity bounce.")
+
+    if float(row["inflation_axis"]) > 0.25:
+        items.append("Core and shelter easing, plus oil stabilization, would move the regime toward a friendlier disinflation path.")
+    else:
+        items.append("An energy or shelter reacceleration would push the regime back toward inflation shock.")
+
+    if float(row["rate_shock"]) > 0.35:
+        items.append("Further front-end repricing would keep long-duration assets under pressure even without a credit accident.")
+    elif float(row["volatility_stress"]) > 0.35:
+        items.append("A falling VIX with stable credit would improve this regime faster than headline growth data alone.")
+    else:
+        items.append("Low volatility is only constructive while valuation and rates remain stable enough to avoid a fresh shock.")
+    return items
+
+
+def _build_regime_overview(frame: pd.DataFrame, lookback_years: int = REPORT_LOOKBACK_YEARS) -> dict[str, Any]:
+    monthly = frame.resample("ME").last().ffill()
+
+    regime_frame = pd.DataFrame(index=monthly.index)
+    regime_frame["spot_vix"] = monthly["spot_vix"]
+    regime_frame["vix3m_level"] = monthly["vix3m_level"]
+    regime_frame["high_yield_spread"] = monthly["high_yield_spread"]
+    regime_frame["NFCI"] = monthly["NFCI"]
+    regime_frame["us_2y_yield"] = monthly["us_2y_yield"]
+    regime_frame["us_10y_yield"] = monthly["us_10y_yield"]
+    regime_frame["yield_curve_10y_2y"] = monthly["yield_curve_10y_2y"]
+    regime_frame["wti_usd_per_bbl"] = monthly["wti_usd_per_bbl"]
+    regime_frame["shiller_cape_ratio"] = monthly["shiller_cape_ratio"]
+    regime_frame["market_cap_to_gdp_pct_patched"] = monthly["market_cap_to_gdp_pct_patched"]
+
+    growth_level = pd.concat(
+        [
+            _zscore(monthly["industrial_production_yoy_pct"]),
+            _zscore(monthly["manufacturing_output_yoy_pct"]),
+            -_zscore(monthly["unemployment_rate_pct"]),
+        ],
+        axis=1,
+    ).mean(axis=1)
+    growth_trend = pd.concat(
+        [
+            _zscore(monthly["industrial_production_yoy_pct"].diff(3)),
+            _zscore(monthly["manufacturing_output_yoy_pct"].diff(3)),
+            -_zscore(monthly["unemployment_rate_pct"].diff(3)),
+        ],
+        axis=1,
+    ).mean(axis=1)
+    inflation_level = pd.concat(
+        [
+            _zscore(monthly["cpi_yoy_pct"]),
+            _zscore(monthly["core_cpi_yoy_pct"]),
+            _zscore(monthly["shelter_cpi_yoy_pct"]),
+            0.6 * _zscore(monthly["energy_cpi_yoy_pct"]),
+        ],
+        axis=1,
+    ).mean(axis=1)
+    inflation_trend = pd.concat(
+        [
+            _zscore(monthly["cpi_yoy_pct"].diff(3)),
+            _zscore(monthly["core_cpi_yoy_pct"].diff(3)),
+            _zscore(monthly["shelter_cpi_yoy_pct"].diff(3)),
+            0.6 * _zscore(monthly["energy_cpi_yoy_pct"].diff(3)),
+        ],
+        axis=1,
+    ).mean(axis=1)
+    volatility_stress = pd.concat(
+        [
+            _zscore(monthly["spot_vix"]),
+            _zscore(monthly["spot_vix"] - monthly["vix3m_level"]),
+            0.7 * _zscore(monthly["spot_vix"].diff(3)),
+        ],
+        axis=1,
+    ).mean(axis=1)
+    credit_stress = pd.concat(
+        [
+            _zscore(monthly["high_yield_spread"]),
+            _zscore(monthly["NFCI"]),
+            0.6 * _zscore(monthly["high_yield_spread"].diff(3)),
+        ],
+        axis=1,
+    ).mean(axis=1)
+    rate_shock = pd.concat(
+        [
+            _zscore(monthly["us_2y_yield"].diff(3)),
+            0.8 * _zscore(monthly["us_10y_yield"].diff(3)),
+            -0.5 * _zscore(monthly["yield_curve_10y_2y"].diff(3)),
+        ],
+        axis=1,
+    ).mean(axis=1)
+    valuation_fragility = pd.concat(
+        [
+            _zscore(monthly["shiller_cape_ratio"]),
+            _zscore(monthly["market_cap_to_gdp_pct_patched"]),
+        ],
+        axis=1,
+    ).mean(axis=1)
+
+    regime_frame["growth_axis"] = (0.65 * growth_level + 0.35 * growth_trend).rolling(3, min_periods=1).mean()
+    regime_frame["inflation_axis"] = (0.7 * inflation_level + 0.3 * inflation_trend).rolling(3, min_periods=1).mean()
+    regime_frame["volatility_stress"] = volatility_stress.rolling(3, min_periods=1).mean()
+    regime_frame["credit_stress"] = credit_stress.rolling(3, min_periods=1).mean()
+    regime_frame["rate_shock"] = rate_shock.rolling(3, min_periods=1).mean()
+    regime_frame["valuation_fragility"] = valuation_fragility.rolling(3, min_periods=1).mean()
+    regime_frame["stress_improving"] = pd.concat(
+        [
+            -_zscore(monthly["spot_vix"].diff(3)),
+            -_zscore(monthly["high_yield_spread"].diff(3)),
+            -_zscore(monthly["NFCI"].diff(3)),
+        ],
+        axis=1,
+    ).mean(axis=1).rolling(3, min_periods=1).mean()
+    regime_frame["stress_axis"] = pd.concat(
+        [
+            regime_frame["volatility_stress"],
+            regime_frame["credit_stress"],
+            0.8 * regime_frame["rate_shock"],
+        ],
+        axis=1,
+    ).mean(axis=1)
+
+    lookback_start = regime_frame.index.max() - pd.DateOffset(years=lookback_years)
+    regime_frame = regime_frame.loc[regime_frame.index >= lookback_start].copy()
+    regime_frame["quadrant_label"] = regime_frame.apply(_classify_quadrant, axis=1)
+    regime_frame["regime_label"] = regime_frame.apply(_classify_regime, axis=1)
+    regime_frame["regime_label"] = _smooth_label_series(regime_frame["regime_label"])
+
+    windows = _build_regime_windows(regime_frame)
+    current_row = regime_frame.iloc[-1]
+    current_window = windows[-1] if windows else None
+    current_regime_label = str(current_row["regime_label"])
+    current_quadrant_label = str(current_row["quadrant_label"])
+    current_regime_entry = _current_regime_library_entry(current_regime_label)
+    current_quadrant_entry = _current_quadrant_entry(current_quadrant_label)
+
+    quadrant_cards: list[dict[str, Any]] = []
+    total_months = max(len(regime_frame.index), 1)
+    quadrant_counts = regime_frame["quadrant_label"].value_counts()
+    for item in QUADRANT_LIBRARY:
+        months = int(quadrant_counts.get(item["title"], 0))
+        quadrant_cards.append(
+            {
+                **item,
+                "months": months,
+                "share": months / total_months,
+                "active": item["title"] == current_quadrant_label,
+            }
+        )
+
+    taxonomy_cards = [
+        {
+            **item,
+            "color": REGIME_COLORS.get(item["title"], ACCENT_COLORS[0]),
+            "active": item["title"] == current_regime_label,
+        }
+        for item in REGIME_LIBRARY
+    ]
+
+    dominant_regimes = regime_frame["regime_label"].value_counts().head(4)
+    dominant_cards = [
+        {
+            "label": str(label),
+            "months": int(months),
+            "share": int(round((months / total_months) * 100.0)),
+            "color": REGIME_COLORS.get(str(label), ACCENT_COLORS[0]),
+        }
+        for label, months in dominant_regimes.items()
+    ]
+
+    timeline_segments = [
+        {
+            "label": window["label"],
+            "color": window["color"],
+            "width_pct": (window["months"] / total_months) * 100.0,
+            "title": f"{window['label']}: {window['start_display']} to {window['end_display']} ({window['duration']})",
+        }
+        for window in windows
+    ]
+
+    return {
+        "start_display": pd.Timestamp(regime_frame.index.min()).strftime("%b %Y"),
+        "end_display": pd.Timestamp(regime_frame.index.max()).strftime("%b %Y"),
+        "history_frame": regime_frame,
+        "current": {
+            "regime_label": current_regime_label,
+            "regime_color": REGIME_COLORS.get(current_regime_label, ACCENT_COLORS[0]),
+            "quadrant_label": current_quadrant_label,
+            "quadrant_subtitle": current_quadrant_entry["subtitle"],
+            "regime_summary": current_regime_entry["summary"],
+            "playbook": current_regime_entry["playbook"],
+            "risk": current_regime_entry["risk"],
+            "quadrant_body": current_quadrant_entry["body"],
+            "duration": current_window["duration"] if current_window else "n/a",
+            "window_start": current_window["start_display"] if current_window else pd.Timestamp(regime_frame.index[-1]).strftime("%b %Y"),
+            "macro_narrative": " ".join(
+                [
+                    _score_direction(float(current_row["growth_axis"]), "Growth is broadening.", "Growth is deteriorating.", "Growth is soft but not broken."),
+                    _score_direction(float(current_row["inflation_axis"]), "Inflation pressure is above trend.", "Disinflation is doing most of the work.", "Inflation is near balance."),
+                    _score_direction(float(current_row["valuation_fragility"]), "Valuation is rich.", "Valuation is not the main risk right now.", "Valuation is not providing much margin of safety."),
+                    _score_direction(float(current_row["credit_stress"]), "Credit stress is active.", "Credit still looks calm.", "Credit is mixed rather than broken."),
+                ]
+            ),
+            "watch_items": _build_current_watch_items(current_row),
+            "score_chips": (
+                f"Growth {_format_sigma(float(current_row['growth_axis']))}",
+                f"Inflation {_format_sigma(float(current_row['inflation_axis']))}",
+                f"Stress {_format_sigma(float(current_row['stress_axis']))}",
+                f"Rates {_format_sigma(float(current_row['rate_shock']))}",
+                f"Valuation {_format_sigma(float(current_row['valuation_fragility']))}",
+            ),
+            "market_chips": (
+                f"VIX {float(current_row['spot_vix']):.1f}",
+                f"HY spread {float(current_row['high_yield_spread']):.2f}%",
+                f"2Y {float(current_row['us_2y_yield']):.2f}%",
+                f"Oil ${float(current_row['wti_usd_per_bbl']):.0f}",
+                f"CAPE {float(current_row['shiller_cape_ratio']):.1f}x",
+            ),
+        },
+        "quadrant_cards": quadrant_cards,
+        "taxonomy_cards": taxonomy_cards,
+        "timeline_segments": timeline_segments,
+        "window_cards": windows,
+        "dominant_cards": dominant_cards,
+    }
+
+
+def _render_chip_list_html(items: tuple[str, ...] | list[str], extra_class: str = "") -> str:
+    class_attr = f' class="chip-list {extra_class}"' if extra_class else ' class="chip-list"'
+    return f"<ul{class_attr}>{_render_chip_list(tuple(items))}</ul>"
+
+
+def _render_current_regime_section(regime_overview: dict[str, Any]) -> str:
+    current = regime_overview["current"]
+    watch_list = "".join(f"<li>{html.escape(item)}</li>" for item in current["watch_items"])
+    return "\n".join(
+        [
+            '<section id="regime_overview" class="framework-section">',
+            '  <p class="eyebrow">Current Diagnosis</p>',
+            '  <h2>Where The Macro Machine Sits Now</h2>',
+            f'  <p>This rule-assisted regime engine compresses the last {REPORT_LOOKBACK_YEARS} years of growth, inflation, credit, volatility, rates, and valuation into a current diagnosis and transition watchlist.</p>',
+            '  <div class="regime-grid">',
+            '    <article class="regime-card regime-card-primary">',
+            f'      <p class="regime-tag"><span class="swatch" style="background:{html.escape(current["regime_color"])}"></span>Current regime</p>',
+            f'      <h3>{html.escape(current["regime_label"])}</h3>',
+            f'      <p>{html.escape(current["regime_summary"])}</p>',
+            f'      <p class="regime-subcopy">Active since {html.escape(current["window_start"])} · current window {html.escape(current["duration"])}.</p>',
+            f'      {_render_chip_list_html(current["score_chips"], extra_class="chip-list-tight")}',
+            '    </article>',
+            '    <article class="regime-card">',
+            '      <p class="regime-tag">Dalio-style quadrant</p>',
+            f'      <h3>{html.escape(current["quadrant_label"])}</h3>',
+            f'      <p class="regime-subcopy">{html.escape(current["quadrant_subtitle"])}</p>',
+            f'      <p>{html.escape(current["quadrant_body"])}</p>',
+            f'      {_render_chip_list_html(current["market_chips"], extra_class="chip-list-tight")}',
+            '    </article>',
+            '    <article class="regime-card">',
+            '      <p class="regime-tag">Macro read</p>',
+            f'      <p>{html.escape(current["macro_narrative"])}</p>',
+            f'      <p class="regime-subcopy">{html.escape(current["playbook"])}</p>',
+            f'      <p class="regime-subcopy">Main risk: {html.escape(current["risk"])}</p>',
+            '    </article>',
+            '    <article class="regime-card">',
+            '      <p class="regime-tag">Transition watch</p>',
+            '      <ul class="plain-list">',
+            watch_list,
+            '      </ul>',
+            '    </article>',
+            '  </div>',
+            '</section>',
+        ]
+    )
+
+
+def _render_quadrant_section(regime_overview: dict[str, Any]) -> str:
+    cards = []
+    for item in regime_overview["quadrant_cards"]:
+        active_class = " quadrant-card-active" if item["active"] else ""
+        cards.append(
+            "\n".join(
+                [
+                    f'<article class="quadrant-card{active_class}">',
+                    f'  <p class="regime-tag">{int(round(float(item["share"]) * 100.0))}% of sample · {int(item["months"])} months</p>',
+                    f'  <h3>{html.escape(str(item["title"]))}</h3>',
+                    f'  <p class="regime-subcopy">{html.escape(str(item["subtitle"]))}</p>',
+                    f'  <p>{html.escape(str(item["body"]))}</p>',
+                    '</article>',
+                ]
+            )
+        )
+    return "\n".join(
+        [
+            '<section id="quadrant_map" class="framework-section">',
+            '  <p class="eyebrow">All-Weather Lens</p>',
+            '  <h2>Dalio-Style Growth And Inflation Quadrants</h2>',
+            '  <p>The quadrant view is a proxy, not a forecast-surprise model. Growth uses production and labor breadth, while inflation uses CPI breadth and recent inflation impulse from the cached feature store.</p>',
+            '  <div class="quadrant-grid">',
+            "\n".join(cards),
+            '  </div>',
+            '</section>',
+        ]
+    )
+
+
+def _render_regime_taxonomy_section(regime_overview: dict[str, Any]) -> str:
+    cards = []
+    for item in regime_overview["taxonomy_cards"]:
+        active_class = " taxonomy-card-active" if item["active"] else ""
+        cards.append(
+            "\n".join(
+                [
+                    f'<article class="taxonomy-card{active_class}">',
+                    f'  <p class="regime-tag"><span class="swatch" style="background:{html.escape(str(item["color"]))}"></span>Regime label</p>',
+                    f'  <h3>{html.escape(str(item["title"]))}</h3>',
+                    f'  <p>{html.escape(str(item["summary"]))}</p>',
+                    f'  <p class="regime-subcopy">Playbook: {html.escape(str(item["playbook"]))}</p>',
+                    f'  <p class="regime-subcopy">Failure mode: {html.escape(str(item["risk"]))}</p>',
+                    '</article>',
+                ]
+            )
+        )
+    return "\n".join(
+        [
+            '<section id="regime_taxonomy" class="framework-section">',
+            '  <p class="eyebrow">Regime Taxonomy</p>',
+            '  <h2>The Labels This Macro App Watches</h2>',
+            '  <div class="taxonomy-grid">',
+            "\n".join(cards),
+            '  </div>',
+            '</section>',
+        ]
+    )
+
+
+def _render_regime_timeline_section(regime_overview: dict[str, Any]) -> str:
+    timeline_html = "".join(
+        f'<span class="timeline-segment" style="width:{segment["width_pct"]:.2f}%; background:{html.escape(segment["color"])}" title="{html.escape(segment["title"])}"></span>'
+        for segment in regime_overview["timeline_segments"]
+    )
+    dominant_html = "".join(
+        f'<li><span class="swatch" style="background:{html.escape(item["color"])}"></span>{html.escape(item["label"])} · {int(item["share"])}% of sample</li>'
+        for item in regime_overview["dominant_cards"]
+    )
+    windows_html = []
+    for window in regime_overview["window_cards"]:
+        current_class = " window-card-current" if window.get("is_current") else ""
+        windows_html.append(
+            "\n".join(
+                [
+                    f'<article class="window-card{current_class}">',
+                    f'  <p class="regime-tag"><span class="swatch" style="background:{html.escape(window["color"])}"></span>{html.escape(window["label"])} · {html.escape(window["duration"])} </p>',
+                    f'  <h3>{html.escape(window["start_display"])} to {html.escape(window["end_display"])}</h3>',
+                    f'  <p>{html.escape(window["summary"])}</p>',
+                    f'  <p class="regime-subcopy">Dominant quadrant: {html.escape(window["quadrant"])}.</p>',
+                    f'  {_render_chip_list_html(window["score_chips"], extra_class="chip-list-tight")}',
+                    '</article>',
+                ]
+            )
+        )
+    return "\n".join(
+        [
+            '<section id="regime_timeline" class="framework-section">',
+            '  <p class="eyebrow">Twenty-Year Timeline</p>',
+            '  <h2>How The Regime Engine Moved Across The Last Twenty Years</h2>',
+            '  <p>The timeline compresses monthly regime calls into contiguous windows. The summary below keeps the major phases readable while still grounding them in the underlying macro composites.</p>',
+            '  <div class="timeline-shell">',
+            '    <div class="timeline-meta">',
+            f'      <span>{html.escape(regime_overview["start_display"])}</span>',
+            f'      <span>{html.escape(regime_overview["end_display"])}</span>',
+            '    </div>',
+            f'    <div class="timeline-bar">{timeline_html}</div>',
+            '  </div>',
+            '  <div class="timeline-legend">',
+            '    <p class="regime-tag">Dominant labels over the sample</p>',
+            f'    <ul class="legend-list">{dominant_html}</ul>',
+            '  </div>',
+            '  <div class="window-grid">',
+            "\n".join(windows_html),
+            '  </div>',
+            '</section>',
+        ]
+    )
 
 
 def _display_text(value: Any, fallback: str = "n/a") -> str:
@@ -458,9 +1208,15 @@ def _render_html(
     inventory: pd.DataFrame,
     generated_at: str,
     group_plot_paths: dict[str, str],
+    regime_overview: dict[str, Any],
 ) -> str:
     group_sections: list[str] = []
-    toc_links: list[str] = []
+    toc_links: list[str] = [
+        '<a href="#regime_overview">Current Diagnosis</a>',
+        '<a href="#quadrant_map">Growth And Inflation Quadrants</a>',
+        '<a href="#regime_taxonomy">Regime Taxonomy</a>',
+        '<a href="#regime_timeline">Twenty-Year Timeline</a>',
+    ]
     regime_text = " | ".join(
         f"{window['label']}: {window['start'][:4]}-{window['end'][:4]}" for window in MACRO_REGIME_WINDOWS
     )
@@ -474,6 +1230,10 @@ def _render_html(
     expansions_section = _render_expansions_section()
     interactions_section = _render_interactions_section()
     scenarios_section = _render_scenarios_section()
+    current_regime_section = _render_current_regime_section(regime_overview)
+    quadrant_section = _render_quadrant_section(regime_overview)
+    taxonomy_section = _render_regime_taxonomy_section(regime_overview)
+    regime_timeline_section = _render_regime_timeline_section(regime_overview)
 
     for group in MACRO_REPORT_GROUPS:
         slug = str(group["slug"])
@@ -511,7 +1271,7 @@ def _render_html(
 <head>
   <meta charset=\"utf-8\" />
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-  <title>Macro Variables Used By The Models</title>
+    <title>Macro Regime Atlas</title>
   <style>
     :root {{
       --bg: {PAGE_BACKGROUND};
@@ -591,6 +1351,80 @@ def _render_html(
       padding: 26px 28px;
       margin-bottom: 28px;
     }}
+        .regime-grid, .quadrant-grid, .taxonomy-grid, .window-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+        }}
+        .regime-card, .quadrant-card, .taxonomy-card, .window-card {{
+            background: var(--panel);
+            border-radius: 18px;
+            border: 1px solid rgba(213, 207, 197, 0.95);
+            padding: 18px;
+            min-height: 100%;
+        }}
+        .regime-card-primary {{
+            background: linear-gradient(180deg, rgba(244, 237, 225, 0.92), rgba(255, 253, 248, 0.94));
+        }}
+        .quadrant-card-active, .taxonomy-card-active, .window-card-current {{
+            border-color: rgba(122, 62, 43, 0.35);
+            box-shadow: 0 12px 28px rgba(27, 36, 48, 0.07);
+        }}
+        .regime-tag {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.74rem;
+            color: var(--accent);
+        }}
+        .swatch {{
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            display: inline-block;
+            flex: 0 0 auto;
+        }}
+        .regime-subcopy {{ margin-top: 10px; color: var(--muted); }}
+        .chip-list-tight {{ margin-top: 14px; }}
+        .timeline-shell {{
+            margin-top: 22px;
+            padding: 18px;
+            border-radius: 18px;
+            background: rgba(247, 242, 232, 0.78);
+            border: 1px solid rgba(213, 207, 197, 0.85);
+        }}
+        .timeline-meta {{
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 10px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }}
+        .timeline-bar {{
+            display: flex;
+            width: 100%;
+            min-height: 28px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(213, 207, 197, 0.55);
+        }}
+        .timeline-segment {{ min-height: 28px; }}
+        .timeline-legend {{ margin-top: 18px; }}
+        .legend-list {{
+            list-style: none;
+            padding: 0;
+            margin: 12px 0 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 18px;
+            color: var(--muted);
+        }}
+        .legend-list li {{ display: inline-flex; align-items: center; gap: 8px; }}
         .framework-section {{
             background: rgba(255, 253, 248, 0.88);
             border-radius: 22px;
@@ -714,13 +1548,14 @@ def _render_html(
 <body>
   <main class=\"page\">
     <section class=\"hero\">
-      <p class=\"eyebrow\">Model Macro Atlas</p>
-      <h1>Macro Variables Used By The Models</h1>
-                        <p>This document groups the macro variables currently fed into the price-action models into a cycle map: inflation breadth, real activity, policy, credit, volatility, real assets, and valuation fragility. The intent is closer to a macro playbook than a loose factor list, so each block is shown in the context where it matters rather than as an interchangeable input beside price action.</p>
+    <p class=\"eyebrow\">Macro Regime Atlas</p>
+    <h1>Twenty Years Of Macro Regimes</h1>
+                <p>This report shifts the macro app from a flat variable inventory toward a Dalio-style regime map: growth and inflation quadrants, stress overlays, and the specific model inputs that matter inside each environment. The goal is to show how the macro machine has moved across the last twenty years, not just list the features beside price action.</p>
       <div class=\"hero-meta\">
         <span>{generated_at}</span>
         <span>{len(inventory.index)} base macro series</span>
-                <span>Current live transforms: level, 63-day z-score, 5-day delta</span>
+            <span>Lookback window: {html.escape(regime_overview['start_display'])} to {html.escape(regime_overview['end_display'])}</span>
+            <span>Current regime: {html.escape(regime_overview['current']['regime_label'])}</span>
       </div>
     </section>
 
@@ -730,8 +1565,16 @@ def _render_html(
 
     <section class=\"methodology\">
       <p class=\"eyebrow\">Method</p>
-        <p>The report rebuilds the macro feature store from raw inputs when it runs, then aligns each selected series to the daily market frame the same way the models consume it. Mixed-frequency indicators are derived before alignment, while patched VIX term-structure history and the daily market-cap-to-GDP proxy remove leading gaps from the regime-critical rows. Crisis windows are shaded to make cross-cycle comparisons easier: {html.escape(regime_text)}. The cards below add model-role guidance so the report treats inflation breadth, production, valuation, credit, and volatility as distinct macro channels rather than a flat list.</p>
+        <p>The report rebuilds the macro feature store from raw inputs when it runs, then aligns each selected series to the daily market frame the same way the models consume it. For the regime engine, the page compresses the last {REPORT_LOOKBACK_YEARS} years into monthly growth, inflation, credit, volatility, rate-shock, and valuation composites. Those composites drive a rule-assisted quadrant map and regime labels. Crisis windows are still shaded on the raw macro charts for fast cross-cycle comparison: {html.escape(regime_text)}.</p>
     </section>
+
+        {current_regime_section}
+
+        {quadrant_section}
+
+        {taxonomy_section}
+
+        {regime_timeline_section}
 
         {architecture_section}
 
@@ -757,6 +1600,9 @@ def generate_macro_report(
     root = resolve_project_root(project_root)
     inventory = load_model_macro_inventory(project_root=root)
     frame = load_model_macro_frame(project_root=root)
+    report_start = frame.index.max() - pd.DateOffset(years=REPORT_LOOKBACK_YEARS)
+    report_frame = frame.loc[frame.index >= report_start].copy()
+    regime_overview = _build_regime_overview(frame=frame, lookback_years=REPORT_LOOKBACK_YEARS)
 
     report_dir = Path(output_dir)
     if not report_dir.is_absolute():
@@ -764,14 +1610,14 @@ def generate_macro_report(
     plots_dir = report_dir / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)
 
-    filtered_inventory = inventory.loc[[column for column in frame.columns if column in inventory.index]].copy()
+    filtered_inventory = inventory.loc[[column for column in report_frame.columns if column in inventory.index]].copy()
     filtered_inventory.to_csv(report_dir / "model_macro_inventory.csv", index=False)
 
     group_plot_paths: dict[str, str] = {}
     for group in MACRO_REPORT_GROUPS:
         slug = str(group["slug"])
         plot_path = plots_dir / f"{slug}.svg"
-        saved_path = _plot_group(frame=frame, inventory=filtered_inventory, group=group, output_path=plot_path)
+        saved_path = _plot_group(frame=report_frame, inventory=filtered_inventory, group=group, output_path=plot_path)
         if saved_path is not None:
             group_plot_paths[slug] = str(saved_path.relative_to(report_dir))
 
@@ -780,6 +1626,7 @@ def generate_macro_report(
         inventory=filtered_inventory,
         generated_at=generated_at,
         group_plot_paths=group_plot_paths,
+        regime_overview=regime_overview,
     )
     report_path = report_dir / "index.html"
     report_path.write_text(html_text, encoding="utf-8")
