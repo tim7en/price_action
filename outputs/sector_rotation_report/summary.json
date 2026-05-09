@@ -1,10 +1,84 @@
 {
-  "generated_at": "2026-05-09T08:48:17.394475+00:00",
+  "generated_at": "2026-05-09T09:04:13.620259+00:00",
   "current_regime": "Fragile Late-Cycle Watch",
   "current_quadrant": "Growth Down / Inflation Down",
   "cash_weight": 0.4,
   "note": "No point-in-time analyst EPS feed exists in this repo. The sector entry calls below therefore use earnings-sensitivity proxies plus realized 1-year and 3-year forward returns from historically similar macro regimes.",
   "missing_symbols": [],
+  "ml": {
+    "available": true,
+    "boosting_backend": "HistGradientBoostingClassifier",
+    "data_note": "Features are lagged by one bar and each validation window uses a five-bar purge plus a five-bar embargo. Macro regime attribution comes from the local macro store and is useful for regime slicing, but it is not a point-in-time macro vintage database.",
+    "config": {
+      "start_date": "2015-01-01",
+      "holdout_start": "2025-01-01",
+      "train_years": 5,
+      "validation_years": 1,
+      "label_horizon": 5,
+      "signal_threshold": 0.55,
+      "cost_bps": 15.0,
+      "embargo_size": 5,
+      "purge_size": 5,
+      "feature_lag": 1,
+      "random_state": 42,
+      "fee_bps_base": 10.0,
+      "slippage_bps_base": 5.0,
+      "fee_scenarios_bps": [
+        5.0,
+        10.0,
+        20.0
+      ],
+      "slippage_scenarios_bps": [
+        0.0,
+        5.0,
+        10.0
+      ]
+    },
+    "holdout_leader": {
+      "symbol": "XLB",
+      "sector_label": "Commodity / Materials",
+      "family": "Cyclical inflation beta",
+      "best_overfit_model": "Elastic Net",
+      "best_overfit_stability_score": 85.0,
+      "ensemble_validation_roc_auc": 0.5950526797984426,
+      "ensemble_validation_brier_score": 0.24897317702057337,
+      "ensemble_holdout_roc_auc": 0.55810147299509,
+      "ensemble_holdout_brier_score": 0.29570715281584964,
+      "ensemble_holdout_cagr": 0.050400689082907624,
+      "ensemble_holdout_sharpe": 1.3183061232061237,
+      "ensemble_holdout_sortino": NaN,
+      "ensemble_holdout_max_drawdown": 0.0,
+      "ensemble_holdout_calmar": NaN,
+      "ensemble_holdout_profit_factor": NaN,
+      "ensemble_holdout_hit_rate": 1.0,
+      "ensemble_holdout_average_win": 0.05888400759037632,
+      "ensemble_holdout_average_loss": NaN,
+      "ensemble_holdout_turnover_per_year": 0.8594117647058823,
+      "ensemble_holdout_trade_count": 1,
+      "ensemble_oos_cagr": 0.08764810225313124,
+      "ensemble_oos_sharpe": 0.9939243735334186,
+      "ensemble_crisis_total_return": 0.643930655951271,
+      "ensemble_crisis_hit_rate": 0.782608695652174,
+      "ensemble_crisis_trade_count": 23,
+      "feature_count": 81,
+      "fold_count": 6
+    },
+    "winner_counts": [
+      {
+        "model_label": "ExtraTrees",
+        "winner_count": 3
+      },
+      {
+        "model_label": "LightGBM",
+        "winner_count": 3
+      },
+      {
+        "model_label": "Elastic Net",
+        "winner_count": 2
+      }
+    ],
+    "robust_cost_sector_count": 6
+  },
   "top_pick": {
     "symbol": "XLK",
     "sector_label": "Information Technology",

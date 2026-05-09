@@ -26,6 +26,19 @@ from .macro_report import (
     _render_data_table,
     load_model_macro_frame,
 )
+from .sector_ml import build_sector_ml_view
+
+
+def _format_decimal(value: float | int | None, digits: int = 2) -> str:
+    if value is None or pd.isna(value):
+        return "n/a"
+    return f"{float(value):.{digits}f}"
+
+
+def _format_turnover(value: float | int | None) -> str:
+    if value is None or pd.isna(value):
+        return "n/a"
+    return f"{float(value):.1f}/yr"
 
 
 def _render_stat_card(title: str, body: str, tag: str) -> str:
@@ -349,10 +362,294 @@ def _render_method_section(sector_rotation_view: dict[str, Any]) -> str:
     )
 
 
+def _render_ml_overview_section(sector_ml_view: dict[str, Any]) -> str:
+    if not sector_ml_view.get("available"):
+        message = str(sector_ml_view.get("message") or "Sector ML study unavailable.")
+        return "\n".join(
+            [
+                '<section class="section">',
+                '  <p class="eyebrow">ML Overlay</p>',
+                '  <h2>Machine Learning Ensemble Audit</h2>',
+                f'  <p>{html.escape(message)}</p>',
+                '</section>',
+            ]
+        )
+
+    config = sector_ml_view["config"]
+    leader = sector_ml_view["holdout_leader"]
+    winner_counts = sector_ml_view["winner_counts_frame"]
+    sector_count = len(sector_ml_view["sector_summary_frame"])
+    top_winner = winner_counts.iloc[0].to_dict() if not winner_counts.empty else {"model_label": "n/a", "winner_count": 0}
+    cards = [
+        _render_stat_card(
+            title="2015-2024 walk-forward, 2025+ holdout",
+            body=(
+                f"Five-year expanding train windows, one-year validation windows, feature lag {int(config['feature_lag'])}, purge {int(config['purge_size'])} bars, embargo {int(config['embargo_size'])} bars."
+            ),
+            tag="Validation design",
+        ),
+        _render_stat_card(
+            title="Probability averaging only",
+            body=(
+                f"Elastic Net, ExtraTrees, and {sector_ml_view['boosting_backend']} are averaged directly. The stacked gate is disabled in this study to reduce meta-model overfit risk."
+            ),
+            tag="Model design",
+        ),
+        _render_stat_card(
+            title=str(top_winner["model_label"]),
+            body=f"Won {int(top_winner['winner_count'])} sectors on the stability score that penalizes validation-to-holdout degradation.",
+            tag="Most stable model",
+        ),
+        _render_stat_card(
+            title=str(leader["sector_label"]),
+            body=(
+                f"Best ensemble holdout by Sharpe. CAGR {_format_return_pct(leader['ensemble_holdout_cagr'])}, Sharpe {_format_decimal(leader['ensemble_holdout_sharpe'])}, max drawdown {_format_return_pct(leader['ensemble_holdout_max_drawdown'])}."
+            ),
+            tag="Holdout leader",
+        ),
+        _render_stat_card(
+            title=f"{int(sector_ml_view['robust_cost_sector_count'])} / {sector_count} sectors",
+            body="Still positive at the worst slippage stress scenario inside the untouched holdout.",
+            tag="Cost robustness",
+        ),
+    ]
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">ML Overlay</p>',
+            '  <h2>Machine Learning Ensemble Audit</h2>',
+            f'  <p>{html.escape(str(sector_ml_view["data_note"]))}</p>',
+            '  <div class="card-grid">',
+            "\n".join(cards),
+            '  </div>',
+            '</section>',
+        ]
+    )
+
+
+def _render_ml_sector_table_section(sector_ml_view: dict[str, Any]) -> str:
+    if not sector_ml_view.get("available"):
+        return ""
+
+    rows: list[tuple[str, ...]] = []
+    for row in sector_ml_view["sector_summary_frame"].sort_values("best_overfit_stability_score", ascending=False).itertuples(index=False):
+        rows.append(
+            (
+                f"{row.sector_label} ({row.symbol})",
+                str(row.best_overfit_model),
+                _format_decimal(row.best_overfit_stability_score, digits=1),
+                _format_return_pct(row.ensemble_holdout_cagr),
+                _format_decimal(row.ensemble_holdout_sharpe),
+                _format_decimal(row.ensemble_holdout_sortino),
+                _format_return_pct(row.ensemble_holdout_max_drawdown),
+                _format_decimal(row.ensemble_holdout_profit_factor),
+                _format_probability_pct(row.ensemble_crisis_hit_rate),
+                _format_turnover(row.ensemble_holdout_turnover_per_year),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Sector ML</p>',
+            '  <h2>Per-Sector Ensemble Results</h2>',
+            '  <p>The table below uses the simple averaged ensemble as the live signal and separately identifies which single model preserved validation behavior into the untouched holdout best.</p>',
+            _render_data_table(
+                headers=(
+                    'Sector',
+                    'Best Anti-Overfit Model',
+                    'Stability Score',
+                    'Holdout CAGR',
+                    'Holdout Sharpe',
+                    'Holdout Sortino',
+                    'Holdout Max DD',
+                    'Profit Factor',
+                    'Crisis Hit Rate',
+                    'Turnover',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
+def _render_ml_model_comparison_section(sector_ml_view: dict[str, Any]) -> str:
+    if not sector_ml_view.get("available"):
+        return ""
+
+    comparison = sector_ml_view["model_comparison_frame"].sort_values(
+        ["sector_label", "stability_score", "model_label"],
+        ascending=[True, False, True],
+    )
+    rows: list[tuple[str, ...]] = []
+    for row in comparison.itertuples(index=False):
+        rows.append(
+            (
+                f"{row.sector_label} ({row.symbol})",
+                str(row.model_label),
+                _format_decimal(row.stability_score, digits=1),
+                _format_decimal(row.validation_roc_auc, digits=3),
+                _format_decimal(row.holdout_roc_auc, digits=3),
+                _format_decimal(row.validation_brier_score, digits=3),
+                _format_decimal(row.holdout_brier_score, digits=3),
+                _format_decimal(row.holdout_sharpe),
+                _format_return_pct(row.holdout_cagr),
+                str(int(row.holdout_trade_count)),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Model Audit</p>',
+            '  <h2>Validation-To-Holdout Stability By Model</h2>',
+            '  <p>Higher stability scores mean the model degraded less from walk-forward validation into the untouched holdout. This is the direct overfitting check, not just a performance ranking.</p>',
+            _render_data_table(
+                headers=(
+                    'Sector',
+                    'Model',
+                    'Stability',
+                    'Val AUC',
+                    'Holdout AUC',
+                    'Val Brier',
+                    'Holdout Brier',
+                    'Holdout Sharpe',
+                    'Holdout CAGR',
+                    'Holdout Trades',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
+def _render_ml_cost_section(sector_ml_view: dict[str, Any]) -> str:
+    if not sector_ml_view.get("available"):
+        return ""
+
+    cost_frame = sector_ml_view["cost_sensitivity_frame"].sort_values(
+        ["sector_label", "sensitivity_type", "scenario_bps"],
+        ascending=[True, True, True],
+    )
+    rows: list[tuple[str, ...]] = []
+    for row in cost_frame.itertuples(index=False):
+        rows.append(
+            (
+                f"{row.sector_label} ({row.symbol})",
+                str(row.sensitivity_type).title(),
+                f"{float(row.scenario_bps):.0f} bps",
+                f"{float(row.total_cost_bps):.0f} bps",
+                _format_return_pct(row.cagr),
+                _format_decimal(row.sharpe),
+                _format_return_pct(row.max_drawdown),
+                _format_probability_pct(row.hit_rate),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Sensitivity</p>',
+            '  <h2>Fee And Slippage Sensitivity On The Holdout</h2>',
+            '  <p>The model is trained on a 15 bps all-in cost assumption. The table below replays the untouched holdout under separate fee and slippage stress scenarios.</p>',
+            _render_data_table(
+                headers=(
+                    'Sector',
+                    'Stress Type',
+                    'Scenario',
+                    'Total Cost',
+                    'Holdout CAGR',
+                    'Holdout Sharpe',
+                    'Holdout Max DD',
+                    'Holdout Hit Rate',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
+def _render_ml_regime_year_section(sector_ml_view: dict[str, Any]) -> str:
+    if not sector_ml_view.get("available"):
+        return ""
+
+    regime_rows: list[tuple[str, ...]] = []
+    regime_frame = sector_ml_view["regime_performance_frame"].sort_values(
+        ["sector_label", "regime_label"],
+        ascending=[True, True],
+    )
+    for row in regime_frame.itertuples(index=False):
+        regime_rows.append(
+            (
+                f"{row.sector_label} ({row.symbol})",
+                str(row.regime_label),
+                _format_return_pct(row.cagr),
+                _format_decimal(row.sharpe),
+                _format_return_pct(row.max_drawdown),
+                _format_probability_pct(row.hit_rate),
+                str(int(row.trade_count)),
+            )
+        )
+
+    year_rows: list[tuple[str, ...]] = []
+    yearly_frame = sector_ml_view["yearly_performance_frame"].sort_values(["year", "sector_label"], ascending=[True, True])
+    for row in yearly_frame.itertuples(index=False):
+        year_rows.append(
+            (
+                f"{row.sector_label} ({row.symbol})",
+                str(int(row.year)),
+                _format_return_pct(row.total_return),
+                _format_return_pct(row.cagr),
+                _format_decimal(row.sharpe),
+                _format_return_pct(row.max_drawdown),
+                str(int(row.trade_count)),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Regime And Year</p>',
+            '  <h2>Out-Of-Sample Performance By Regime And Year</h2>',
+            '  <p>These tables use only the averaged ensemble and slice the full out-of-sample stream by macro regime and by calendar year.</p>',
+            _render_data_table(
+                headers=(
+                    'Sector',
+                    'Regime',
+                    'CAGR',
+                    'Sharpe',
+                    'Max DD',
+                    'Hit Rate',
+                    'Trades',
+                ),
+                rows=regime_rows,
+            ),
+            _render_data_table(
+                headers=(
+                    'Sector',
+                    'Year',
+                    'Total Return',
+                    'CAGR',
+                    'Sharpe',
+                    'Max DD',
+                    'Trades',
+                ),
+                rows=year_rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
 def _render_html(
     generated_at: str,
     regime_overview: dict[str, Any],
     sector_rotation_view: dict[str, Any],
+    sector_ml_view: dict[str, Any],
 ) -> str:
     return f"""<!DOCTYPE html>
 <html lang=\"en\">
@@ -476,6 +773,11 @@ def _render_html(
     {_render_allocation_section(sector_rotation_view=sector_rotation_view)}
     {_render_current_matrix_section(sector_rotation_view=sector_rotation_view)}
     {_render_regime_behaviour_section(sector_rotation_view=sector_rotation_view)}
+        {_render_ml_overview_section(sector_ml_view=sector_ml_view)}
+        {_render_ml_sector_table_section(sector_ml_view=sector_ml_view)}
+        {_render_ml_model_comparison_section(sector_ml_view=sector_ml_view)}
+        {_render_ml_cost_section(sector_ml_view=sector_ml_view)}
+        {_render_ml_regime_year_section(sector_ml_view=sector_ml_view)}
   </main>
 </body>
 </html>
@@ -490,6 +792,7 @@ def generate_sector_rotation_report(
     frame = load_model_macro_frame(project_root=root)
     regime_overview = _build_regime_overview(frame=frame, lookback_years=REPORT_LOOKBACK_YEARS)
     sector_rotation_view = _build_sector_rotation_view(project_root=root, regime_overview=regime_overview)
+    sector_ml_view = build_sector_ml_view(project_root=root)
 
     report_dir = Path(output_dir)
     if not report_dir.is_absolute():
@@ -499,6 +802,11 @@ def generate_sector_rotation_report(
     matrix_path = report_dir / "sector_regime_matrix.csv"
     current_path = report_dir / "sector_current_regime.csv"
     summary_path = report_dir / "summary.json"
+    ml_sector_summary_path = report_dir / "sector_ml_sector_summary.csv"
+    ml_model_comparison_path = report_dir / "sector_ml_model_comparison.csv"
+    ml_yearly_path = report_dir / "sector_ml_yearly_performance.csv"
+    ml_regime_path = report_dir / "sector_ml_regime_performance.csv"
+    ml_cost_path = report_dir / "sector_ml_cost_sensitivity.csv"
 
     summary_payload: dict[str, Any] = {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -507,6 +815,11 @@ def generate_sector_rotation_report(
         "cash_weight": float(sector_rotation_view.get("cash_weight", 0.40)),
         "note": str(sector_rotation_view.get("note") or ""),
         "missing_symbols": list(sector_rotation_view.get("missing_symbols") or []),
+        "ml": {
+            "available": bool(sector_ml_view.get("available")),
+            "boosting_backend": sector_ml_view.get("boosting_backend"),
+            "data_note": sector_ml_view.get("data_note"),
+        },
     }
 
     if sector_rotation_view.get("available"):
@@ -524,6 +837,25 @@ def generate_sector_rotation_report(
     else:
         summary_payload["message"] = str(sector_rotation_view.get("message") or "Sector analytics unavailable.")
 
+    if sector_ml_view.get("available"):
+        sector_ml_view["sector_summary_frame"].to_csv(ml_sector_summary_path, index=False)
+        sector_ml_view["model_comparison_frame"].to_csv(ml_model_comparison_path, index=False)
+        sector_ml_view["yearly_performance_frame"].to_csv(ml_yearly_path, index=False)
+        sector_ml_view["regime_performance_frame"].to_csv(ml_regime_path, index=False)
+        sector_ml_view["cost_sensitivity_frame"].to_csv(ml_cost_path, index=False)
+        summary_payload["ml"].update(
+            {
+                "config": sector_ml_view.get("config"),
+                "holdout_leader": json.loads(
+                    pd.DataFrame([sector_ml_view.get("holdout_leader")]).to_json(orient="records")
+                )[0],
+                "winner_counts": json.loads(sector_ml_view["winner_counts_frame"].to_json(orient="records")),
+                "robust_cost_sector_count": int(sector_ml_view.get("robust_cost_sector_count", 0)),
+            }
+        )
+    else:
+        summary_payload["ml"]["message"] = str(sector_ml_view.get("message") or "Sector ML study unavailable.")
+
     summary_path.write_text(json.dumps(summary_payload, indent=2), encoding="utf-8")
 
     generated_at = datetime.now(UTC).strftime("Generated %Y-%m-%d %H:%M UTC")
@@ -531,6 +863,7 @@ def generate_sector_rotation_report(
         generated_at=generated_at,
         regime_overview=regime_overview,
         sector_rotation_view=sector_rotation_view,
+        sector_ml_view=sector_ml_view,
     )
     report_path = report_dir / "index.html"
     report_path.write_text(html_text, encoding="utf-8")
@@ -540,6 +873,11 @@ def generate_sector_rotation_report(
         "summary": str(summary_path),
         "sector_matrix": str(matrix_path) if matrix_path.exists() else None,
         "sector_current": str(current_path) if current_path.exists() else None,
+        "ml_sector_summary": str(ml_sector_summary_path) if ml_sector_summary_path.exists() else None,
+        "ml_model_comparison": str(ml_model_comparison_path) if ml_model_comparison_path.exists() else None,
+        "ml_yearly": str(ml_yearly_path) if ml_yearly_path.exists() else None,
+        "ml_regime": str(ml_regime_path) if ml_regime_path.exists() else None,
+        "ml_cost": str(ml_cost_path) if ml_cost_path.exists() else None,
     }
 
 

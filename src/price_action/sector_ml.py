@@ -525,8 +525,13 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         .reset_index(drop=True)
     )
 
+    holdout_leader_candidates = sector_summary_frame.loc[
+        sector_summary_frame["ensemble_holdout_trade_count"].fillna(0) >= 3
+    ]
+    if holdout_leader_candidates.empty:
+        holdout_leader_candidates = sector_summary_frame
     holdout_leader = (
-        sector_summary_frame.sort_values(
+        holdout_leader_candidates.sort_values(
             ["ensemble_holdout_sharpe", "ensemble_holdout_cagr"],
             ascending=[False, False],
         )
