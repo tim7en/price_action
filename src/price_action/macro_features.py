@@ -44,13 +44,115 @@ EXTRA_SERIES_METADATA: dict[str, dict[str, Any]] = {
         "combined_col": "T10Y3M",
         "notes": ["Yield-curve slope proxy."],
     },
-    "VIXCLS": {
+    "spot_vix": {
         "name": "CBOE Volatility Index: VIX",
         "source": "FRED",
         "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
         "units": "index level",
         "combined_col": "spot_vix",
-        "notes": ["Daily spot volatility proxy."],
+        "notes": [
+            "Daily spot volatility proxy.",
+            "Leading 1999 gap is patched with the discontinued VXO predecessor and backfilled over the opening holiday rows so the aligned daily frame has no NaNs.",
+        ],
+    },
+    "VXOCLS": {
+        "name": "CBOE S&P 100 Volatility Index: VXO",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/VXOCLS",
+        "units": "index level",
+        "combined_col": "VXOCLS",
+        "notes": ["Discontinued predecessor used only as a historical fallback for spot_vix."],
+    },
+    "vix3m_level": {
+        "name": "CBOE S&P 500 3-Month Volatility Index",
+        "source": "Yahoo Finance chart API / derived pre-launch backfill",
+        "source_url": "https://finance.yahoo.com/quote/%5EVIX3M",
+        "units": "index level",
+        "combined_col": "vix3m_level",
+        "notes": [
+            "Official ^VIX3M history where available.",
+            "Pre-launch history is backfilled from the observed spot_vix overlap regression so the aligned daily frame has no leading NaNs.",
+        ],
+    },
+    "CPILFESL": {
+        "name": "Consumer Price Index: All Items Less Food and Energy",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/CPILFESL",
+        "units": "index 1982-1984=100, seasonally adjusted",
+        "combined_col": "CPILFESL",
+        "notes": ["Monthly core CPI index."],
+    },
+    "core_cpi_yoy_pct": {
+        "name": "Core CPI YoY",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/CPILFESL",
+        "units": "percent",
+        "combined_col": "core_cpi_yoy_pct",
+        "notes": ["Derived as the 12-month percent change of CPILFESL."],
+    },
+    "CPIENGSL": {
+        "name": "Consumer Price Index: Energy",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/CPIENGSL",
+        "units": "index 1982-1984=100, seasonally adjusted",
+        "combined_col": "CPIENGSL",
+        "notes": ["Monthly energy CPI index."],
+    },
+    "energy_cpi_yoy_pct": {
+        "name": "Energy CPI YoY",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/CPIENGSL",
+        "units": "percent",
+        "combined_col": "energy_cpi_yoy_pct",
+        "notes": ["Derived as the 12-month percent change of CPIENGSL."],
+    },
+    "CUSR0000SAH1": {
+        "name": "Consumer Price Index: Shelter",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/CUSR0000SAH1",
+        "units": "index 1982-1984=100",
+        "combined_col": "CUSR0000SAH1",
+        "notes": ["Monthly shelter CPI index."],
+    },
+    "shelter_cpi_yoy_pct": {
+        "name": "Shelter CPI YoY",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/CUSR0000SAH1",
+        "units": "percent",
+        "combined_col": "shelter_cpi_yoy_pct",
+        "notes": ["Derived as the 12-month percent change of CUSR0000SAH1."],
+    },
+    "INDPRO": {
+        "name": "Industrial Production: Total Index",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/INDPRO",
+        "units": "index 2017=100",
+        "combined_col": "INDPRO",
+        "notes": ["Monthly total industrial production index."],
+    },
+    "industrial_production_yoy_pct": {
+        "name": "Industrial Production YoY",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/INDPRO",
+        "units": "percent",
+        "combined_col": "industrial_production_yoy_pct",
+        "notes": ["Derived as the 12-month percent change of INDPRO."],
+    },
+    "IPMAN": {
+        "name": "Industrial Production: Manufacturing",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/IPMAN",
+        "units": "index 2017=100",
+        "combined_col": "IPMAN",
+        "notes": ["Monthly manufacturing output index."],
+    },
+    "manufacturing_output_yoy_pct": {
+        "name": "Manufacturing Output YoY",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/IPMAN",
+        "units": "percent",
+        "combined_col": "manufacturing_output_yoy_pct",
+        "notes": ["Derived as the 12-month percent change of IPMAN."],
     },
     "yield_curve_10y_2y": {
         "name": "10Y minus 2Y Treasury yield spread",
@@ -67,7 +169,7 @@ EXTRA_SERIES_METADATA: dict[str, dict[str, Any]] = {
         "units": "percent of GDP",
         "combined_col": "market_cap_to_gdp_proxy_pct",
         "notes": [
-            "Daily proxy anchored to the last official market_cap_to_gdp_pct observation using Wilshire and nominal GDP.",
+            "Daily proxy scaled from Wilshire and nominal GDP using the full set of official annual market_cap_to_gdp_pct anchors.",
         ],
     },
     "market_cap_to_gdp_pct_patched": {
@@ -77,10 +179,76 @@ EXTRA_SERIES_METADATA: dict[str, dict[str, Any]] = {
         "units": "percent of GDP",
         "combined_col": "market_cap_to_gdp_pct_patched",
         "notes": [
-            "Official annual observations when available, extended with the derived proxy after the last official date.",
+            "Official annual observations when available, with the derived daily proxy filling the gaps between official prints and after the latest official date.",
         ],
     },
 }
+
+
+def derive_yoy_pct(series: pd.Series) -> pd.Series:
+    observed = pd.to_numeric(series, errors="coerce").dropna()
+    if observed.empty:
+        return pd.Series(index=series.index, dtype="float64")
+
+    yoy = observed.pct_change(12) * 100.0
+    return yoy.reindex(series.index)
+
+
+def build_macro_open_data_derivatives(combined: pd.DataFrame) -> pd.DataFrame:
+    derived_sources = {
+        "core_cpi_yoy_pct": "CPILFESL",
+        "energy_cpi_yoy_pct": "CPIENGSL",
+        "shelter_cpi_yoy_pct": "CUSR0000SAH1",
+        "industrial_production_yoy_pct": "INDPRO",
+        "manufacturing_output_yoy_pct": "IPMAN",
+    }
+    for derived_col, source_col in derived_sources.items():
+        if source_col in combined.columns:
+            combined[derived_col] = derive_yoy_pct(combined[source_col])
+    return combined
+
+
+def patch_spot_vix_history(combined: pd.DataFrame) -> pd.DataFrame:
+    if "spot_vix" not in combined.columns:
+        return combined
+
+    spot_vix = pd.to_numeric(combined["spot_vix"], errors="coerce")
+    if "VXOCLS" in combined.columns:
+        vxo = pd.to_numeric(combined["VXOCLS"], errors="coerce")
+        spot_vix = spot_vix.combine_first(vxo)
+
+    combined["spot_vix"] = spot_vix.bfill()
+    return combined
+
+
+def patch_vix3m_history(combined: pd.DataFrame) -> pd.DataFrame:
+    required = {"spot_vix", "vix3m_level"}
+    if not required.issubset(combined.columns):
+        return combined
+
+    spot_vix = pd.to_numeric(combined["spot_vix"], errors="coerce")
+    vix3m = pd.to_numeric(combined["vix3m_level"], errors="coerce")
+    overlap = pd.DataFrame({"spot_vix": spot_vix, "vix3m": vix3m}).dropna()
+    if overlap.empty:
+        combined["vix3m_level"] = vix3m.bfill()
+        return combined
+
+    spot_mean = float(overlap["spot_vix"].mean())
+    vix3m_mean = float(overlap["vix3m"].mean())
+    spot_variance = float(((overlap["spot_vix"] - spot_mean) ** 2).mean())
+    if spot_variance == 0.0:
+        slope = 1.0
+        intercept = float((overlap["vix3m"] - overlap["spot_vix"]).median())
+    else:
+        covariance = float(
+            ((overlap["spot_vix"] - spot_mean) * (overlap["vix3m"] - vix3m_mean)).mean()
+        )
+        slope = covariance / spot_variance
+        intercept = vix3m_mean - slope * spot_mean
+
+    synthetic_vix3m = (spot_vix * slope + intercept).clip(lower=0.01)
+    combined["vix3m_level"] = vix3m.combine_first(synthetic_vix3m).bfill()
+    return combined
 
 
 def build_market_cap_to_gdp_proxy(combined: pd.DataFrame) -> pd.DataFrame:
@@ -93,25 +261,18 @@ def build_market_cap_to_gdp_proxy(combined: pd.DataFrame) -> pd.DataFrame:
     if official_series.empty:
         return combined
 
-    anchor_date = official_series.index.max()
-    anchor_ratio = float(official_series.iloc[-1])
-
     wilshire = pd.to_numeric(combined["wilshire_total_market_index"], errors="coerce").ffill()
     gdp = pd.to_numeric(combined["us_nominal_gdp_saar_bil"], errors="coerce").ffill()
 
-    wilshire_anchor = wilshire.loc[:anchor_date].dropna()
-    gdp_anchor = gdp.loc[:anchor_date].dropna()
-    if wilshire_anchor.empty or gdp_anchor.empty:
+    base_ratio = wilshire / gdp
+    anchor_scale = (official_series / base_ratio.reindex(official_series.index)).replace([float("inf"), float("-inf")], pd.NA)
+    anchor_scale = pd.to_numeric(anchor_scale, errors="coerce").dropna()
+    if anchor_scale.empty:
         return combined
 
-    wilshire_anchor_value = float(wilshire_anchor.iloc[-1])
-    gdp_anchor_value = float(gdp_anchor.iloc[-1])
-    if wilshire_anchor_value == 0.0 or gdp_anchor_value == 0.0:
-        return combined
-
-    proxy = anchor_ratio * (wilshire / wilshire_anchor_value) * (gdp_anchor_value / gdp)
-    patched = pd.to_numeric(combined["market_cap_to_gdp_pct"], errors="coerce").copy()
-    patched.loc[patched.index > anchor_date] = proxy.loc[patched.index > anchor_date]
+    scale = anchor_scale.reindex(combined.index).interpolate(method="time").ffill().bfill()
+    proxy = (base_ratio * scale).where(base_ratio.notna()).bfill()
+    patched = pd.to_numeric(combined["market_cap_to_gdp_pct"], errors="coerce").combine_first(proxy)
 
     combined["market_cap_to_gdp_proxy_pct"] = proxy
     combined["market_cap_to_gdp_pct_patched"] = patched
@@ -142,7 +303,11 @@ def load_macro_combined_frame(project_root: str | Path | None = None) -> pd.Data
     if "VIXCLS" in combined.columns:
         combined = combined.rename(columns={"VIXCLS": "spot_vix"})
 
+    combined = build_macro_open_data_derivatives(combined)
+    combined = patch_spot_vix_history(combined)
+    combined = patch_vix3m_history(combined)
     combined = build_market_cap_to_gdp_proxy(combined)
+    combined = combined.loc[combined.index >= macro_frame.index.min()].copy()
 
     return combined
 

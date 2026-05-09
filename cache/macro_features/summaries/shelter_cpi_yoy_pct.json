@@ -1,0 +1,22 @@
+{
+  "feature": "shelter_cpi_yoy_pct",
+  "name": "Shelter CPI YoY",
+  "source": "FRED",
+  "source_url": "https://fred.stlouisfed.org/series/CUSR0000SAH1",
+  "units": "percent",
+  "history_start": "1999-01-01",
+  "history_end": "2026-03-01",
+  "rows_with_values": 326,
+  "total_rows": 7300,
+  "missing_rows": 6974,
+  "coverage_ratio": 0.04465753424657534,
+  "frequency": "monthly",
+  "latest_value": 3.2317980101900456,
+  "days_since_update": 68,
+  "expected_max_lag_days": 62,
+  "stale": true,
+  "stale_status": "stale",
+  "notes": [
+    "Derived as the 12-month percent change of CUSR0000SAH1."
+  ]
+}

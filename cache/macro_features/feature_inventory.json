@@ -336,7 +336,7 @@
     "missing_rows": 1516,
     "coverage_ratio": 0.7923287671232877,
     "frequency": "daily",
-    "latest_value": 60.18999862670898,
+    "latest_value": 60.189998626708984,
     "days_since_update": 29,
     "expected_max_lag_days": 10,
     "stale": true,
@@ -385,23 +385,26 @@
   },
   {
     "feature": "vix3m_level",
-    "name": "vix3m_level",
-    "source": "unknown",
-    "source_url": null,
-    "units": null,
-    "history_start": "2006-07-17",
+    "name": "CBOE S&P 500 3-Month Volatility Index",
+    "source": "Yahoo Finance chart API / derived pre-launch backfill",
+    "source_url": "https://finance.yahoo.com/quote/%5EVIX3M",
+    "units": "index level",
+    "history_start": "1999-01-01",
     "history_end": "2026-04-09",
-    "rows_with_values": 4964,
+    "rows_with_values": 7300,
     "total_rows": 7300,
-    "missing_rows": 2336,
-    "coverage_ratio": 0.68,
+    "missing_rows": 0,
+    "coverage_ratio": 1.0,
     "frequency": "daily",
     "latest_value": 21.90999984741211,
     "days_since_update": 29,
     "expected_max_lag_days": 10,
     "stale": true,
     "stale_status": "stale",
-    "notes": []
+    "notes": [
+      "Official ^VIX3M history where available.",
+      "Pre-launch history is backfilled from the observed spot_vix overlap regression so the aligned daily frame has no leading NaNs."
+    ]
   },
   {
     "feature": "high_yield_spread",
@@ -423,6 +426,116 @@
     "stale_status": "stale",
     "notes": [
       "Daily credit-spread proxy used for risk-off context."
+    ]
+  },
+  {
+    "feature": "CPIENGSL",
+    "name": "Consumer Price Index: Energy",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/CPIENGSL",
+    "units": "index 1982-1984=100, seasonally adjusted",
+    "history_start": "1999-01-01",
+    "history_end": "2026-03-01",
+    "rows_with_values": 326,
+    "total_rows": 7300,
+    "missing_rows": 6974,
+    "coverage_ratio": 0.04465753424657534,
+    "frequency": "monthly",
+    "latest_value": 314.019,
+    "days_since_update": 68,
+    "expected_max_lag_days": 62,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Monthly energy CPI index."
+    ]
+  },
+  {
+    "feature": "CPILFESL",
+    "name": "Consumer Price Index: All Items Less Food and Energy",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/CPILFESL",
+    "units": "index 1982-1984=100, seasonally adjusted",
+    "history_start": "1999-01-01",
+    "history_end": "2026-03-01",
+    "rows_with_values": 326,
+    "total_rows": 7300,
+    "missing_rows": 6974,
+    "coverage_ratio": 0.04465753424657534,
+    "frequency": "monthly",
+    "latest_value": 334.165,
+    "days_since_update": 68,
+    "expected_max_lag_days": 62,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Monthly core CPI index."
+    ]
+  },
+  {
+    "feature": "CUSR0000SAH1",
+    "name": "Consumer Price Index: Shelter",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/CUSR0000SAH1",
+    "units": "index 1982-1984=100",
+    "history_start": "1999-01-01",
+    "history_end": "2026-03-01",
+    "rows_with_values": 326,
+    "total_rows": 7300,
+    "missing_rows": 6974,
+    "coverage_ratio": 0.04465753424657534,
+    "frequency": "monthly",
+    "latest_value": 424.069,
+    "days_since_update": 68,
+    "expected_max_lag_days": 62,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Monthly shelter CPI index."
+    ]
+  },
+  {
+    "feature": "INDPRO",
+    "name": "Industrial Production: Total Index",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/INDPRO",
+    "units": "index 2017=100",
+    "history_start": "1999-01-01",
+    "history_end": "2026-03-01",
+    "rows_with_values": 327,
+    "total_rows": 7300,
+    "missing_rows": 6973,
+    "coverage_ratio": 0.04479452054794521,
+    "frequency": "monthly",
+    "latest_value": 101.7898,
+    "days_since_update": 68,
+    "expected_max_lag_days": 62,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Monthly total industrial production index."
+    ]
+  },
+  {
+    "feature": "IPMAN",
+    "name": "Industrial Production: Manufacturing",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/IPMAN",
+    "units": "index 2017=100",
+    "history_start": "1999-01-01",
+    "history_end": "2026-03-01",
+    "rows_with_values": 327,
+    "total_rows": 7300,
+    "missing_rows": 6973,
+    "coverage_ratio": 0.04479452054794521,
+    "frequency": "monthly",
+    "latest_value": 97.995,
+    "days_since_update": 68,
+    "expected_max_lag_days": 62,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Monthly manufacturing output index."
     ]
   },
   {
@@ -471,23 +584,48 @@
   },
   {
     "feature": "spot_vix",
-    "name": "spot_vix",
-    "source": "unknown",
-    "source_url": null,
-    "units": null,
-    "history_start": "1999-03-10",
+    "name": "CBOE Volatility Index: VIX",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
+    "units": "index level",
+    "history_start": "1999-01-01",
     "history_end": "2026-04-06",
-    "rows_with_values": 6840,
+    "rows_with_values": 7297,
     "total_rows": 7300,
-    "missing_rows": 460,
-    "coverage_ratio": 0.936986301369863,
+    "missing_rows": 3,
+    "coverage_ratio": 0.9995890410958904,
     "frequency": "daily",
     "latest_value": 24.17,
     "days_since_update": 32,
     "expected_max_lag_days": 10,
     "stale": true,
     "stale_status": "stale",
-    "notes": []
+    "notes": [
+      "Daily spot volatility proxy.",
+      "Leading 1999 gap is patched with the discontinued VXO predecessor and backfilled over the opening holiday rows so the aligned daily frame has no NaNs."
+    ]
+  },
+  {
+    "feature": "VXOCLS",
+    "name": "CBOE S&P 100 Volatility Index: VXO",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/VXOCLS",
+    "units": "index level",
+    "history_start": "1999-01-04",
+    "history_end": "2021-09-23",
+    "rows_with_values": 5719,
+    "total_rows": 7300,
+    "missing_rows": 1581,
+    "coverage_ratio": 0.7834246575342466,
+    "frequency": "daily",
+    "latest_value": 17.87,
+    "days_since_update": 1688,
+    "expected_max_lag_days": 10,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Discontinued predecessor used only as a historical fallback for spot_vix."
+    ]
   },
   {
     "feature": "yield_curve_10y_2y",
@@ -512,17 +650,127 @@
     ]
   },
   {
+    "feature": "core_cpi_yoy_pct",
+    "name": "Core CPI YoY",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/CPILFESL",
+    "units": "percent",
+    "history_start": "1999-01-01",
+    "history_end": "2026-03-01",
+    "rows_with_values": 326,
+    "total_rows": 7300,
+    "missing_rows": 6974,
+    "coverage_ratio": 0.04465753424657534,
+    "frequency": "monthly",
+    "latest_value": 2.6730984898529986,
+    "days_since_update": 68,
+    "expected_max_lag_days": 62,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Derived as the 12-month percent change of CPILFESL."
+    ]
+  },
+  {
+    "feature": "energy_cpi_yoy_pct",
+    "name": "Energy CPI YoY",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/CPIENGSL",
+    "units": "percent",
+    "history_start": "1999-01-01",
+    "history_end": "2026-03-01",
+    "rows_with_values": 326,
+    "total_rows": 7300,
+    "missing_rows": 6974,
+    "coverage_ratio": 0.04465753424657534,
+    "frequency": "monthly",
+    "latest_value": 11.31636038795303,
+    "days_since_update": 68,
+    "expected_max_lag_days": 62,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Derived as the 12-month percent change of CPIENGSL."
+    ]
+  },
+  {
+    "feature": "shelter_cpi_yoy_pct",
+    "name": "Shelter CPI YoY",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/CUSR0000SAH1",
+    "units": "percent",
+    "history_start": "1999-01-01",
+    "history_end": "2026-03-01",
+    "rows_with_values": 326,
+    "total_rows": 7300,
+    "missing_rows": 6974,
+    "coverage_ratio": 0.04465753424657534,
+    "frequency": "monthly",
+    "latest_value": 3.2317980101900456,
+    "days_since_update": 68,
+    "expected_max_lag_days": 62,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Derived as the 12-month percent change of CUSR0000SAH1."
+    ]
+  },
+  {
+    "feature": "industrial_production_yoy_pct",
+    "name": "Industrial Production YoY",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/INDPRO",
+    "units": "percent",
+    "history_start": "1999-01-01",
+    "history_end": "2026-03-01",
+    "rows_with_values": 327,
+    "total_rows": 7300,
+    "missing_rows": 6973,
+    "coverage_ratio": 0.04479452054794521,
+    "frequency": "monthly",
+    "latest_value": 0.7416835246099485,
+    "days_since_update": 68,
+    "expected_max_lag_days": 62,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Derived as the 12-month percent change of INDPRO."
+    ]
+  },
+  {
+    "feature": "manufacturing_output_yoy_pct",
+    "name": "Manufacturing Output YoY",
+    "source": "FRED",
+    "source_url": "https://fred.stlouisfed.org/series/IPMAN",
+    "units": "percent",
+    "history_start": "1999-01-01",
+    "history_end": "2026-03-01",
+    "rows_with_values": 327,
+    "total_rows": 7300,
+    "missing_rows": 6973,
+    "coverage_ratio": 0.04479452054794521,
+    "frequency": "monthly",
+    "latest_value": 0.6214203130102014,
+    "days_since_update": 68,
+    "expected_max_lag_days": 62,
+    "stale": true,
+    "stale_status": "stale",
+    "notes": [
+      "Derived as the 12-month percent change of IPMAN."
+    ]
+  },
+  {
     "feature": "market_cap_to_gdp_proxy_pct",
     "name": "Market cap to GDP proxy",
     "source": "derived",
     "source_url": null,
     "units": "percent of GDP",
-    "history_start": "1999-01-04",
+    "history_start": "1999-01-01",
     "history_end": "2026-04-09",
-    "rows_with_values": 7299,
+    "rows_with_values": 7300,
     "total_rows": 7300,
-    "missing_rows": 1,
-    "coverage_ratio": 0.9998630136986302,
+    "missing_rows": 0,
+    "coverage_ratio": 1.0,
     "frequency": "daily",
     "latest_value": 278.54432820702334,
     "days_since_update": 29,
@@ -530,7 +778,7 @@
     "stale": true,
     "stale_status": "stale",
     "notes": [
-      "Daily proxy anchored to the last official market_cap_to_gdp_pct observation using Wilshire and nominal GDP."
+      "Daily proxy scaled from Wilshire and nominal GDP using the full set of official annual market_cap_to_gdp_pct anchors."
     ]
   },
   {
@@ -541,10 +789,10 @@
     "units": "percent of GDP",
     "history_start": "1999-01-01",
     "history_end": "2026-04-09",
-    "rows_with_values": 1702,
+    "rows_with_values": 7300,
     "total_rows": 7300,
-    "missing_rows": 5598,
-    "coverage_ratio": 0.23315068493150684,
+    "missing_rows": 0,
+    "coverage_ratio": 1.0,
     "frequency": "daily",
     "latest_value": 278.54432820702334,
     "days_since_update": 29,
@@ -552,7 +800,7 @@
     "stale": true,
     "stale_status": "stale",
     "notes": [
-      "Official annual observations when available, extended with the derived proxy after the last official date."
+      "Official annual observations when available, with the derived daily proxy filling the gaps between official prints and after the latest official date."
     ]
   }
 ]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import argparse
 import html
 import json
@@ -49,9 +50,7 @@ SVG_ROW_GAP = 18
 def _ensure_macro_feature_store(project_root: str | Path | None = None) -> Path:
     root = resolve_project_root(project_root)
     feature_store_dir = root / MACRO_FEATURES_DIR
-    inventory_path = feature_store_dir / "feature_inventory.csv"
-    if not inventory_path.exists():
-        write_macro_feature_store(project_root=root)
+    write_macro_feature_store(project_root=root)
     return feature_store_dir
 
 
@@ -69,7 +68,9 @@ def load_model_macro_inventory(project_root: str | Path | None = None) -> pd.Dat
 
 
 def load_model_macro_frame(project_root: str | Path | None = None) -> pd.DataFrame:
-    frame = load_macro_context(project_root=project_root)
+    root = resolve_project_root(project_root)
+    _ensure_macro_feature_store(project_root=root)
+    frame = load_macro_context(project_root=root)
     selected = [feature for group in MACRO_REPORT_GROUPS for feature in group["series"] if feature in frame.columns]
     numeric = frame[selected].apply(pd.to_numeric, errors="coerce").sort_index().ffill()
     numeric.index = pd.to_datetime(numeric.index)
@@ -108,6 +109,21 @@ def _display_text(value: Any, fallback: str = "n/a") -> str:
     if value is None or pd.isna(value):
         return fallback
     return str(value)
+
+
+def _coerce_text_items(value: Any) -> tuple[str, ...]:
+    if isinstance(value, (list, tuple)):
+        return tuple(str(item) for item in value if str(item).strip())
+    if isinstance(value, str) and value.strip():
+        try:
+            parsed = ast.literal_eval(value)
+        except (SyntaxError, ValueError):
+            parsed = value
+        if isinstance(parsed, (list, tuple)):
+            return tuple(str(item) for item in parsed if str(item).strip())
+        if str(parsed).strip() and str(parsed).strip() != "[]":
+            return (str(parsed),)
+    return ()
 
 
 def _format_axis_label(value: float) -> str:
@@ -321,6 +337,7 @@ def _series_card(feature: str, inventory: pd.DataFrame) -> str:
         coverage_text = f"{float(coverage_ratio) * 100:.1f}%"
     engineering_items = tuple(str(item) for item in detail.get("engineering", ()))
     interaction_items = tuple(str(item) for item in detail.get("interactions", ()))
+    note_items = _coerce_text_items(detail.get("data_notes") or row.get("notes"))
 
     return "\n".join(
         [
@@ -337,6 +354,7 @@ def _series_card(feature: str, inventory: pd.DataFrame) -> str:
             f"    <div><dt>Coverage</dt><dd>{coverage_text}</dd></div>",
             f"    <div><dt>Source</dt><dd>{source_html}</dd></div>",
             "  </dl>",
+            _render_detail_block("Data Notes", note_items),
             _render_detail_block("Engineer Next", engineering_items),
             _render_detail_block("Watch With", interaction_items),
             "</article>",
@@ -698,7 +716,7 @@ def _render_html(
     <section class=\"hero\">
       <p class=\"eyebrow\">Model Macro Atlas</p>
       <h1>Macro Variables Used By The Models</h1>
-            <p>This document groups the macro variables currently fed into the price-action models and shows their long-history timelines in a cycle-aware format. It also distinguishes what the live model uses today from the richer regime architecture it should evolve toward: VIX as a structural regime variable, valuation as fragility rather than timing, and rate pace as a dedicated shock channel.</p>
+                        <p>This document groups the macro variables currently fed into the price-action models into a cycle map: inflation breadth, real activity, policy, credit, volatility, real assets, and valuation fragility. The intent is closer to a macro playbook than a loose factor list, so each block is shown in the context where it matters rather than as an interchangeable input beside price action.</p>
       <div class=\"hero-meta\">
         <span>{generated_at}</span>
         <span>{len(inventory.index)} base macro series</span>
@@ -712,7 +730,7 @@ def _render_html(
 
     <section class=\"methodology\">
       <p class=\"eyebrow\">Method</p>
-            <p>The charts use the same base macro series list referenced by model feature engineering. Each series is aligned to the daily market frame and forward-filled the same way the models consume it. Crisis windows are shaded to make cross-cycle comparisons easier: {html.escape(regime_text)}. The cards below add model-role guidance so the report does not treat VIX, valuation, credit, and rates as interchangeable inputs.</p>
+        <p>The report rebuilds the macro feature store from raw inputs when it runs, then aligns each selected series to the daily market frame the same way the models consume it. Mixed-frequency indicators are derived before alignment, while patched VIX term-structure history and the daily market-cap-to-GDP proxy remove leading gaps from the regime-critical rows. Crisis windows are shaded to make cross-cycle comparisons easier: {html.escape(regime_text)}. The cards below add model-role guidance so the report treats inflation breadth, production, valuation, credit, and volatility as distinct macro channels rather than a flat list.</p>
     </section>
 
         {architecture_section}

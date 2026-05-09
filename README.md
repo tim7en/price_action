@@ -113,7 +113,9 @@ The command writes:
 - The trade schedule is non-overlapping: once a trade is taken, the strategy waits `N` bars before considering the next one.
 - Sparse context columns are pruned automatically so mixed-frequency macro data does not collapse the whole sample.
 - The regime filter is intentionally simple and inspectable. It is a starter context layer, not a final macro engine.
-- `market_cap_to_gdp_pct_patched` extends the stale annual market-cap-to-GDP series with a daily proxy anchored to the last official observation.
+- The macro layer now separates headline, core, energy, and shelter inflation, and adds industrial plus manufacturing output so sticky inflation and real-activity rollovers can be distinguished.
+- `spot_vix` uses VXO fallback and `vix3m_level` uses a regression-backed pre-launch backfill so the aligned daily macro frame has no leading gaps.
+- `market_cap_to_gdp_proxy_pct` and `market_cap_to_gdp_pct_patched` keep valuation usable at daily frequency while staying anchored to the official annual market-cap-to-GDP observations.
 - The panel workflow pools common features across symbols and evaluates a calendar holdout on the combined cross-section.
 
 ## Good next steps

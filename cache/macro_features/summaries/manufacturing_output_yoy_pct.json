@@ -1,0 +1,22 @@
+{
+  "feature": "manufacturing_output_yoy_pct",
+  "name": "Manufacturing Output YoY",
+  "source": "FRED",
+  "source_url": "https://fred.stlouisfed.org/series/IPMAN",
+  "units": "percent",
+  "history_start": "1999-01-01",
+  "history_end": "2026-03-01",
+  "rows_with_values": 327,
+  "total_rows": 7300,
+  "missing_rows": 6973,
+  "coverage_ratio": 0.04479452054794521,
+  "frequency": "monthly",
+  "latest_value": 0.6214203130102014,
+  "days_since_update": 68,
+  "expected_max_lag_days": 62,
+  "stale": true,
+  "stale_status": "stale",
+  "notes": [
+    "Derived as the 12-month percent change of IPMAN."
+  ]
+}

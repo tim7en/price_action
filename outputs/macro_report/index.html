@@ -208,21 +208,21 @@
     <section class="hero">
       <p class="eyebrow">Model Macro Atlas</p>
       <h1>Macro Variables Used By The Models</h1>
-            <p>This document groups the macro variables currently fed into the price-action models and shows their long-history timelines in a cycle-aware format. It also distinguishes what the live model uses today from the richer regime architecture it should evolve toward: VIX as a structural regime variable, valuation as fragility rather than timing, and rate pace as a dedicated shock channel.</p>
+                        <p>This document groups the macro variables currently fed into the price-action models into a cycle map: inflation breadth, real activity, policy, credit, volatility, real assets, and valuation fragility. The intent is closer to a macro playbook than a loose factor list, so each block is shown in the context where it matters rather than as an interchangeable input beside price action.</p>
       <div class="hero-meta">
-        <span>Generated 2026-05-08 17:17 UTC</span>
-        <span>16 base macro series</span>
+        <span>Generated 2026-05-08 20:18 UTC</span>
+        <span>22 base macro series</span>
                 <span>Current live transforms: level, 63-day z-score, 5-day delta</span>
       </div>
     </section>
 
     <nav class="toc">
-      <a href="#inflation_labor">Inflation And Labor</a> <a href="#rates_curve">Rates And The Curve</a> <a href="#credit_conditions">Credit And Conditions</a> <a href="#volatility_risk">Volatility And Risk Appetite</a> <a href="#dollar_real_assets">Dollar And Real Assets</a> <a href="#valuation_balance_sheet">Valuation And Balance Sheet Backdrop</a>
+      <a href="#inflation_breadth">Inflation Breadth And Labor</a> <a href="#production_activity">Real Activity And Production</a> <a href="#rates_curve">Rates And The Curve</a> <a href="#credit_conditions">Credit And Conditions</a> <a href="#volatility_risk">Volatility And Risk Appetite</a> <a href="#dollar_real_assets">Dollar And Real Assets</a> <a href="#valuation_backdrop">Valuation And Debt-Cycle Backdrop</a>
     </nav>
 
     <section class="methodology">
       <p class="eyebrow">Method</p>
-            <p>The charts use the same base macro series list referenced by model feature engineering. Each series is aligned to the daily market frame and forward-filled the same way the models consume it. Crisis windows are shaded to make cross-cycle comparisons easier: Dot-com unwind: 2000-2002 | GFC: 2007-2009 | Pandemic shock: 2020-2020 | Inflation tightening: 2021-2023. The cards below add model-role guidance so the report does not treat VIX, valuation, credit, and rates as interchangeable inputs.</p>
+        <p>The report rebuilds the macro feature store from raw inputs when it runs, then aligns each selected series to the daily market frame the same way the models consume it. Mixed-frequency indicators are derived before alignment, while patched VIX term-structure history and the daily market-cap-to-GDP proxy remove leading gaps from the regime-critical rows. Crisis windows are shaded to make cross-cycle comparisons easier: Dot-com unwind: 2000-2002 | GFC: 2007-2009 | Pandemic shock: 2020-2020 | Inflation tightening: 2021-2023. The cards below add model-role guidance so the report treats inflation breadth, production, valuation, credit, and volatility as distinct macro channels rather than a flat list.</p>
     </section>
 
         <section class="framework-section">
@@ -232,12 +232,12 @@
 <article class="framework-card">
   <h3>Regime Layer</h3>
   <p>This layer decides whether the environment is calm, stressed, panicking, recovering, or inflation-shocked before any directional forecast is trusted.</p>
-  <ul class="plain-list"><li>VIX level, change, percentile, and term structure</li><li>Credit and liquidity stress via high-yield spreads, NFCI, and dollar strength</li><li>Rate shock via front-end repricing and curve deformation</li><li>Valuation fragility as a backdrop rather than a timing trigger</li></ul>
+  <ul class="plain-list"><li>VIX level, change, percentile, and term structure</li><li>Credit and liquidity stress via high-yield spreads, NFCI, and dollar strength</li><li>Rate shock via front-end repricing and curve deformation</li><li>Inflation breadth and production breadth so sticky inflation is not confused with a temporary commodity shock</li></ul>
 </article>
 <article class="framework-card">
   <h3>Prediction Layer</h3>
   <p>Once regime is known, price-action and macro features forecast forward return within that environment instead of pretending all regimes behave the same way.</p>
-  <ul class="plain-list"><li>Price action and volume</li><li>Macro and valuation context</li><li>Volatility-adjusted returns and breakout strength</li><li>Sentiment and liquidity inputs when available</li></ul>
+  <ul class="plain-list"><li>Price action and volume</li><li>Macro, inflation, production, and valuation context</li><li>Volatility-adjusted returns and breakout strength</li><li>Sentiment and liquidity inputs when available</li></ul>
 </article>
 <article class="framework-card">
   <h3>Decision Layer</h3>
@@ -264,8 +264,16 @@
   <p>High CAPE or market-cap-to-GDP does not mean crash tomorrow. It lowers long-run expected return and becomes dangerous when combined with rising volatility, widening spreads, or rapid tightening.</p>
 </article>
 <article class="principle-card">
+  <h3>Decompose inflation before declaring a regime</h3>
+  <p>Headline CPI can fall because energy rolled over while shelter and core stay sticky. The regime should react to the breadth of inflation, not just the headline print.</p>
+</article>
+<article class="principle-card">
   <h3>Rate pace matters more than static levels</h3>
   <p>Equities usually react hardest to speed, surprise, and direction of rate change. Front-end repricing, real-yield moves, and curve change deserve their own shock variables.</p>
+</article>
+<article class="principle-card">
+  <h3>Production confirms or rejects the market narrative</h3>
+  <p>Industrial and manufacturing output tell you whether real activity is improving underneath price action. If production is rolling over while risk assets levitate, fragility is rising.</p>
 </article>
 <article class="principle-card">
   <h3>Interactions matter more than isolated readings</h3>
@@ -285,15 +293,15 @@
   <div class="framework-grid framework-card-grid">
 <article class="framework-card">
   <h3>Derive Next From Current Inputs</h3>
-  <ul class="plain-list"><li>vix_percentile_1y, vix_change_1d, vix_change_5d, vix_change_20d, and vix_acceleration</li><li>realized_vol_20d and iv_rv_spread = spot_vix minus realized_vol_20d</li><li>return_1d_vix_adjusted, return_5d_vix_adjusted, breakout_strength_vix_adjusted, and drawdown_vix_adjusted</li><li>two_year_yield_change_1m, yield_curve_change_3m, credit_stress_score, valuation_fragility_score, and rate_shock_score</li> </ul>
+  <ul class="plain-list"><li>vix_percentile_1y, vix_change_1d, vix_change_5d, vix_change_20d, and vix_acceleration</li><li>realized_vol_20d and iv_rv_spread = spot_vix minus realized_vol_20d</li><li>return_1d_vix_adjusted, return_5d_vix_adjusted, breakout_strength_vix_adjusted, and drawdown_vix_adjusted</li><li>headline_minus_core_inflation_gap, shelter_minus_headline_gap, sticky_inflation_flag, and energy_shock_flag</li><li>industrial_production_change_3m, manufacturing_change_3m, goods_cycle_score, and production_slowdown_flag</li><li>two_year_yield_change_1m, yield_curve_change_3m, credit_stress_score, valuation_fragility_score, and rate_shock_score</li> </ul>
 </article>
 <article class="framework-card">
-  <h3>Available In The Repository But Not Active In The Current Model List</h3>
-  <ul class="plain-list"><li>shiller_cape_ratio belongs in the valuation-fragility layer and should be read as a long-horizon vulnerability variable, not a short-term crash timer</li> </ul>
+  <h3>Added In This Macro Upgrade</h3>
+  <ul class="plain-list"><li>shiller_cape_ratio is now active beside market-cap-to-GDP so valuation is read as a long-cycle fragility cluster rather than a single indicator</li><li>core_cpi_yoy_pct, energy_cpi_yoy_pct, and shelter_cpi_yoy_pct split sticky inflation from commodity-driven inflation</li><li>industrial_production_yoy_pct and manufacturing_output_yoy_pct add real-economy breadth to the macro stack</li><li>spot_vix now uses VXO fallback and vix3m_level uses a regression-backed pre-launch backfill so the aligned daily frame has no leading gaps</li> </ul>
 </article>
 <article class="framework-card">
-  <h3>Feeds Worth Adding</h3>
-  <ul class="plain-list"><li>Fed funds level and 3m, 6m, and 12m change</li><li>Real-yield level and change</li><li>Expected Fed path and policy-surprise measures</li><li>Liquidity and sentiment proxies for confirmation and de-risking</li> </ul>
+  <h3>Open Data Worth Adding Next</h3>
+  <ul class="plain-list"><li>Fed funds level and 3m, 6m, and 12m change</li><li>Real-yield level and change, breakevens, and expected Fed path / policy-surprise measures</li><li>Senior Loan Officer Opinion Survey, bank lending standards, and delinquency / default rates</li><li>PMI new orders, inventory-to-sales, freight, rail, trucking, and port activity for real-economy breadth</li><li>Google Trends search intensity for layoffs, recession, housing, AI, semiconductors, and labor-market stress</li><li>Patent activity, venture funding, semiconductor capex, R&amp;D-heavy equity baskets, and IPO issuance as innovation proxies</li> </ul>
 </article>
   </div>
 </section>
@@ -302,7 +310,7 @@
   <p class="eyebrow">Interaction Library</p>
   <h2>Signals That Matter More Than Raw Levels</h2>
   <ul class="plain-list two-column-list">
-<li>high_valuation x rising_vix</li><li>high_valuation x fast_rate_hikes</li><li>high_valuation x yield_curve_inversion</li><li>rising_vix x negative_price_momentum</li><li>rate_shock x growth_stock_exposure</li><li>vix_spike x volume_spike</li><li>credit_stress x dollar_strength</li>
+<li>high_valuation x rising_vix</li><li>high_cape x rising_real_rates</li><li>high_valuation x fast_rate_hikes</li><li>high_valuation x yield_curve_inversion</li><li>rising_vix x negative_price_momentum</li><li>rate_shock x growth_stock_exposure</li><li>vix_spike x volume_spike</li><li>credit_stress x dollar_strength</li><li>energy_shock x falling_manufacturing_output</li><li>sticky_inflation x weak_industrial_production</li>
   </ul>
 </section>
 
@@ -330,17 +338,25 @@
   <h3>Low VIX, strong trend</h3>
   <p>Trend following can work well, but complacency risk rises if valuation is stretched and the front end starts repricing higher.</p>
 </article>
+<article class="scenario-card">
+  <h3>Sticky core and shelter inflation, weakening production</h3>
+  <p>This is the stagflation squeeze. Growth assets lose support, duration can struggle, and risk control matters more than chasing nominal rebounds.</p>
+</article>
+<article class="scenario-card">
+  <h3>Energy spike, stable core, resilient production</h3>
+  <p>Treat this as a commodity shock first, not an automatic persistent inflation regime. Watch whether the shock bleeds into core and labor before overreacting.</p>
+</article>
   </div>
 </section>
 
-    <section id="inflation_labor" class="group-section">
+    <section id="inflation_breadth" class="group-section">
   <div class="section-copy">
     <p class="eyebrow">Macro Channel</p>
-    <h2>Inflation And Labor</h2>
-    <p>These series capture the pressure between demand, pricing power, and slack in the real economy.</p>
+    <h2>Inflation Breadth And Labor</h2>
+    <p>Headline inflation is not enough. This group separates sticky inflation from commodity shocks and keeps labor slack in the same frame.</p>
   </div>
   <figure class="plot-frame">
-    <img src="plots/inflation_labor.svg" alt="Inflation And Labor timeline plots" />
+    <img src="plots/inflation_breadth.svg" alt="Inflation Breadth And Labor timeline plots" />
   </figure>
   <div class="series-grid">
 <article class="series-card">
@@ -357,12 +373,94 @@
     <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/CPIAUCSL">FRED</a></dd></div>
   </dl>
 <div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Derived from CPI.</li></ul>
+</div>
+<div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>cpi_yoy_change_3m</li><li>inflation_momentum</li><li>inflation_shock_flag</li></ul>
 </div>
 <div class="detail-block">
   <p class="detail-label">Watch With</p>
   <ul class="chip-list"><li>inflation_pressure x rising_long_yields</li><li>inflation_pressure x falling_margins_proxy</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">core_cpi_yoy_pct</p>
+  <h3>Core CPI YoY</h3>
+  <p class="series-brief">Core CPI strips out the most volatile food and energy swings so you can see whether underlying inflation is staying sticky.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Sticky inflation gauge</dd></div>
+    <div><dt>Latest</dt><dd>2.67%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-03-01</dd></div>
+    <div><dt>Frequency</dt><dd>monthly</dd></div>
+    <div><dt>Coverage</dt><dd>4.5%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/CPILFESL">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Derived as the 12-month percent change of CPILFESL.</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>core_cpi_change_3m</li><li>core_vs_headline_gap</li><li>sticky_inflation_flag</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>sticky_inflation x rising_2y</li><li>sticky_inflation x weak_duration_assets</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">energy_cpi_yoy_pct</p>
+  <h3>Energy CPI YoY</h3>
+  <p class="series-brief">Energy inflation captures the fastest shock channel from commodities and geopolitics into consumer prices and margins.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Commodity-shock inflation gauge</dd></div>
+    <div><dt>Latest</dt><dd>11.32%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-03-01</dd></div>
+    <div><dt>Frequency</dt><dd>monthly</dd></div>
+    <div><dt>Coverage</dt><dd>4.5%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/CPIENGSL">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Derived as the 12-month percent change of CPIENGSL.</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>energy_cpi_change_3m</li><li>energy_shock_flag</li><li>headline_minus_core_inflation_gap</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>energy_shock x falling_consumer_discretionary</li><li>energy_shock x rising_long_yields</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">shelter_cpi_yoy_pct</p>
+  <h3>Shelter CPI YoY</h3>
+  <p class="series-brief">Shelter inflation is slow and sticky. It is one of the cleanest checks on whether inflation pressure is really fading.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Sticky housing-cost inflation gauge</dd></div>
+    <div><dt>Latest</dt><dd>3.23%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-03-01</dd></div>
+    <div><dt>Frequency</dt><dd>monthly</dd></div>
+    <div><dt>Coverage</dt><dd>4.5%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/CUSR0000SAH1">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Derived as the 12-month percent change of CUSR0000SAH1.</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>shelter_cpi_change_3m</li><li>shelter_disinflation_flag</li><li>shelter_minus_headline_gap</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>sticky_shelter x restrictive_rates</li><li>sticky_shelter x weak_homebuilder_breadth</li></ul>
 </div>
 </article>
 <article class="series-card">
@@ -378,6 +476,7 @@
     <div><dt>Coverage</dt><dd>4.5%</dd></div>
     <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/UNRATE">FRED</a></dd></div>
   </dl>
+
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>unemployment_change_3m</li><li>unemployment_change_12m</li><li>labor_deterioration_flag</li></ul>
@@ -385,6 +484,69 @@
 <div class="detail-block">
   <p class="detail-label">Watch With</p>
   <ul class="chip-list"><li>rising_unemployment x widening_spreads</li><li>rising_unemployment x falling_equity_momentum</li></ul>
+</div>
+</article>
+  </div>
+</section> <section id="production_activity" class="group-section">
+  <div class="section-copy">
+    <p class="eyebrow">Macro Channel</p>
+    <h2>Real Activity And Production</h2>
+    <p>Industrial and manufacturing output show whether growth is broadening, slowing, or rolling over beneath the market narrative.</p>
+  </div>
+  <figure class="plot-frame">
+    <img src="plots/production_activity.svg" alt="Real Activity And Production timeline plots" />
+  </figure>
+  <div class="series-grid">
+<article class="series-card">
+  <p class="series-key">industrial_production_yoy_pct</p>
+  <h3>Industrial Production YoY</h3>
+  <p class="series-brief">Industrial production captures the broad goods-producing side of the economy and is a cleaner real-growth check than pure narrative data.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Broad real-activity gauge</dd></div>
+    <div><dt>Latest</dt><dd>0.74%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-03-01</dd></div>
+    <div><dt>Frequency</dt><dd>monthly</dd></div>
+    <div><dt>Coverage</dt><dd>4.5%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/INDPRO">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Derived as the 12-month percent change of INDPRO.</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>industrial_production_change_3m</li><li>production_slowdown_flag</li><li>goods_cycle_score</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>production_slowdown x curve_inversion</li><li>production_slowdown x widening_spreads</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">manufacturing_output_yoy_pct</p>
+  <h3>Manufacturing Output YoY</h3>
+  <p class="series-brief">Manufacturing output is the cyclically sensitive production gauge that often turns with inventories, exports, and capex expectations.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Goods-cycle and inventory-turn gauge</dd></div>
+    <div><dt>Latest</dt><dd>0.62%</dd></div>
+    <div><dt>Units</dt><dd>percent</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-03-01</dd></div>
+    <div><dt>Frequency</dt><dd>monthly</dd></div>
+    <div><dt>Coverage</dt><dd>4.5%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/IPMAN">FRED</a></dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Derived as the 12-month percent change of IPMAN.</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>manufacturing_change_3m</li><li>factory_reacceleration_flag</li><li>manufacturing_vs_industrial_gap</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>factory_rollover x cyclical_equity_weakness</li><li>factory_reacceleration x copper_strength</li></ul>
 </div>
 </article>
   </div>
@@ -411,6 +573,7 @@
     <div><dt>Coverage</dt><dd>93.4%</dd></div>
     <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/DGS2">FRED</a></dd></div>
   </dl>
+
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>two_year_yield_change_1m</li><li>two_year_yield_change_3m</li><li>rate_acceleration</li></ul>
@@ -433,6 +596,7 @@
     <div><dt>Coverage</dt><dd>93.4%</dd></div>
     <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/DGS10">FRED</a></dd></div>
   </dl>
+
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>ten_year_yield_change_1m</li><li>ten_year_yield_change_3m</li><li>long_rate_shock_score</li></ul>
@@ -455,6 +619,7 @@
     <div><dt>Coverage</dt><dd>93.4%</dd></div>
     <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/DGS30">FRED</a></dd></div>
   </dl>
+
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>thirty_year_yield_change_1m</li><li>curve_30y10y_proxy</li><li>duration_stress_flag</li></ul>
@@ -478,6 +643,10 @@
     <div><dt>Source</dt><dd>derived</dd></div>
   </dl>
 <div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Derived from us_10y_yield minus us_2y_yield.</li></ul>
+</div>
+<div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>curve_change_1m</li><li>inversion_flag</li><li>steepening_after_inversion</li></ul>
 </div>
@@ -499,6 +668,10 @@
     <div><dt>Coverage</dt><dd>92.8%</dd></div>
     <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/T10Y3M">FRED</a></dd></div>
   </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Yield-curve slope proxy.</li></ul>
+</div>
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>t10y3m_change_1m</li><li>deep_inversion_flag</li><li>curve_shock_score</li></ul>
@@ -533,6 +706,10 @@
     <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/BAMLH0A0HYM2">FRED</a></dd></div>
   </dl>
 <div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Daily credit-spread proxy used for risk-off context.</li></ul>
+</div>
+<div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>hy_spread_change_5d</li><li>hy_spread_percentile_1y</li><li>credit_stress_score</li></ul>
 </div>
@@ -554,6 +731,10 @@
     <div><dt>Coverage</dt><dd>19.3%</dd></div>
     <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/NFCI">FRED</a></dd></div>
   </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Weekly financial conditions series.</li></ul>
+</div>
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>nfci_change_4w</li><li>tightening_flag</li><li>conditions_stress_score</li></ul>
@@ -582,11 +763,15 @@
     <div><dt>Model role</dt><dd>Primary regime variable</dd></div>
     <div><dt>Latest</dt><dd>24.17</dd></div>
     <div><dt>Units</dt><dd>index level</dd></div>
-    <div><dt>History</dt><dd>1999-03-10 to 2026-04-06</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-04-06</dd></div>
     <div><dt>Frequency</dt><dd>daily</dd></div>
-    <div><dt>Coverage</dt><dd>93.7%</dd></div>
-    <div><dt>Source</dt><dd>unknown</dd></div>
+    <div><dt>Coverage</dt><dd>100.0%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/VIXCLS">FRED</a></dd></div>
   </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Daily spot volatility proxy.</li><li>Leading 1999 gap is patched with the discontinued VXO predecessor and backfilled over the opening holiday rows so the aligned daily frame has no NaNs.</li></ul>
+</div>
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>vix_percentile_1y</li><li>vix_change_1d</li><li>vix_change_5d</li><li>vix_change_20d</li><li>vix_acceleration</li><li>return_1d_vix_adjusted</li></ul>
@@ -604,11 +789,15 @@
     <div><dt>Model role</dt><dd>Medium-horizon stress and term-structure leg</dd></div>
     <div><dt>Latest</dt><dd>21.91</dd></div>
     <div><dt>Units</dt><dd>index level</dd></div>
-    <div><dt>History</dt><dd>2006-07-17 to 2026-04-09</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-04-09</dd></div>
     <div><dt>Frequency</dt><dd>daily</dd></div>
-    <div><dt>Coverage</dt><dd>68.0%</dd></div>
-    <div><dt>Source</dt><dd>unknown</dd></div>
+    <div><dt>Coverage</dt><dd>100.0%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://finance.yahoo.com/quote/%5EVIX3M">Yahoo Finance chart API / derived pre-launch backfill</a></dd></div>
   </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Official ^VIX3M history where available.</li><li>Pre-launch history is backfilled from the observed spot_vix overlap regression so the aligned daily frame has no leading NaNs.</li></ul>
+</div>
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>vix3m_minus_vix</li><li>vix_term_structure_ratio</li><li>term_structure_change_5d</li></ul>
@@ -642,6 +831,7 @@
     <div><dt>Coverage</dt><dd>94.4%</dd></div>
     <div><dt>Source</dt><dd><a href="https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB">Yahoo Finance chart API</a></dd></div>
   </dl>
+
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>dxy_change_5d</li><li>dxy_percentile_1y</li><li>dollar_strength x credit_stress</li></ul>
@@ -664,6 +854,7 @@
     <div><dt>Coverage</dt><dd>88.0%</dd></div>
     <div><dt>Source</dt><dd><a href="https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF">Yahoo Finance chart API</a></dd></div>
   </dl>
+
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>gold_momentum_20d</li><li>gold_vs_dxy_relative_strength</li><li>gold_breakout x rising_vix</li></ul>
@@ -686,6 +877,7 @@
     <div><dt>Coverage</dt><dd>93.6%</dd></div>
     <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/DCOILWTICO">FRED</a></dd></div>
   </dl>
+
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>wti_change_20d</li><li>wti_volatility_20d</li><li>oil_spike x inflation_pressure</li></ul>
@@ -696,51 +888,82 @@
 </div>
 </article>
   </div>
-</section> <section id="valuation_balance_sheet" class="group-section">
+</section> <section id="valuation_backdrop" class="group-section">
   <div class="section-copy">
     <p class="eyebrow">Macro Channel</p>
-    <h2>Valuation And Balance Sheet Backdrop</h2>
-    <p>These series describe valuation fragility. They do not time the next crash by themselves, but they matter when stress begins to activate.</p>
+    <h2>Valuation And Debt-Cycle Backdrop</h2>
+    <p>These are long-duration fragility gauges. They do not tell you the day of the turn, but they matter when rates, credit, and volatility start to bite.</p>
   </div>
   <figure class="plot-frame">
-    <img src="plots/valuation_balance_sheet.svg" alt="Valuation And Balance Sheet Backdrop timeline plots" />
+    <img src="plots/valuation_backdrop.svg" alt="Valuation And Debt-Cycle Backdrop timeline plots" />
   </figure>
   <div class="series-grid">
 <article class="series-card">
-  <p class="series-key">market_cap_to_gdp_pct</p>
-  <h3>Market Cap to GDP</h3>
-  <p class="series-brief">This is the slow-moving official valuation backdrop: financial asset prices versus the productive economy beneath them.</p>
+  <p class="series-key">shiller_cape_ratio</p>
+  <h3>Shiller CAPE</h3>
+  <p class="series-brief">Shiller CAPE is a long-cycle valuation gauge. It is slow, but it matters when leverage, rates, and sentiment are stretched together.</p>
   <dl class="series-meta">
-    <div><dt>Model role</dt><dd>Slow valuation-fragility backdrop</dd></div>
-    <div><dt>Latest</dt><dd>194.89%</dd></div>
-    <div><dt>Units</dt><dd>percent of GDP</dd></div>
-    <div><dt>History</dt><dd>1999-01-01 to 2020-01-01</dd></div>
-    <div><dt>Frequency</dt><dd>annual_or_irregular</dd></div>
-    <div><dt>Coverage</dt><dd>0.3%</dd></div>
-    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/DDDM01USA156NWDB">FRED</a></dd></div>
+    <div><dt>Model role</dt><dd>Long-horizon valuation and earnings-cycle gauge</dd></div>
+    <div><dt>Latest</dt><dd>39.14x</dd></div>
+    <div><dt>Units</dt><dd>ratio</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-04-08</dd></div>
+    <div><dt>Frequency</dt><dd>monthly</dd></div>
+    <div><dt>Coverage</dt><dd>4.5%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://www.multpl.com/shiller-pe/table/by-month">Multpl</a></dd></div>
   </dl>
+
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
-  <ul class="chip-list"><li>valuation_percentile</li><li>valuation_zscore</li><li>valuation_fragility_score</li></ul>
+  <ul class="chip-list"><li>cape_percentile_10y</li><li>cape_regime_flag</li><li>cape x real_yield_gap</li></ul>
 </div>
 <div class="detail-block">
   <p class="detail-label">Watch With</p>
-  <ul class="chip-list"><li>high_valuation x rising_vix</li><li>high_valuation x fast_rate_hikes</li></ul>
+  <ul class="chip-list"><li>high_cape x rising_real_rates</li><li>high_cape x weak_breadth</li></ul>
 </div>
 </article>
 <article class="series-card">
-  <p class="series-key">market_cap_to_gdp_pct_patched</p>
-  <h3>Market Cap to GDP, Patched Daily Proxy</h3>
-  <p class="series-brief">The patched series extends the official valuation gauge into a usable daily proxy so the model can track the backdrop in real time.</p>
+  <p class="series-key">market_cap_to_gdp_proxy_pct</p>
+  <h3>Market Cap to GDP, Daily Proxy</h3>
+  <p class="series-brief">This daily proxy keeps the Buffett-indicator logic usable between annual official prints so valuation stress can be tracked in real time.</p>
   <dl class="series-meta">
-    <div><dt>Model role</dt><dd>Daily valuation backdrop for regime-aware models</dd></div>
+    <div><dt>Model role</dt><dd>Continuous valuation-fragility gauge</dd></div>
     <div><dt>Latest</dt><dd>278.54%</dd></div>
     <div><dt>Units</dt><dd>percent of GDP</dd></div>
     <div><dt>History</dt><dd>1999-01-01 to 2026-04-09</dd></div>
     <div><dt>Frequency</dt><dd>daily</dd></div>
-    <div><dt>Coverage</dt><dd>23.3%</dd></div>
+    <div><dt>Coverage</dt><dd>100.0%</dd></div>
+    <div><dt>Source</dt><dd>derived</dd></div>
+  </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Daily proxy scaled from Wilshire and nominal GDP using the full set of official annual market_cap_to_gdp_pct anchors.</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Engineer Next</p>
+  <ul class="chip-list"><li>valuation_proxy_percentile</li><li>valuation_proxy_trend_3m</li><li>valuation_proxy x credit_stress</li></ul>
+</div>
+<div class="detail-block">
+  <p class="detail-label">Watch With</p>
+  <ul class="chip-list"><li>high_valuation_proxy x rising_vix</li><li>high_valuation_proxy x curve_inversion</li></ul>
+</div>
+</article>
+<article class="series-card">
+  <p class="series-key">market_cap_to_gdp_pct_patched</p>
+  <h3>Market Cap to GDP, Official Plus Daily Composite</h3>
+  <p class="series-brief">The patched series extends the official valuation gauge into a usable daily proxy so the model can track the backdrop in real time.</p>
+  <dl class="series-meta">
+    <div><dt>Model role</dt><dd>Officially anchored daily valuation backdrop for regime-aware models</dd></div>
+    <div><dt>Latest</dt><dd>278.54%</dd></div>
+    <div><dt>Units</dt><dd>percent of GDP</dd></div>
+    <div><dt>History</dt><dd>1999-01-01 to 2026-04-09</dd></div>
+    <div><dt>Frequency</dt><dd>daily</dd></div>
+    <div><dt>Coverage</dt><dd>100.0%</dd></div>
     <div><dt>Source</dt><dd>derived_plus_official</dd></div>
   </dl>
+<div class="detail-block">
+  <p class="detail-label">Data Notes</p>
+  <ul class="chip-list"><li>Official annual observations when available, with the derived daily proxy filling the gaps between official prints and after the latest official date.</li></ul>
+</div>
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>
   <ul class="chip-list"><li>daily_valuation_fragility_score</li><li>valuation_trend_3m</li><li>valuation x rate_shock</li></ul>

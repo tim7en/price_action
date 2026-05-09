@@ -1,20 +1,23 @@
 {
   "feature": "vix3m_level",
-  "name": "vix3m_level",
-  "source": "unknown",
-  "source_url": null,
-  "units": null,
-  "history_start": "2006-07-17",
+  "name": "CBOE S&P 500 3-Month Volatility Index",
+  "source": "Yahoo Finance chart API / derived pre-launch backfill",
+  "source_url": "https://finance.yahoo.com/quote/%5EVIX3M",
+  "units": "index level",
+  "history_start": "1999-01-01",
   "history_end": "2026-04-09",
-  "rows_with_values": 4964,
+  "rows_with_values": 7300,
   "total_rows": 7300,
-  "missing_rows": 2336,
-  "coverage_ratio": 0.68,
+  "missing_rows": 0,
+  "coverage_ratio": 1.0,
   "frequency": "daily",
   "latest_value": 21.90999984741211,
   "days_since_update": 29,
   "expected_max_lag_days": 10,
   "stale": true,
   "stale_status": "stale",
-  "notes": []
+  "notes": [
+    "Official ^VIX3M history where available.",
+    "Pre-launch history is backfilled from the observed spot_vix overlap regression so the aligned daily frame has no leading NaNs."
+  ]
 }

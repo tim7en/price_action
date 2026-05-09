@@ -6,10 +6,10 @@
   "units": "percent of GDP",
   "history_start": "1999-01-01",
   "history_end": "2026-04-09",
-  "rows_with_values": 1702,
+  "rows_with_values": 7300,
   "total_rows": 7300,
-  "missing_rows": 5598,
-  "coverage_ratio": 0.23315068493150684,
+  "missing_rows": 0,
+  "coverage_ratio": 1.0,
   "frequency": "daily",
   "latest_value": 278.54432820702334,
   "days_since_update": 29,
@@ -17,6 +17,6 @@
   "stale": true,
   "stale_status": "stale",
   "notes": [
-    "Official annual observations when available, extended with the derived proxy after the last official date."
+    "Official annual observations when available, with the derived daily proxy filling the gaps between official prints and after the latest official date."
   ]
 }
