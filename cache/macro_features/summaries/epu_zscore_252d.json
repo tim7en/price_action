@@ -1,0 +1,22 @@
+{
+  "feature": "epu_zscore_252d",
+  "name": "US Economic Policy Uncertainty 252-Day Z-Score",
+  "source": "derived_from_fred",
+  "source_url": "https://fred.stlouisfed.org/series/USEPUINDXD",
+  "units": "z-score",
+  "history_start": "1999-01-01",
+  "history_end": "2026-05-07",
+  "rows_with_values": 9989,
+  "total_rows": 9989,
+  "missing_rows": 0,
+  "coverage_ratio": 1.0,
+  "frequency": "daily",
+  "latest_value": -0.6490071599735512,
+  "days_since_update": 2,
+  "expected_max_lag_days": 10,
+  "stale": false,
+  "stale_status": "fresh",
+  "notes": [
+    "Derived from a trailing 252-bar rolling mean and standard deviation with no future leak."
+  ]
+}

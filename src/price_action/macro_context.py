@@ -23,6 +23,11 @@ MODEL_MACRO_CONTEXT_COLUMNS: tuple[str, ...] = (
     "manufacturing_output_yoy_pct",
     "NFCI",
     "T10Y3M",
+    "epu_level",
+    "epu_5d_change",
+    "epu_20d_change",
+    "epu_zscore_252d",
+    "epu_spike_flag",
 )
 
 MACRO_REPORT_GROUPS: tuple[dict[str, str | tuple[str, ...]], ...] = (
@@ -66,6 +71,17 @@ MACRO_REPORT_GROUPS: tuple[dict[str, str | tuple[str, ...]], ...] = (
         "series": (
             "high_yield_spread",
             "NFCI",
+        ),
+    },
+    {
+        "slug": "uncertainty_sentiment",
+        "title": "Policy Uncertainty And Sentiment",
+        "summary": "Policy uncertainty and household sentiment are context gauges. They help distinguish noisy slowdowns from genuine stress, but sentiment should stay contextual unless first-release timestamps are tracked explicitly.",
+        "series": (
+            "epu_level",
+            "epu_20d_change",
+            "epu_zscore_252d",
+            "consumer_sentiment_level",
         ),
     },
     {
@@ -123,6 +139,12 @@ MACRO_SERIES_BRIEFS: dict[str, str] = {
     "manufacturing_output_yoy_pct": "Manufacturing output is the cyclically sensitive production gauge that often turns with inventories, exports, and capex expectations.",
     "NFCI": "The Chicago Fed NFCI summarizes how easy or restrictive overall financial conditions are across funding, leverage, and risk markets.",
     "T10Y3M": "The 10Y-3M slope is a more policy-sensitive curve measure that has historically mattered for recession timing.",
+    "epu_level": "Economic Policy Uncertainty tracks how politically and policy-driven macro stress is becoming. Sharp rises often coincide with delayed capex, tighter risk tolerance, and noisier market reactions.",
+    "epu_5d_change": "The 5-day EPU change shows whether policy uncertainty is accelerating quickly enough to matter for near-term positioning.",
+    "epu_20d_change": "The 20-day EPU change distinguishes brief headline noise from a more persistent policy-uncertainty build.",
+    "epu_zscore_252d": "The trailing one-year EPU z-score asks whether uncertainty is merely elevated or genuinely abnormal versus the last year of observations.",
+    "epu_spike_flag": "The spike flag marks unusually large EPU stress relative to trailing history and is designed as a regime-warning feature, not a standalone trade signal.",
+    "consumer_sentiment_level": "Consumer sentiment is a slow household-demand context gauge. It helps frame confidence and recession risk, but without point-in-time release timestamps it should stay contextual rather than drive precise daily timing.",
 }
 
 MACRO_SERIES_DETAILS: dict[str, dict[str, str | tuple[str, ...]]] = {
@@ -406,6 +428,30 @@ MACRO_SERIES_DETAILS: dict[str, dict[str, str | tuple[str, ...]]] = {
         "interactions": (
             "tightening_conditions x expensive_market",
             "tightening_conditions x strong_dollar",
+        ),
+    },
+    "epu_level": {
+        "role": "Policy-uncertainty stress gauge",
+        "engineering": (
+            "epu_5d_change",
+            "epu_20d_change",
+            "epu_zscore_252d",
+        ),
+        "interactions": (
+            "epu_spike x widening_high_yield_spread",
+            "epu_spike x falling_consumer_sentiment",
+        ),
+    },
+    "consumer_sentiment_level": {
+        "role": "Household confidence context gauge",
+        "engineering": (
+            "consumer_sentiment_3m_change",
+            "consumer_sentiment_percentile_3y",
+            "sentiment_drawdown_flag",
+        ),
+        "interactions": (
+            "low_sentiment x widening_credit_spreads",
+            "low_sentiment x rising_unemployment",
         ),
     },
     "T10Y3M": {

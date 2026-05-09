@@ -21,6 +21,8 @@ The current macro stack now exposes per-feature histories for:
 - high-yield spread
 - NFCI
 - 10Y minus 3M curve
+- daily U.S. Economic Policy Uncertainty and trailing EPU shock features
+- University of Michigan consumer sentiment as contextual FRED survey input
 
 ## High-value features still missing
 
@@ -30,7 +32,7 @@ The most important missing context features relative to the target design are:
 - real yields and inflation breakevens
 - Fed funds expectations or policy-path proxies
 - PMI, payroll, CPI-surprise, and broader economic-surprise features
-- Economic Policy Uncertainty and Trade Policy Uncertainty
+- Trade Policy Uncertainty and other uncertainty decompositions beyond the headline U.S. EPU index
 - Geopolitical Risk Index and conflict/news event feeds such as GDELT or ACLED
 - option skew, put-call ratios, and other market-implied sentiment measures
 - AAII, CFTC positioning, fund flows, and other crowding/sentiment data
@@ -42,6 +44,7 @@ The main quality gaps visible in the current cache are:
 
 - `market_cap_to_gdp_pct` is stale relative to the rest of the macro set and currently ends far earlier than 2026.
 - Monthly and quarterly macro series are aligned by observation date, not by publication date or first availability date.
+- `consumer_sentiment_level` is available for context, but it still shares the same observation-date versus first-release-date limitation as the other monthly FRED series.
 - The asset universe is very small and mostly contains currently tradable symbols.
 - The universe is not yet point-in-time; it is defined by today’s file list.
 

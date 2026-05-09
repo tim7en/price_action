@@ -154,6 +154,60 @@ EXTRA_SERIES_METADATA: dict[str, dict[str, Any]] = {
         "combined_col": "manufacturing_output_yoy_pct",
         "notes": ["Derived as the 12-month percent change of IPMAN."],
     },
+    "epu_level": {
+        "name": "US Economic Policy Uncertainty Index",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/USEPUINDXD",
+        "units": "index level",
+        "combined_col": "epu_level",
+        "notes": [
+            "Daily economic policy uncertainty proxy.",
+            "Derived changes and z-scores use only current and trailing history.",
+        ],
+    },
+    "epu_5d_change": {
+        "name": "US Economic Policy Uncertainty 5-Day Change",
+        "source": "derived_from_fred",
+        "source_url": "https://fred.stlouisfed.org/series/USEPUINDXD",
+        "units": "index points",
+        "combined_col": "epu_5d_change",
+        "notes": ["Derived as the 5-bar difference of epu_level using trailing-only history."],
+    },
+    "epu_20d_change": {
+        "name": "US Economic Policy Uncertainty 20-Day Change",
+        "source": "derived_from_fred",
+        "source_url": "https://fred.stlouisfed.org/series/USEPUINDXD",
+        "units": "index points",
+        "combined_col": "epu_20d_change",
+        "notes": ["Derived as the 20-bar difference of epu_level using trailing-only history."],
+    },
+    "epu_zscore_252d": {
+        "name": "US Economic Policy Uncertainty 252-Day Z-Score",
+        "source": "derived_from_fred",
+        "source_url": "https://fred.stlouisfed.org/series/USEPUINDXD",
+        "units": "z-score",
+        "combined_col": "epu_zscore_252d",
+        "notes": ["Derived from a trailing 252-bar rolling mean and standard deviation with no future leak."],
+    },
+    "epu_spike_flag": {
+        "name": "US Economic Policy Uncertainty Spike Flag",
+        "source": "derived_from_fred",
+        "source_url": "https://fred.stlouisfed.org/series/USEPUINDXD",
+        "units": "binary flag",
+        "combined_col": "epu_spike_flag",
+        "notes": ["Set to 1 when epu_zscore_252d is at least 2.0, otherwise 0, with missing values preserved before the full trailing window exists."],
+    },
+    "consumer_sentiment_level": {
+        "name": "University of Michigan Consumer Sentiment",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/UMCSENT",
+        "units": "index level",
+        "combined_col": "consumer_sentiment_level",
+        "notes": [
+            "Monthly household sentiment context from FRED.",
+            "Kept as contextual macro information rather than a primary daily trading trigger because the repo does not store first-release vintage timestamps.",
+        ],
+    },
     "yield_curve_10y_2y": {
         "name": "10Y minus 2Y Treasury yield spread",
         "source": "derived",
@@ -194,6 +248,13 @@ def derive_yoy_pct(series: pd.Series) -> pd.Series:
     return yoy.reindex(series.index)
 
 
+def rolling_zscore(series: pd.Series, window: int) -> pd.Series:
+    observed = pd.to_numeric(series, errors="coerce")
+    mean = observed.rolling(window=window, min_periods=window).mean()
+    std = observed.rolling(window=window, min_periods=window).std().replace(0.0, pd.NA)
+    return (observed - mean) / std
+
+
 def build_macro_open_data_derivatives(combined: pd.DataFrame) -> pd.DataFrame:
     derived_sources = {
         "core_cpi_yoy_pct": "CPILFESL",
@@ -205,6 +266,25 @@ def build_macro_open_data_derivatives(combined: pd.DataFrame) -> pd.DataFrame:
     for derived_col, source_col in derived_sources.items():
         if source_col in combined.columns:
             combined[derived_col] = derive_yoy_pct(combined[source_col])
+    return combined
+
+
+def build_uncertainty_and_sentiment_derivatives(combined: pd.DataFrame) -> pd.DataFrame:
+    if "USEPUINDXD" in combined.columns:
+        epu_level = pd.to_numeric(combined["USEPUINDXD"], errors="coerce")
+        combined["epu_level"] = epu_level
+        combined["epu_5d_change"] = epu_level.diff(5)
+        combined["epu_20d_change"] = epu_level.diff(20)
+        combined["epu_zscore_252d"] = rolling_zscore(epu_level, window=252)
+        combined["epu_spike_flag"] = (
+            (combined["epu_zscore_252d"] >= 2.0)
+            .astype("float64")
+            .where(combined["epu_zscore_252d"].notna())
+        )
+
+    if "UMCSENT" in combined.columns:
+        combined["consumer_sentiment_level"] = pd.to_numeric(combined["UMCSENT"], errors="coerce")
+
     return combined
 
 
@@ -304,6 +384,7 @@ def load_macro_combined_frame(project_root: str | Path | None = None) -> pd.Data
         combined = combined.rename(columns={"VIXCLS": "spot_vix"})
 
     combined = build_macro_open_data_derivatives(combined)
+    combined = build_uncertainty_and_sentiment_derivatives(combined)
     combined = patch_spot_vix_history(combined)
     combined = patch_vix3m_history(combined)
     combined = build_market_cap_to_gdp_proxy(combined)
