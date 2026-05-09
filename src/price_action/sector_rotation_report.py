@@ -408,6 +408,7 @@ def _render_rebalance_sensitivity_section(sector_ml_view: dict[str, Any]) -> str
             '  <p class="eyebrow">Execution Sensitivity</p>',
             '  <h2>How 5, 10, And 21-Bar Rebalancing Change The Result</h2>',
             '  <p>This section uses the full 2006-2026 walk-forward history and compares the same sector signal under slower execution cadences. It answers whether lower turnover can preserve enough of the edge to matter in practice.</p>',
+            '  <p>Read this section row-by-row within the same cadence. A 5-bar ML result should be compared with the 5-bar SPY benchmark, not with the 21-bar SPY row, because each cadence is a different execution policy and produces a different benchmark path.</p>',
             '  <div class="card-grid">',
             "\n".join(cards),
             '  </div>',
