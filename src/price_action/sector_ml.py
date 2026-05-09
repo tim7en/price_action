@@ -51,6 +51,16 @@ DEFAULT_SECTOR_ML_CONFIG: dict[str, Any] = {
     "slippage_scenarios_bps": (0.0, 5.0, 10.0),
     "top_n": 3,
     "quality_weight": 0.25,
+    "leverage_multiple": 3.0,
+    "annual_financing_rate": 0.06,
+    "core_sector_weight": 0.60,
+    "reserve_cash_weight": 0.40,
+    "cash_yield_rate": 0.05,
+    "reserve_drawdown_first": 0.05,
+    "reserve_drawdown_second": 0.10,
+    "reserve_drawdown_full": 0.20,
+    "reserve_deploy_first": 0.10,
+    "reserve_deploy_second": 0.20,
 }
 
 CRISIS_REGIMES: frozenset[str] = frozenset(
@@ -310,6 +320,49 @@ def _weighted_return(weights: dict[str, float], period_returns: pd.Series) -> fl
     return float(sum(weight * float(period_returns.get(symbol, 0.0)) for symbol, weight in weights.items()))
 
 
+def _period_year_fraction(entry_date: pd.Timestamp, exit_date: pd.Timestamp) -> float:
+    return max((pd.Timestamp(exit_date) - pd.Timestamp(entry_date)).days / 365.25, 0.0)
+
+
+def _leveraged_period_return(
+    gross_return: float,
+    turnover_cost: float,
+    period_year_fraction: float,
+    leverage_multiple: float,
+    annual_financing_rate: float,
+) -> float:
+    borrowed_multiple = max(leverage_multiple - 1.0, 0.0)
+    financing_cost = borrowed_multiple * annual_financing_rate * period_year_fraction
+    net_return = leverage_multiple * gross_return - leverage_multiple * turnover_cost - financing_cost
+    return max(net_return, -0.999)
+
+
+def _cash_period_return(cash_yield_rate: float, period_year_fraction: float) -> float:
+    return float((1.0 + cash_yield_rate) ** period_year_fraction - 1.0)
+
+
+def _reserve_target_fraction(
+    current_drawdown: float,
+    current_fraction: float,
+    config: dict[str, Any],
+) -> float:
+    first_drawdown = float(config["reserve_drawdown_first"])
+    second_drawdown = float(config["reserve_drawdown_second"])
+    full_drawdown = float(config["reserve_drawdown_full"])
+    first_fraction = float(config["reserve_deploy_first"])
+    second_fraction = float(config["reserve_deploy_second"])
+
+    if current_drawdown <= -full_drawdown:
+        return 1.0
+    if current_drawdown <= -second_drawdown:
+        return max(current_fraction, second_fraction)
+    if current_drawdown <= -first_drawdown:
+        return max(current_fraction, first_fraction)
+    if current_drawdown >= 0.0:
+        return 0.0
+    return current_fraction
+
+
 def _summarize_period_groups(
     period_frame: pd.DataFrame,
     strategy_column: str,
@@ -319,6 +372,12 @@ def _summarize_period_groups(
     rows: list[dict[str, Any]] = []
     for group_value, group in period_frame.groupby(group_column, dropna=False):
         summary = _periodic_strategy_summary(group.set_index("exit_date"), strategy_column, turnover_column=turnover_column)
+        group_years = _segment_years(pd.DatetimeIndex(group["exit_date"]))
+        if group_years < 0.5 or len(group.index) < 3:
+            summary["cagr"] = None
+            summary["sharpe"] = None
+            summary["sortino"] = None
+            summary["calmar"] = None
         rows.append({group_column: group_value, **summary})
     summary_frame = pd.DataFrame(rows)
     if not summary_frame.empty:
@@ -356,11 +415,19 @@ def _build_holdout_rotation_view(
     threshold = float(config["signal_threshold"])
     holding_period = int(config["label_horizon"])
     cost_rate = float(config["cost_bps"]) / 10_000.0
+    leverage_multiple = float(config["leverage_multiple"])
+    annual_financing_rate = float(config["annual_financing_rate"])
+    core_sector_weight = float(config["core_sector_weight"])
+    reserve_cash_weight = float(config["reserve_cash_weight"])
+    cash_yield_rate = float(config["cash_yield_rate"])
+    spy_drawdown_series = price_panel["SPY"] / price_panel["SPY"].cummax() - 1.0
 
     previous_weights = {
         "probability": {},
         "quality": {},
+        "reserve": {},
     }
+    reserve_deployed_fraction = 0.0
     period_rows: list[dict[str, Any]] = []
     signal_pointer = 0
 
@@ -392,15 +459,67 @@ def _build_holdout_rotation_view(
             )
 
         period_returns = price_panel.loc[exit_date, symbols] / price_panel.loc[entry_date, symbols] - 1.0
-        spy_return = float(price_panel.loc[exit_date, "SPY"] / price_panel.loc[entry_date, "SPY"] - 1.0)
+        spy_gross_return = float(price_panel.loc[exit_date, "SPY"] / price_panel.loc[entry_date, "SPY"] - 1.0)
+        period_year_fraction = _period_year_fraction(entry_date=entry_date, exit_date=exit_date)
+        cash_period_return = _cash_period_return(cash_yield_rate=cash_yield_rate, period_year_fraction=period_year_fraction)
+        spy_drawdown_signal = float(spy_drawdown_series.loc[signal_date])
 
         probability_turnover, probability_cost = _turnover_cost(previous_weights["probability"], probability_weights, cost_rate)
         quality_turnover, quality_cost = _turnover_cost(previous_weights["quality"], quality_weights, cost_rate)
-        probability_return = _weighted_return(probability_weights, period_returns) - probability_cost
-        quality_return = _weighted_return(quality_weights, period_returns) - quality_cost
+        probability_gross_return = _weighted_return(probability_weights, period_returns)
+        quality_gross_return = _weighted_return(quality_weights, period_returns)
+        probability_return = probability_gross_return - probability_cost
+        quality_return = quality_gross_return - quality_cost
+        spy_return = spy_gross_return
+        probability_return_x3 = _leveraged_period_return(
+            gross_return=probability_gross_return,
+            turnover_cost=probability_cost,
+            period_year_fraction=period_year_fraction,
+            leverage_multiple=leverage_multiple,
+            annual_financing_rate=annual_financing_rate,
+        )
+        quality_return_x3 = _leveraged_period_return(
+            gross_return=quality_gross_return,
+            turnover_cost=quality_cost,
+            period_year_fraction=period_year_fraction,
+            leverage_multiple=leverage_multiple,
+            annual_financing_rate=annual_financing_rate,
+        )
+        spy_return_x3 = _leveraged_period_return(
+            gross_return=spy_gross_return,
+            turnover_cost=0.0,
+            period_year_fraction=period_year_fraction,
+            leverage_multiple=leverage_multiple,
+            annual_financing_rate=annual_financing_rate,
+        )
+
+        quality_selected = signal_slice.sort_values("quality_weighted_score", ascending=False)
+        reserve_top_symbol = str(quality_selected["symbol"].iloc[0]) if not quality_selected.empty else None
+        reserve_target_fraction = _reserve_target_fraction(
+            current_drawdown=spy_drawdown_signal,
+            current_fraction=reserve_deployed_fraction,
+            config=config,
+        )
+        if reserve_top_symbol is None and previous_weights["reserve"] and reserve_target_fraction > 0.0:
+            reserve_top_symbol = next(iter(previous_weights["reserve"].keys()))
+        if reserve_top_symbol is None:
+            reserve_target_fraction = 0.0 if reserve_deployed_fraction == 0.0 else reserve_deployed_fraction
+        reserve_invested_weight = reserve_cash_weight * reserve_target_fraction if reserve_top_symbol else 0.0
+        reserve_weights = {reserve_top_symbol: reserve_invested_weight} if reserve_invested_weight > 0.0 and reserve_top_symbol else {}
+        reserve_turnover, reserve_cost = _turnover_cost(previous_weights["reserve"], reserve_weights, cost_rate)
+        reserve_sector_return = (
+            reserve_invested_weight * float(period_returns.get(reserve_top_symbol, 0.0))
+            if reserve_top_symbol is not None and reserve_invested_weight > 0.0
+            else 0.0
+        )
+        reserve_cash_return = (reserve_cash_weight - reserve_invested_weight) * cash_period_return
+        core_component = core_sector_weight * quality_return
+        if quality_selected.empty:
+            core_component += core_sector_weight * cash_period_return
+        reserve_rule_return = core_component + reserve_sector_return - reserve_cost + reserve_cash_return
 
         regime_label = str(signal_slice["regime_label"].mode().iloc[0]) if not signal_slice.empty else "Cash"
-        selected_slice = signal_slice.sort_values("quality_weighted_score", ascending=False).head(top_n)
+        selected_slice = quality_selected.head(top_n)
         period_rows.append(
             {
                 "signal_date": signal_date,
@@ -409,11 +528,23 @@ def _build_holdout_rotation_view(
                 "regime_label": regime_label,
                 "probability_selection": probability_labels,
                 "quality_selection": quality_labels,
+                "reserve_sector": reserve_top_symbol or "Cash",
+                "spy_drawdown_signal": spy_drawdown_signal,
+                "period_year_fraction": period_year_fraction,
+                "cash_period_return": cash_period_return,
                 "probability_return": probability_return,
                 "quality_return": quality_return,
                 "spy_return": spy_return,
+                "reserve_rule_return": reserve_rule_return,
+                "probability_return_x3": probability_return_x3,
+                "quality_return_x3": quality_return_x3,
+                "spy_return_x3": spy_return_x3,
                 "probability_turnover": probability_turnover,
                 "quality_turnover": quality_turnover,
+                "reserve_turnover": reserve_turnover,
+                "reserve_deployed_fraction": reserve_target_fraction,
+                "reserve_invested_weight": reserve_invested_weight,
+                "reserve_cash_weight": reserve_cash_weight - reserve_invested_weight,
                 "top_probability": float(signal_slice["ensemble_probability"].max()) if not signal_slice.empty else None,
                 "top_quality_score": float(signal_slice["quality_weighted_score"].max()) if not signal_slice.empty else None,
                 "selected_count": int(len(selected_slice.index)),
@@ -422,6 +553,8 @@ def _build_holdout_rotation_view(
 
         previous_weights["probability"] = probability_weights
         previous_weights["quality"] = quality_weights
+        previous_weights["reserve"] = reserve_weights
+        reserve_deployed_fraction = reserve_target_fraction
         signal_pointer += holding_period
 
     period_log_frame = pd.DataFrame(period_rows)
@@ -431,12 +564,20 @@ def _build_holdout_rotation_view(
     period_log_frame["equity_probability"] = (1.0 + period_log_frame["probability_return"]).cumprod()
     period_log_frame["equity_quality"] = (1.0 + period_log_frame["quality_return"]).cumprod()
     period_log_frame["equity_spy"] = (1.0 + period_log_frame["spy_return"]).cumprod()
+    period_log_frame["equity_reserve_rule"] = (1.0 + period_log_frame["reserve_rule_return"]).cumprod()
+    period_log_frame["equity_probability_x3"] = (1.0 + period_log_frame["probability_return_x3"]).cumprod()
+    period_log_frame["equity_quality_x3"] = (1.0 + period_log_frame["quality_return_x3"]).cumprod()
+    period_log_frame["equity_spy_x3"] = (1.0 + period_log_frame["spy_return_x3"]).cumprod()
 
     strategy_rows = []
     for label, return_column, turnover_column in (
         ("ML Probability Rotation", "probability_return", "probability_turnover"),
         ("ML Quality-Weighted Rotation", "quality_return", "quality_turnover"),
+        ("Sector Reserve Cash Rule", "reserve_rule_return", "reserve_turnover"),
         ("SPY Buy And Hold", "spy_return", None),
+        (f"ML Probability Rotation x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "probability_return_x3", "probability_turnover"),
+        (f"ML Quality-Weighted Rotation x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "quality_return_x3", "quality_turnover"),
+        (f"SPY Buy And Hold x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "spy_return_x3", None),
     ):
         summary = _periodic_strategy_summary(
             period_log_frame.set_index("exit_date"),
@@ -451,7 +592,11 @@ def _build_holdout_rotation_view(
     for label, return_column, turnover_column in (
         ("ML Probability Rotation", "probability_return", "probability_turnover"),
         ("ML Quality-Weighted Rotation", "quality_return", "quality_turnover"),
+        ("Sector Reserve Cash Rule", "reserve_rule_return", "reserve_turnover"),
         ("SPY Buy And Hold", "spy_return", None),
+        (f"ML Probability Rotation x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "probability_return_x3", "probability_turnover"),
+        (f"ML Quality-Weighted Rotation x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "quality_return_x3", "quality_turnover"),
+        (f"SPY Buy And Hold x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "spy_return_x3", None),
     ):
         yearly = _summarize_period_groups(
             period_log_frame.assign(year=pd.to_datetime(period_log_frame["exit_date"]).dt.year),
@@ -502,7 +647,9 @@ def _build_holdout_rotation_view(
         "benchmark_symbol": "SPY",
         "method_note": (
             "The benchmark uses only final holdout dates. Signals are generated from walk-forward out-of-sample sector predictions, executed one bar after the signal date, and held for five bars before the next rebalance. "
-            "The quality-weighted variant mixes live ensemble probability with a sector quality prior estimated only from the pre-holdout validation window."
+            "The quality-weighted variant mixes live ensemble probability with a sector quality prior estimated only from the pre-holdout validation window. "
+            "The reserve-cash rule keeps 40% of the portfolio in cash earning 5% annually, deploys 10% of that reserve after a 5% SPY drawdown, another 10% after a 10% drawdown, and the rest after a 20% drawdown, then rebuilds the reserve only after SPY gets back to its prior high. "
+            f"The leveraged scenario applies {leverage_multiple:.0f}x gross exposure and charges {annual_financing_rate:.0%} annual interest on the borrowed {max(leverage_multiple - 1.0, 0.0):.0f}x capital over each realized holding period."
         ),
     }
 

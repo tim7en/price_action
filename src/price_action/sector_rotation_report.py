@@ -143,12 +143,37 @@ def _build_live_ml_allocation_view(
     }
 
 
-def _render_equity_curve_chart(period_log_frame: pd.DataFrame) -> str:
+def _render_equity_curve_chart(period_log_frame: pd.DataFrame, leveraged: bool = False) -> str:
     if period_log_frame.empty:
         return ""
 
-    plot_frame = period_log_frame[["exit_date", "equity_quality", "equity_probability", "equity_spy"]].copy()
-    values = plot_frame[["equity_quality", "equity_probability", "equity_spy"]].to_numpy(dtype=float)
+    if leveraged:
+        title = "Holdout Equity Curves x3 @ 6% Financing"
+        quality_column = "equity_quality_x3"
+        probability_column = "equity_probability_x3"
+        spy_column = "equity_spy_x3"
+        quality_label = "ML quality-weighted x3"
+        probability_label = "ML probability-only x3"
+        spy_label = "SPY x3"
+    else:
+        title = "Holdout Equity Curves"
+        quality_column = "equity_quality"
+        probability_column = "equity_probability"
+        spy_column = "equity_spy"
+        reserve_column = "equity_reserve_rule"
+        quality_label = "ML quality-weighted"
+        probability_label = "ML probability-only"
+        reserve_label = "Reserve cash rule"
+        spy_label = "SPY"
+
+    plot_columns = ["exit_date", quality_column, probability_column, spy_column]
+    if not leveraged:
+        plot_columns.insert(3, reserve_column)
+    plot_frame = period_log_frame[plot_columns].copy()
+    value_columns = [quality_column, probability_column, spy_column]
+    if not leveraged:
+        value_columns.append(reserve_column)
+    values = plot_frame[value_columns].to_numpy(dtype=float)
     min_value = float(min(values.min(), 1.0))
     max_value = float(max(values.max(), 1.0))
     span = max(max_value - min_value, 1e-9)
@@ -165,18 +190,20 @@ def _render_equity_curve_chart(period_log_frame: pd.DataFrame) -> str:
             coordinates.append(f"{x:.1f},{y:.1f}")
         return " ".join(coordinates)
 
-    end_quality = float(plot_frame["equity_quality"].iloc[-1])
-    end_probability = float(plot_frame["equity_probability"].iloc[-1])
-    end_spy = float(plot_frame["equity_spy"].iloc[-1])
+    end_quality = float(plot_frame[quality_column].iloc[-1])
+    end_probability = float(plot_frame[probability_column].iloc[-1])
+    end_spy = float(plot_frame[spy_column].iloc[-1])
+    end_reserve = float(plot_frame[reserve_column].iloc[-1]) if not leveraged else None
     return f"""
 <div class=\"chart-shell\">
   <svg viewBox=\"0 0 960 280\" role=\"img\" aria-label=\"Holdout equity curves\">
     <rect x=\"0\" y=\"0\" width=\"960\" height=\"280\" rx=\"18\" fill=\"rgba(255, 253, 248, 0.92)\"></rect>
-    <polyline fill=\"none\" stroke=\"#7a3e2b\" stroke-width=\"4\" points=\"{points('equity_quality')}\"></polyline>
-    <polyline fill=\"none\" stroke=\"#0f4c5c\" stroke-width=\"3\" stroke-dasharray=\"7 6\" points=\"{points('equity_probability')}\"></polyline>
-    <polyline fill=\"none\" stroke=\"#7d8b99\" stroke-width=\"3\" points=\"{points('equity_spy')}\"></polyline>
-    <text x=\"28\" y=\"34\" fill=\"#1b2430\" font-size=\"18\" font-family=\"Iowan Old Style, Georgia, serif\">Holdout Equity Curves</text>
-    <text x=\"28\" y=\"56\" fill=\"#5f6b76\" font-size=\"13\">ML quality-weighted: {_format_return_pct(end_quality - 1.0)} | ML probability-only: {_format_return_pct(end_probability - 1.0)} | SPY: {_format_return_pct(end_spy - 1.0)}</text>
+        <polyline fill=\"none\" stroke=\"#7a3e2b\" stroke-width=\"4\" points=\"{points(quality_column)}\"></polyline>
+        <polyline fill=\"none\" stroke=\"#0f4c5c\" stroke-width=\"3\" stroke-dasharray=\"7 6\" points=\"{points(probability_column)}\"></polyline>
+        {f'<polyline fill="none" stroke="#2d6a4f" stroke-width="3" points="{points(reserve_column)}"></polyline>' if not leveraged else ''}
+        <polyline fill=\"none\" stroke=\"#7d8b99\" stroke-width=\"3\" points=\"{points(spy_column)}\"></polyline>
+        <text x=\"28\" y=\"34\" fill=\"#1b2430\" font-size=\"18\" font-family=\"Iowan Old Style, Georgia, serif\">{title}</text>
+        <text x=\"28\" y=\"56\" fill=\"#5f6b76\" font-size=\"13\">{quality_label}: {_format_return_pct(end_quality - 1.0)} | {probability_label}: {_format_return_pct(end_probability - 1.0)}{f' | {reserve_label}: {_format_return_pct(end_reserve - 1.0)}' if not leveraged and end_reserve is not None else ''} | {spy_label}: {_format_return_pct(end_spy - 1.0)}</text>
   </svg>
 </div>
 """
@@ -595,8 +622,14 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
     summary_frame = rotation_view["strategy_summary_frame"].copy()
     quality_row = summary_frame.loc[summary_frame["strategy_label"] == "ML Quality-Weighted Rotation"].iloc[0]
     probability_row = summary_frame.loc[summary_frame["strategy_label"] == "ML Probability Rotation"].iloc[0]
+    reserve_row = summary_frame.loc[summary_frame["strategy_label"] == "Sector Reserve Cash Rule"].iloc[0]
     spy_row = summary_frame.loc[summary_frame["strategy_label"] == "SPY Buy And Hold"].iloc[0]
+    quality_x3_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith("ML Quality-Weighted Rotation x")].iloc[0]
+    spy_x3_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith("SPY Buy And Hold x")].iloc[0]
     signal_date = pd.Timestamp(rotation_view["current_signal_date"]).strftime("%Y-%m-%d")
+    reserve_peak_fraction = float(rotation_view["period_log_frame"]["reserve_deployed_fraction"].max()) if not rotation_view["period_log_frame"].empty else 0.0
+    spy_worst_drawdown = float(rotation_view["period_log_frame"]["spy_drawdown_signal"].min()) if not rotation_view["period_log_frame"].empty else 0.0
+    reserve_tier_note = "Only the first 5% drawdown tier triggered in this holdout." if reserve_peak_fraction <= 0.10 else "Multiple reserve tiers triggered in this holdout."
 
     cards = [
         _render_stat_card(
@@ -617,6 +650,34 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
                 f"CAGR {_format_return_pct(spy_row.cagr)}, Sharpe {_format_decimal(spy_row.sharpe)}, max drawdown {_format_return_pct(spy_row.max_drawdown)} over the same holdout windows."
             ),
             tag="Benchmark",
+        ),
+        _render_stat_card(
+            title="Sector Reserve Cash Rule",
+            body=(
+                f"CAGR {_format_return_pct(reserve_row.cagr)}, Sharpe {_format_decimal(reserve_row.sharpe)}, max drawdown {_format_return_pct(reserve_row.max_drawdown)}, turnover {_format_turnover(reserve_row.turnover_per_year)}."
+            ),
+            tag="Reserve rule",
+        ),
+        _render_stat_card(
+            title=f"Worst holdout SPY drawdown {_format_return_pct(spy_worst_drawdown)}",
+            body=(
+                f"Peak reserve deployment reached {_format_weight_pct(reserve_peak_fraction)} of the reserve sleeve. {reserve_tier_note}"
+            ),
+            tag="Trigger depth",
+        ),
+        _render_stat_card(
+            title=str(quality_x3_row.strategy_label),
+            body=(
+                f"CAGR {_format_return_pct(quality_x3_row.cagr)}, Sharpe {_format_decimal(quality_x3_row.sharpe)}, max drawdown {_format_return_pct(quality_x3_row.max_drawdown)}, turnover {_format_turnover(quality_x3_row.turnover_per_year)}."
+            ),
+            tag="Leveraged strategy",
+        ),
+        _render_stat_card(
+            title=str(spy_x3_row.strategy_label),
+            body=(
+                f"CAGR {_format_return_pct(spy_x3_row.cagr)}, Sharpe {_format_decimal(spy_x3_row.sharpe)}, max drawdown {_format_return_pct(spy_x3_row.max_drawdown)} under the same 6% financing assumption."
+            ),
+            tag="Leveraged benchmark",
         ),
         _render_stat_card(
             title=f"Latest complete signal {signal_date}",
@@ -646,12 +707,13 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
         [
             '<section class="section">',
             '  <p class="eyebrow">Holdout Benchmark</p>',
-            '  <h2>ML Rotation Vs SPY Buy And Hold</h2>',
+            '  <h2>ML Rotation, Reserve Cash Rule, And SPY</h2>',
             f'  <p>{html.escape(str(rotation_view["method_note"]))}</p>',
             '  <div class="card-grid">',
             "\n".join(cards),
             '  </div>',
             _render_equity_curve_chart(rotation_view["period_log_frame"]),
+            _render_equity_curve_chart(rotation_view["period_log_frame"], leveraged=True),
             _render_data_table(
                 headers=(
                     'Strategy',
@@ -685,11 +747,18 @@ def _render_holdout_period_log_section(sector_ml_view: dict[str, Any]) -> str:
                 pd.Timestamp(row.signal_date).strftime("%Y-%m-%d"),
                 pd.Timestamp(row.entry_date).strftime("%Y-%m-%d"),
                 pd.Timestamp(row.exit_date).strftime("%Y-%m-%d"),
+                _format_return_pct(row.spy_drawdown_signal),
                 str(row.regime_label),
                 str(row.quality_selection),
+                str(row.reserve_sector),
+                _format_weight_pct(row.reserve_deployed_fraction),
+                _format_weight_pct(row.reserve_cash_weight),
                 _format_return_pct(row.quality_return),
+                _format_return_pct(row.quality_return_x3),
+                _format_return_pct(row.reserve_rule_return),
                 _format_return_pct(row.probability_return),
                 _format_return_pct(row.spy_return),
+                _format_return_pct(row.spy_return_x3),
                 _format_decimal(row.quality_turnover, 2),
             )
         )
@@ -705,11 +774,18 @@ def _render_holdout_period_log_section(sector_ml_view: dict[str, Any]) -> str:
                     'Signal Date',
                     'Entry Date',
                     'Exit Date',
+                    'SPY Drawdown',
                     'Regime',
                     'Quality Selection',
+                    'Reserve Sector',
+                    'Reserve Deployed',
+                    'Reserve Cash',
                     'Quality Return',
+                    'Quality Return x3',
+                    'Reserve Rule Return',
                     'Probability Return',
                     'SPY Return',
+                    'SPY Return x3',
                     'Turnover',
                 ),
                 rows=rows,
