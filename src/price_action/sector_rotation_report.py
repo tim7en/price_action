@@ -1488,6 +1488,453 @@ def _render_ml_regime_year_section(sector_ml_view: dict[str, Any]) -> str:
     )
 
 
+def _select_strategy_row(summary_frame: pd.DataFrame, label: str, startswith: bool = False) -> pd.Series:
+        if startswith:
+                matches = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith(label)]
+        else:
+                matches = summary_frame.loc[summary_frame["strategy_label"] == label]
+        if matches.empty:
+                raise KeyError(f"Strategy row not found for {label}")
+        return matches.iloc[0]
+
+
+def _risk_bucket_from_row(label: str, max_drawdown: float | int | None) -> tuple[str, str, str]:
+        drawdown = abs(float(max_drawdown or 0.0))
+        if "SPY Buy And Hold x" in label:
+                return ("Extreme risk / weak reward quality", "#8f2d1f", "Borrowing magnifies the pain faster than it improves the compounding path.")
+        if "x3" in label:
+                return ("High risk / high reward", "#b85c38", "Reward can be large, but the path is violent and hard to hold in live capital.")
+        if drawdown <= 0.33:
+                return ("Lower risk / steadier reward", "#2d6a4f", "This is the capital-preservation bucket: smoother path, smaller drawdowns, slower wealth growth.")
+        if drawdown <= 0.42:
+                return ("Balanced risk / strong reward", "#7a3e2b", "This is the efficient middle: meaningful compounding without borrowing and without catastrophic path risk.")
+        return ("Medium risk / lower efficiency", "#6c757d", "This earns a return, but the drawdown path is harsher than the reward profile deserves.")
+
+
+def _render_summary_risk_map(strategy_frame: pd.DataFrame) -> str:
+        if strategy_frame.empty:
+                return ""
+
+        plot_frame = strategy_frame.copy()
+        plot_frame["drawdown_abs"] = plot_frame["max_drawdown"].astype(float).abs()
+        x_min = float(plot_frame["drawdown_abs"].min())
+        x_max = float(plot_frame["drawdown_abs"].max())
+        y_min = float(min(plot_frame["cagr"].astype(float).min(), 0.0))
+        y_max = float(plot_frame["cagr"].astype(float).max())
+        x_span = max(x_max - x_min, 1e-9)
+        y_span = max(y_max - y_min, 1e-9)
+        width = 920.0
+        height = 300.0
+        left = 70.0
+        right = 28.0
+        top = 28.0
+        bottom = 42.0
+
+        def x_pos(value: float) -> float:
+                return left + ((value - x_min) / x_span) * (width - left - right)
+
+        def y_pos(value: float) -> float:
+                return height - bottom - ((value - y_min) / y_span) * (height - top - bottom)
+
+        grid_markup: list[str] = []
+        for fraction in (0.0, 0.25, 0.5, 0.75, 1.0):
+                y = top + fraction * (height - top - bottom)
+                y_value = y_max - fraction * y_span
+                grid_markup.append(
+                        f'<line x1="{left:.1f}" y1="{y:.1f}" x2="{width - right:.1f}" y2="{y:.1f}" stroke="rgba(125, 139, 153, 0.18)" stroke-width="1"></line>'
+                )
+                grid_markup.append(
+                        f'<text x="12" y="{y + 4:.1f}" fill="#5f6b76" font-size="11">{_format_return_pct(y_value)}</text>'
+                )
+
+        points_markup: list[str] = []
+        for row in plot_frame.itertuples(index=False):
+                x = x_pos(float(row.drawdown_abs))
+                y = y_pos(float(row.cagr))
+                label = html.escape(str(row.short_label))
+                color = str(row.bucket_color)
+                points_markup.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="8" fill="{color}"></circle>')
+                points_markup.append(f'<text x="{x + 10:.1f}" y="{y - 10:.1f}" fill="#37404a" font-size="11">{label}</text>')
+
+        return """
+<div class="mini-chart">
+    <svg viewBox="0 0 920 300" role="img" aria-label="Risk reward map">
+        <rect x="0" y="0" width="920" height="300" rx="18" fill="rgba(255,253,248,0.92)"></rect>
+        {grid}
+        <line x1="{left}" y1="{axis_bottom}" x2="{axis_right}" y2="{axis_bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
+        <line x1="{left}" y1="{top}" x2="{left}" y2="{axis_bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
+        <text x="{left}" y="20" fill="#1b2430" font-size="18" font-family="Iowan Old Style, Georgia, serif">Risk / Reward Map</text>
+        <text x="{left}" y="292" fill="#5f6b76" font-size="12">Left is better: smaller drawdown. Up is better: higher CAGR.</text>
+        <text x="12" y="20" fill="#5f6b76" font-size="12">CAGR</text>
+        <text x="{axis_right_text}" y="292" fill="#5f6b76" font-size="12">Max drawdown</text>
+        {points}
+    </svg>
+</div>
+""".format(
+                grid="".join(grid_markup),
+                left=f"{left:.1f}",
+                top=f"{top:.1f}",
+                axis_bottom=f"{height - bottom:.1f}",
+                axis_right=f"{width - right:.1f}",
+                axis_right_text=f"{width - right - 90:.1f}",
+                points="".join(points_markup),
+        )
+
+
+def _render_summary_terminal_wealth_chart(strategy_frame: pd.DataFrame) -> str:
+        if strategy_frame.empty:
+                return ""
+
+        plot_frame = strategy_frame.copy()
+        plot_frame["terminal_wealth"] = 100.0 * (1.0 + plot_frame["total_return"].astype(float))
+        max_wealth = float(plot_frame["terminal_wealth"].max())
+        width = 920.0
+        height = 300.0
+        left = 58.0
+        right = 24.0
+        top = 28.0
+        bottom = 54.0
+        count = max(len(plot_frame.index), 1)
+        slot_width = (width - left - right) / count
+        bar_width = min(58.0, slot_width * 0.58)
+
+        def bar_height(value: float) -> float:
+                return ((value / max(max_wealth, 1e-9)) * (height - top - bottom))
+
+        bars: list[str] = []
+        for idx, row in enumerate(plot_frame.itertuples(index=False)):
+                x = left + idx * slot_width + (slot_width - bar_width) / 2.0
+                h = bar_height(float(row.terminal_wealth))
+                y = height - bottom - h
+                bars.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_width:.1f}" height="{h:.1f}" rx="10" fill="{row.bucket_color}"></rect>')
+                bars.append(f'<text x="{x + bar_width / 2.0:.1f}" y="{y - 8:.1f}" text-anchor="middle" fill="#37404a" font-size="11">${float(row.terminal_wealth):.0f}</text>')
+                bars.append(f'<text x="{x + bar_width / 2.0:.1f}" y="{height - 22:.1f}" text-anchor="middle" fill="#5f6b76" font-size="11">{html.escape(str(row.short_label))}</text>')
+
+        return """
+<div class="mini-chart">
+    <svg viewBox="0 0 920 300" role="img" aria-label="Terminal wealth from 100 dollars">
+        <rect x="0" y="0" width="920" height="300" rx="18" fill="rgba(255,253,248,0.92)"></rect>
+        <line x1="{left}" y1="{axis_bottom}" x2="{axis_right}" y2="{axis_bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
+        <text x="{left}" y="20" fill="#1b2430" font-size="18" font-family="Iowan Old Style, Georgia, serif">Terminal Wealth From $100</text>
+        <text x="{left}" y="292" fill="#5f6b76" font-size="12">Full 2006-2026 walk-forward history. This is why the 2000% numbers appear in the leveraged ML rows.</text>
+        {bars}
+    </svg>
+</div>
+""".format(
+                left=f"{left:.1f}",
+                axis_bottom=f"{height - bottom:.1f}",
+                axis_right=f"{width - right:.1f}",
+                bars="".join(bars),
+        )
+
+
+def _render_bias_timeline_chart(config: dict[str, Any]) -> str:
+        train_years = int(config.get("train_years", 5))
+        validation_years = int(config.get("validation_years", 1))
+        holdout_start = str(config.get("holdout_start") or "2025-01-01")
+        feature_lag = int(config.get("feature_lag", 1))
+        purge = int(config.get("purge_size", 5))
+        embargo = int(config.get("embargo_size", 5))
+        horizon = int(config.get("label_horizon", 5))
+        return f"""
+<div class="mini-chart">
+    <svg viewBox="0 0 920 220" role="img" aria-label="Bias control timeline">
+        <rect x="0" y="0" width="920" height="220" rx="18" fill="rgba(255,253,248,0.92)"></rect>
+        <text x="36" y="28" fill="#1b2430" font-size="18" font-family="Iowan Old Style, Georgia, serif">Why This Is Not Forward-Looking</text>
+        <rect x="36" y="58" width="220" height="72" rx="16" fill="#f3ebe1" stroke="#d5cfc5"></rect>
+        <text x="52" y="86" fill="#1b2430" font-size="15">Train</text>
+        <text x="52" y="108" fill="#5f6b76" font-size="12">{train_years}-year expanding window</text>
+        <text x="52" y="126" fill="#5f6b76" font-size="12">features lagged {feature_lag} bar</text>
+
+        <rect x="306" y="58" width="220" height="72" rx="16" fill="#f3ebe1" stroke="#d5cfc5"></rect>
+        <text x="322" y="86" fill="#1b2430" font-size="15">Validate</text>
+        <text x="322" y="108" fill="#5f6b76" font-size="12">{validation_years}-year walk-forward test</text>
+        <text x="322" y="126" fill="#5f6b76" font-size="12">purge {purge} bars, embargo {embargo} bars</text>
+
+        <rect x="576" y="58" width="308" height="72" rx="16" fill="#f3ebe1" stroke="#d5cfc5"></rect>
+        <text x="592" y="86" fill="#1b2430" font-size="15">Holdout And Execution</text>
+        <text x="592" y="108" fill="#5f6b76" font-size="12">untouched holdout starts {html.escape(holdout_start)}</text>
+        <text x="592" y="126" fill="#5f6b76" font-size="12">trade one bar later, hold {horizon} bars</text>
+
+        <line x1="256" y1="94" x2="306" y2="94" stroke="#7a3e2b" stroke-width="2"></line>
+        <line x1="526" y1="94" x2="576" y2="94" stroke="#7a3e2b" stroke-width="2"></line>
+        <text x="36" y="168" fill="#5f6b76" font-size="12">Macro regime labels are used to explain results, not to generate historical signals. Sector quality priors come only from the pre-holdout validation window.</text>
+        <text x="36" y="188" fill="#5f6b76" font-size="12">Reserve deployment uses only the SPY drawdown visible on the signal date. There is no future return, future regime, or future allocation leak in the benchmark path.</text>
+    </svg>
+</div>
+"""
+
+
+def _render_executive_summary_html(
+        generated_at: str,
+        regime_overview: dict[str, Any],
+        sector_ml_view: dict[str, Any],
+) -> str:
+        history_view = sector_ml_view.get("historical_rotation_view") if isinstance(sector_ml_view, dict) else None
+        holdout_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
+        if not isinstance(history_view, dict) or not history_view.get("available"):
+                return "<html><body><p>Executive summary unavailable.</p></body></html>"
+        if not isinstance(holdout_view, dict) or not holdout_view.get("available"):
+                return "<html><body><p>Executive summary unavailable.</p></body></html>"
+
+        history_frame = history_view["strategy_summary_frame"].copy()
+        holdout_frame = holdout_view["strategy_summary_frame"].copy()
+        reserve_leverage_label = str(history_view.get("reserve_leverage_label") or "Reserve Cash Rule x")
+        selected_specs = [
+                ("Sector Reserve Cash Rule", "Reserve Rule"),
+                ("ML Quality-Weighted Rotation", "Quality Rotation"),
+                ("SPY Buy And Hold", "SPY"),
+                (reserve_leverage_label, "Reserve x3"),
+                ("ML Quality-Weighted Rotation x", "Quality x3"),
+                ("SPY Buy And Hold x", "SPY x3"),
+        ]
+
+        rows: list[dict[str, Any]] = []
+        for lookup_label, short_label in selected_specs:
+                startswith = lookup_label.endswith("x")
+                history_row = _select_strategy_row(history_frame, lookup_label, startswith=startswith)
+                holdout_row = _select_strategy_row(holdout_frame, lookup_label, startswith=startswith)
+                bucket_label, bucket_color, bucket_body = _risk_bucket_from_row(str(history_row.strategy_label), history_row.max_drawdown)
+                rows.append(
+                        {
+                                "strategy_label": str(history_row.strategy_label),
+                                "short_label": short_label,
+                                "bucket_label": bucket_label,
+                                "bucket_color": bucket_color,
+                                "bucket_body": bucket_body,
+                                "history_total_return": float(history_row.total_return),
+                                "history_cagr": float(history_row.cagr),
+                                "history_sharpe": float(history_row.sharpe),
+                                "history_max_drawdown": float(history_row.max_drawdown),
+                                "holdout_cagr": float(holdout_row.cagr),
+                                "holdout_sharpe": float(holdout_row.sharpe),
+                                "holdout_max_drawdown": float(holdout_row.max_drawdown),
+                                "trade_count": int(history_row.trade_count),
+                                "turnover_per_year": float(history_row.turnover_per_year),
+                                "cagr": float(history_row.cagr),
+                                "max_drawdown": float(history_row.max_drawdown),
+                                "total_return": float(history_row.total_return),
+                        }
+                )
+
+        strategy_frame = pd.DataFrame(rows)
+        reserve_row = strategy_frame.loc[strategy_frame["short_label"] == "Reserve Rule"].iloc[0]
+        quality_row = strategy_frame.loc[strategy_frame["short_label"] == "Quality Rotation"].iloc[0]
+        reserve_x3_row = strategy_frame.loc[strategy_frame["short_label"] == "Reserve x3"].iloc[0]
+        spy_x3_row = strategy_frame.loc[strategy_frame["short_label"] == "SPY x3"].iloc[0]
+        current = regime_overview["current"]
+
+        risk_cards = []
+        for label in ["Reserve Rule", "Quality Rotation", "Reserve x3", "SPY x3"]:
+                row = strategy_frame.loc[strategy_frame["short_label"] == label].iloc[0]
+                risk_cards.append(
+                        "\n".join(
+                                [
+                                        '<article class="summary-card">',
+                                        f'  <p class="summary-tag">{html.escape(str(row.bucket_label))}</p>',
+                                        f'  <h3>{html.escape(str(row.short_label))}</h3>',
+                        f'  <p class="tight-copy">{html.escape(str(row.bucket_body))}</p>',
+                        f'  <p class="metric-line">CAGR {_format_return_pct(row.history_cagr)} | Max DD {_format_return_pct(row.history_max_drawdown)}</p>',
+                                        '</article>',
+                                ]
+                        )
+                )
+
+        strategy_rows: list[str] = []
+        for row in strategy_frame.itertuples(index=False):
+                strategy_rows.append(
+                        "<tr>"
+                        f"<td>{html.escape(str(row.short_label))}</td>"
+                        f"<td>{html.escape(str(row.bucket_label))}</td>"
+                        f"<td>{_format_return_pct(row.history_cagr)}</td>"
+                        f"<td>{_format_return_pct(row.history_max_drawdown)}</td>"
+                        f"<td>{_format_decimal(row.history_sharpe)}</td>"
+                        f"<td>{_format_return_pct(row.holdout_cagr)}</td>"
+                        f"<td>{_format_return_pct(row.holdout_max_drawdown)}</td>"
+                        "</tr>"
+                )
+
+        return f"""<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"utf-8\" />
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+    <title>Sector Rotation Executive Summary</title>
+                <style>
+        @page {{
+            size: 11in 8.5in;
+            margin: 0.32in;
+        }}
+        :root {{
+            --bg: #f4efe7;
+            --sheet: #fffdf8;
+            --ink: #1b2430;
+            --muted: #5f6b76;
+            --line: #d5cfc5;
+            --accent: #7a3e2b;
+            --green: #2d6a4f;
+            --orange: #b85c38;
+            --red: #8f2d1f;
+        }}
+        * {{ box-sizing: border-box; }}
+        body {{ margin: 0; background: var(--bg); color: var(--ink); font-family: "Iowan Old Style", Georgia, serif; }}
+        .sheet {{ width: 10.36in; height: 7.76in; margin: 0 auto; padding: 0.28in 0.34in 0.3in; background: var(--sheet); page-break-after: always; overflow: hidden; }}
+        .sheet:last-child {{ page-break-after: auto; }}
+        .eyebrow {{ margin: 0 0 8px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }}
+        h1, h2, h3 {{ margin: 0; line-height: 1.1; }}
+        h1 {{ font-size: 40px; max-width: 11ch; }}
+        h2 {{ font-size: 24px; margin-bottom: 8px; }}
+        h3 {{ font-size: 16px; margin-bottom: 8px; }}
+        p {{ margin: 0; color: var(--muted); line-height: 1.42; font-size: 13px; }}
+        .hero {{ display: grid; grid-template-columns: 1.12fr 0.88fr; gap: 14px; align-items: start; margin-bottom: 14px; }}
+        .hero-panel, .principle-panel, .summary-card, .table-panel {{ border: 1px solid var(--line); border-radius: 18px; padding: 14px; background: rgba(255,253,248,0.96); }}
+        .meta-row {{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }}
+        .meta-pill {{ padding: 6px 10px; border: 1px solid rgba(122,62,43,0.14); border-radius: 999px; color: var(--ink); background: rgba(243,235,225,0.82); font-size: 12px; }}
+        .principles {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }}
+        .summary-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 12px 0 14px; }}
+        .summary-tag {{ margin: 0 0 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }}
+        .tight-copy {{ min-height: 36px; }}
+        .metric-line {{ margin-top: 10px; color: var(--ink); font-size: 12px; }}
+        .mini-chart {{ margin-top: 12px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }}
+        .table-panel {{ margin-top: 14px; }}
+        table {{ width: 100%; border-collapse: collapse; font-size: 12px; }}
+        th, td {{ padding: 8px 9px; text-align: left; border-bottom: 1px solid rgba(213,207,197,0.7); }}
+        th {{ font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: rgba(244,237,225,0.75); }}
+        tr:last-child td {{ border-bottom: none; }}
+        .two-col {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }}
+        .callout {{ border-left: 4px solid var(--accent); padding-left: 16px; color: var(--ink); }}
+        ul {{ margin: 8px 0 0; padding-left: 18px; color: var(--muted); }}
+        li {{ margin-bottom: 5px; font-size: 13px; line-height: 1.32; }}
+        @media print {{
+            body {{ background: white; }}
+            .sheet {{ width: auto; margin: 0; box-shadow: none; }}
+        }}
+    </style>
+</head>
+<body>
+    <section class=\"sheet\">
+        <div class=\"hero\">
+            <div class=\"hero-panel\">
+                <p class=\"eyebrow\">Executive Summary</p>
+                <h1>What The Backtest Is Actually Saying</h1>
+                <p>This is a short decision memo, not the full report. It separates the investable core from the high-reward but hard-to-live-through ideas. The goal is simple: earn enough, survive the bad years, and avoid fooling ourselves with forward-looking bias.</p>
+                <div class=\"meta-row\">
+                    <span class=\"meta-pill\">{html.escape(generated_at)}</span>
+                    <span class=\"meta-pill\">Current regime: {html.escape(str(current['regime_label']))}</span>
+                    <span class=\"meta-pill\">Quadrant: {html.escape(str(current['quadrant_label']))}</span>
+                    <span class=\"meta-pill\">History tested: 2006-2026</span>
+                </div>
+            </div>
+            <div class=\"hero-panel\">
+                <p class=\"eyebrow\">Bottom Line</p>
+                <h2>Keep The Unlevered Reserve Rule As Core</h2>
+                <p class=\"callout\">The best balanced engine is the unlevered quality rotation, but the most usable live portfolio is still the unlevered reserve rule. The x3 variants create big headline returns and unacceptable path risk. A 90% drawdown is not theoretical here.</p>
+                <ul>
+                    <li>Best unlevered growth engine: Quality Rotation, about {_format_return_pct(quality_row.history_cagr)} CAGR with {_format_return_pct(quality_row.history_max_drawdown)} max drawdown.</li>
+                    <li>Best steadier-risk profile: Reserve Rule, about {_format_return_pct(reserve_row.history_cagr)} CAGR with {_format_return_pct(reserve_row.history_max_drawdown)} max drawdown.</li>
+                    <li>Why the 2000% number appears: Quality x3 compounded from a much riskier path; it is a leveraged total-return figure, not an annual rate.</li>
+                    <li>What not to ignore: SPY x3 still ended near {_format_return_pct(spy_x3_row.history_cagr)} CAGR but with {_format_return_pct(spy_x3_row.history_max_drawdown)} max drawdown.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class=\"principles\">
+            <div class=\"principle-panel\">
+                <p class=\"eyebrow\">Principle 1</p>
+                <h3>Protect The Downside First</h3>
+                <p>The reserve rule earns less than the fastest strategy, but it keeps the path smoother. That matters because strategies only work if you can hold them through the bad times.</p>
+            </div>
+            <div class=\"principle-panel\">
+                <p class=\"eyebrow\">Principle 2</p>
+                <h3>Borrow Only After You Earn The Right</h3>
+                <p>Leverage is not alpha. It amplifies whatever quality already exists. In this dataset, the x3 variants raise reward and slash survivability.</p>
+            </div>
+            <div class=\"principle-panel\">
+                <p class=\"eyebrow\">Principle 3</p>
+                <h3>Separate Prediction From Proof</h3>
+                <p>The model signal is one thing. The proof is the untouched holdout and the walk-forward history. They are both shown here, separately.</p>
+            </div>
+        </div>
+
+                <div class=\"summary-grid\">
+                    {''.join(risk_cards)}
+                </div>
+
+                {_render_summary_risk_map(strategy_frame)}
+    </section>
+
+    <section class=\"sheet\">
+        <p class=\"eyebrow\">Page Two</p>
+        <h2>Simple Scorecard And Bias Controls</h2>
+                <p>This page answers two questions. Which ideas belong in the low-risk, balanced, and high-risk buckets? And why this is not a forward-looking backtest?</p>
+
+                {_render_summary_terminal_wealth_chart(strategy_frame)}
+
+                <div class=\"two-col\" style=\"margin-top: 12px;\">
+            <div class=\"table-panel\">
+                <p class=\"eyebrow\">Risk Ladder</p>
+                <h3>High Reward Is Not The Same As High Quality</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>Bucket</th>
+                            <th>History CAGR</th>
+                            <th>History Max DD</th>
+                            <th>Sharpe</th>
+                            <th>Holdout CAGR</th>
+                            <th>Holdout Max DD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {''.join(strategy_rows)}
+                    </tbody>
+                </table>
+            </div>
+            <div class=\"table-panel\">
+                <p class=\"eyebrow\">Simple Read</p>
+                <h3>How To Use The Buckets</h3>
+                <ul>
+                    <li><strong>Lower risk / steadier reward:</strong> the reserve rule. This is the most usable sleeve for real capital because drawdown is controlled and turnover is low.</li>
+                    <li><strong>Balanced risk / strong reward:</strong> the unlevered quality rotation. This is the best pure alpha engine, but it asks for more turnover and a rougher path.</li>
+                    <li><strong>High risk / high reward:</strong> the reserve x3 sleeve and the quality x3 model. These are tactical ideas, not default policy portfolios.</li>
+                    <li><strong>Extreme risk / weak reward quality:</strong> SPY x3. It proves that leverage alone is not a strategy.</li>
+                </ul>
+                <p class=\"callout\" style=\"margin-top: 12px;\">A 90% drawdown matters even if the terminal wealth looks large. The path can disqualify the strategy.</p>
+            </div>
+        </div>
+
+        <div class=\"two-col\" style=\"margin-top: 12px;\">
+            <div class=\"table-panel\">
+                <p class=\"eyebrow\">Why This Is Not Forward-Looking</p>
+                <h3>Controls Against Bias</h3>
+                <ul>
+                    <li>Features are lagged one bar before training and prediction.</li>
+                    <li>Each walk-forward fold uses a {int(sector_ml_view['config']['purge_size'])}-bar purge and a {int(sector_ml_view['config']['embargo_size'])}-bar embargo.</li>
+                    <li>The final holdout starts on {html.escape(str(sector_ml_view['config']['holdout_start']))} and is never used for model selection.</li>
+                    <li>Signals are executed one bar after the signal date and held for {int(sector_ml_view['config']['label_horizon'])} bars.</li>
+                    <li>Validation quality priors are estimated only from the pre-holdout window.</li>
+                    <li>Macro regime labels explain the results but do not generate the historical trades.</li>
+                </ul>
+            </div>
+            <div class=\"table-panel\">
+                <p class=\"eyebrow\">Decision</p>
+                <h3>What To Stick To</h3>
+                <ul>
+                    <li><strong>Core portfolio:</strong> unlevered reserve cash rule.</li>
+                    <li><strong>Growth sleeve:</strong> unlevered quality rotation if you can tolerate higher turnover and deeper drawdowns.</li>
+                    <li><strong>Tactical only:</strong> reserve x3 drawdown sleeve, and only if you explicitly accept much deeper drawdowns.</li>
+                    <li><strong>Avoid as core:</strong> SPY x3 and the full x3 rotation variants. They generate striking terminal wealth and unacceptable path risk.</li>
+                </ul>
+                <p class=\"callout\" style=\"margin-top: 18px;\">The safest honest reading is: there is evidence of edge, there is no evidence that leverage improves the quality of that edge enough to deserve core capital.</p>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+"""
+
+
 def _render_html(
     generated_at: str,
     regime_overview: dict[str, Any],
@@ -1675,6 +2122,7 @@ def generate_sector_rotation_report(
     ml_history_regime_path = report_dir / "sector_ml_history_regime_summary.csv"
     ml_rebalance_sensitivity_path = report_dir / "sector_ml_rebalance_sensitivity.csv"
     ml_live_allocation_path = report_dir / "sector_ml_live_allocation.csv"
+    executive_summary_path = report_dir / "executive_summary.html"
 
     summary_payload: dict[str, Any] = {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -1770,6 +2218,10 @@ def generate_sector_rotation_report(
     else:
         summary_payload["ml"]["live_allocation_message"] = str(live_ml_view.get("message") or "Live ML allocation unavailable.")
 
+    summary_payload["executive_summary"] = {
+        "html": str(executive_summary_path),
+    }
+
     summary_path.write_text(json.dumps(summary_payload, indent=2), encoding="utf-8")
 
     generated_at = datetime.now(UTC).strftime("Generated %Y-%m-%d %H:%M UTC")
@@ -1780,11 +2232,18 @@ def generate_sector_rotation_report(
         sector_ml_view=sector_ml_view,
         live_ml_view=live_ml_view,
     )
+    executive_summary_html = _render_executive_summary_html(
+        generated_at=generated_at,
+        regime_overview=regime_overview,
+        sector_ml_view=sector_ml_view,
+    )
     report_path = report_dir / "index.html"
     report_path.write_text(html_text, encoding="utf-8")
+    executive_summary_path.write_text(executive_summary_html, encoding="utf-8")
 
     return {
         "report": str(report_path),
+        "executive_summary": str(executive_summary_path),
         "summary": str(summary_path),
         "sector_matrix": str(matrix_path) if matrix_path.exists() else None,
         "sector_current": str(current_path) if current_path.exists() else None,

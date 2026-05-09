@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sector Rotation Executive Summary</title>
+    <style>
+        :root {
+            --bg: #f4efe7;
+            --sheet: #fffdf8;
+            --ink: #1b2430;
+            --muted: #5f6b76;
+            --line: #d5cfc5;
+            --accent: #7a3e2b;
+            --green: #2d6a4f;
+            --orange: #b85c38;
+            --red: #8f2d1f;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Iowan Old Style", Georgia, serif; }
+        .sheet { width: 1100px; min-height: 1400px; margin: 0 auto; padding: 42px 48px 54px; background: var(--sheet); page-break-after: always; }
+        .sheet:last-child { page-break-after: auto; }
+        .eyebrow { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+        h1, h2, h3 { margin: 0; line-height: 1.1; }
+        h1 { font-size: 52px; max-width: 12ch; }
+        h2 { font-size: 28px; margin-bottom: 10px; }
+        h3 { font-size: 18px; margin-bottom: 10px; }
+        p { margin: 0; color: var(--muted); line-height: 1.55; }
+        .hero { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 22px; align-items: start; margin-bottom: 28px; }
+        .hero-panel, .principle-panel, .summary-card, .table-panel { border: 1px solid var(--line); border-radius: 20px; padding: 20px; background: rgba(255,253,248,0.96); }
+        .meta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+        .meta-pill { padding: 8px 12px; border: 1px solid rgba(122,62,43,0.14); border-radius: 999px; color: var(--ink); background: rgba(243,235,225,0.82); font-size: 13px; }
+        .principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 18px 0 26px; }
+        .summary-tag { margin: 0 0 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+        .metric-line { margin-top: 12px; color: var(--ink); font-size: 14px; }
+        .mini-chart { margin-top: 18px; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+        .table-panel { margin-top: 22px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid rgba(213,207,197,0.7); }
+        th { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: rgba(244,237,225,0.75); }
+        tr:last-child td { border-bottom: none; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .callout { border-left: 4px solid var(--accent); padding-left: 16px; color: var(--ink); }
+        ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); }
+        li { margin-bottom: 8px; }
+        @media print {
+            body { background: white; }
+            .sheet { width: auto; margin: 0; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <section class="sheet">
+        <div class="hero">
+            <div class="hero-panel">
+                <p class="eyebrow">Executive Summary</p>
+                <h1>What The Backtest Is Actually Saying</h1>
+                <p>This is a short decision memo, not the full report. It separates the investable core from the high-reward but hard-to-live-through ideas. The goal is simple: earn enough, survive the bad years, and avoid fooling ourselves with forward-looking bias.</p>
+                <div class="meta-row">
+                    <span class="meta-pill">Generated 2026-05-09 14:47 UTC</span>
+                    <span class="meta-pill">Current regime: Fragile Late-Cycle Watch</span>
+                    <span class="meta-pill">Quadrant: Growth Down / Inflation Down</span>
+                    <span class="meta-pill">History tested: 2006-2026</span>
+                </div>
+            </div>
+            <div class="hero-panel">
+                <p class="eyebrow">Bottom Line</p>
+                <h2>Keep The Unlevered Reserve Rule As Core</h2>
+                <p class="callout">The best balanced engine remains the unlevered quality rotation, but the best capital-preservation engine is the unlevered reserve rule. The x3 variants produce eye-catching terminal wealth and brutal drawdowns. A 90% drawdown is possible, and in the x3 SPY benchmark it effectively happened.</p>
+                <ul>
+                    <li>Best unlevered growth engine: Quality Rotation, about +11.2% CAGR with -35.6% max drawdown.</li>
+                    <li>Best steadier-risk profile: Reserve Rule, about +10.0% CAGR with -31.5% max drawdown.</li>
+                    <li>Why the 2000% number appears: Quality x3 compounded from a much riskier path; it is a leveraged total-return figure, not an annual rate.</li>
+                    <li>What not to ignore: SPY x3 still ended near +5.4% CAGR but with -93.4% max drawdown.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="principles">
+            <div class="principle-panel">
+                <p class="eyebrow">Principle 1</p>
+                <h3>Protect The Downside First</h3>
+                <p>The reserve rule earns less than the fastest strategy, but it keeps the path smoother. That matters because strategies only work if you can hold them through the bad times.</p>
+            </div>
+            <div class="principle-panel">
+                <p class="eyebrow">Principle 2</p>
+                <h3>Borrow Only After You Earn The Right</h3>
+                <p>Leverage is not alpha. It amplifies whatever quality already exists. In this dataset, the x3 variants raise reward and slash survivability.</p>
+            </div>
+            <div class="principle-panel">
+                <p class="eyebrow">Principle 3</p>
+                <h3>Separate Prediction From Proof</h3>
+                <p>The model signal is one thing. The proof is the untouched holdout and the walk-forward history. They are both shown here, separately.</p>
+            </div>
+        </div>
+
+        <div class="summary-grid">
+            <article class="summary-card">
+  <p class="summary-tag">Lower risk / steadier reward</p>
+  <h3>Reserve Rule</h3>
+  <p>This is the capital-preservation bucket: smoother path, smaller drawdowns, slower wealth growth.</p>
+  <p class="metric-line">History CAGR +10.0% | Max DD -31.5% | Sharpe 0.84</p>
+</article><article class="summary-card">
+  <p class="summary-tag">Balanced risk / strong reward</p>
+  <h3>Quality Rotation</h3>
+  <p>This is the efficient middle: meaningful compounding without borrowing and without catastrophic path risk.</p>
+  <p class="metric-line">History CAGR +11.2% | Max DD -35.6% | Sharpe 0.82</p>
+</article><article class="summary-card">
+  <p class="summary-tag">High risk / high reward</p>
+  <h3>Reserve x3</h3>
+  <p>Reward can be large, but the path is violent and hard to hold in live capital.</p>
+  <p class="metric-line">History CAGR +10.3% | Max DD -49.9% | Sharpe 0.58</p>
+</article><article class="summary-card">
+  <p class="summary-tag">Extreme risk / weak reward quality</p>
+  <h3>SPY x3</h3>
+  <p>Borrowing magnifies the pain faster than it improves the compounding path.</p>
+  <p class="metric-line">History CAGR +5.4% | Max DD -93.4% | Sharpe 0.36</p>
+</article>
+        </div>
+
+        
+<div class="mini-chart">
+    <svg viewBox="0 0 920 300" role="img" aria-label="Risk reward map">
+        <rect x="0" y="0" width="920" height="300" rx="18" fill="rgba(255,253,248,0.92)"></rect>
+        <line x1="70.0" y1="28.0" x2="892.0" y2="28.0" stroke="rgba(125, 139, 153, 0.18)" stroke-width="1"></line><text x="12" y="32.0" fill="#5f6b76" font-size="11">+16.6%</text><line x1="70.0" y1="85.5" x2="892.0" y2="85.5" stroke="rgba(125, 139, 153, 0.18)" stroke-width="1"></line><text x="12" y="89.5" fill="#5f6b76" font-size="11">+12.4%</text><line x1="70.0" y1="143.0" x2="892.0" y2="143.0" stroke="rgba(125, 139, 153, 0.18)" stroke-width="1"></line><text x="12" y="147.0" fill="#5f6b76" font-size="11">+8.3%</text><line x1="70.0" y1="200.5" x2="892.0" y2="200.5" stroke="rgba(125, 139, 153, 0.18)" stroke-width="1"></line><text x="12" y="204.5" fill="#5f6b76" font-size="11">+4.1%</text><line x1="70.0" y1="258.0" x2="892.0" y2="258.0" stroke="rgba(125, 139, 153, 0.18)" stroke-width="1"></line><text x="12" y="262.0" fill="#5f6b76" font-size="11">+0.0%</text>
+        <line x1="70.0" y1="258.0" x2="892.0" y2="258.0" stroke="#b8b1a7" stroke-width="1.2"></line>
+        <line x1="70.0" y1="28.0" x2="70.0" y2="258.0" stroke="#b8b1a7" stroke-width="1.2"></line>
+        <text x="70.0" y="20" fill="#1b2430" font-size="18" font-family="Iowan Old Style, Georgia, serif">Risk / Reward Map</text>
+        <text x="70.0" y="292" fill="#5f6b76" font-size="12">Left is better: smaller drawdown. Up is better: higher CAGR.</text>
+        <text x="12" y="20" fill="#5f6b76" font-size="12">CAGR</text>
+        <text x="802.0" y="292" fill="#5f6b76" font-size="12">Max drawdown</text>
+        <circle cx="70.0" cy="118.9" r="8" fill="#2d6a4f"></circle><text x="80.0" y="108.9" fill="#37404a" font-size="11">Reserve Rule</text><circle cx="124.3" cy="102.1" r="8" fill="#7a3e2b"></circle><text x="134.3" y="92.1" fill="#37404a" font-size="11">Quality Rotation</text><circle cx="319.3" cy="146.0" r="8" fill="#6c757d"></circle><text x="329.3" y="136.0" fill="#37404a" font-size="11">SPY</text><circle cx="315.0" cy="114.9" r="8" fill="#b85c38"></circle><text x="325.0" y="104.9" fill="#37404a" font-size="11">Reserve x3</text><circle cx="761.5" cy="28.0" r="8" fill="#b85c38"></circle><text x="771.5" y="18.0" fill="#37404a" font-size="11">Quality x3</text><circle cx="892.0" cy="183.1" r="8" fill="#8f2d1f"></circle><text x="902.0" y="173.1" fill="#37404a" font-size="11">SPY x3</text>
+    </svg>
+</div>
+
+        
+<div class="mini-chart">
+    <svg viewBox="0 0 920 300" role="img" aria-label="Terminal wealth from 100 dollars">
+        <rect x="0" y="0" width="920" height="300" rx="18" fill="rgba(255,253,248,0.92)"></rect>
+        <line x1="58.0" y1="246.0" x2="896.0" y2="246.0" stroke="#b8b1a7" stroke-width="1.2"></line>
+        <text x="58.0" y="20" fill="#1b2430" font-size="18" font-family="Iowan Old Style, Georgia, serif">Terminal Wealth From $100</text>
+        <text x="58.0" y="292" fill="#5f6b76" font-size="12">Full 2006-2026 walk-forward history. This is why the 2000% numbers appear in the leveraged ML rows.</text>
+        <rect x="98.8" y="178.1" width="58.0" height="67.9" rx="10" fill="#2d6a4f"></rect><text x="127.8" y="170.1" text-anchor="middle" fill="#37404a" font-size="11">$686</text><text x="127.8" y="278.0" text-anchor="middle" fill="#5f6b76" font-size="11">Reserve Rule</text><rect x="238.5" y="161.3" width="58.0" height="84.7" rx="10" fill="#7a3e2b"></rect><text x="267.5" y="153.3" text-anchor="middle" fill="#37404a" font-size="11">$855</text><text x="267.5" y="278.0" text-anchor="middle" fill="#5f6b76" font-size="11">Quality Rotation</text><rect x="378.2" y="198.6" width="58.0" height="47.4" rx="10" fill="#6c757d"></rect><text x="407.2" y="190.6" text-anchor="middle" fill="#37404a" font-size="11">$479</text><text x="407.2" y="278.0" text-anchor="middle" fill="#5f6b76" font-size="11">SPY</text><rect x="517.8" y="174.4" width="58.0" height="71.6" rx="10" fill="#b85c38"></rect><text x="546.8" y="166.4" text-anchor="middle" fill="#37404a" font-size="11">$724</text><text x="546.8" y="278.0" text-anchor="middle" fill="#5f6b76" font-size="11">Reserve x3</text><rect x="657.5" y="28.0" width="58.0" height="218.0" rx="10" fill="#b85c38"></rect><text x="686.5" y="20.0" text-anchor="middle" fill="#37404a" font-size="11">$2202</text><text x="686.5" y="278.0" text-anchor="middle" fill="#5f6b76" font-size="11">Quality x3</text><rect x="797.2" y="217.4" width="58.0" height="28.6" rx="10" fill="#8f2d1f"></rect><text x="826.2" y="209.4" text-anchor="middle" fill="#37404a" font-size="11">$289</text><text x="826.2" y="278.0" text-anchor="middle" fill="#5f6b76" font-size="11">SPY x3</text>
+    </svg>
+</div>
+
+    </section>
+
+    <section class="sheet">
+        <p class="eyebrow">Page Two</p>
+        <h2>Simple Scorecard And Bias Controls</h2>
+        <p>This page answers two questions. First: which ideas belong in the low-risk, balanced, and high-risk buckets? Second: why this is not a forward-looking backtest.</p>
+
+        <div class="two-col" style="margin-top: 18px;">
+            <div class="table-panel">
+                <p class="eyebrow">Risk Ladder</p>
+                <h3>High Reward Is Not The Same As High Quality</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>Bucket</th>
+                            <th>History CAGR</th>
+                            <th>History Max DD</th>
+                            <th>Sharpe</th>
+                            <th>Holdout CAGR</th>
+                            <th>Holdout Max DD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Reserve Rule</td><td>Lower risk / steadier reward</td><td>+10.0%</td><td>-31.5%</td><td>0.84</td><td>+8.3%</td><td>-1.6%</td></tr><tr><td>Quality Rotation</td><td>Balanced risk / strong reward</td><td>+11.2%</td><td>-35.6%</td><td>0.82</td><td>+11.0%</td><td>-3.0%</td></tr><tr><td>SPY</td><td>Medium risk / lower efficiency</td><td>+8.1%</td><td>-50.3%</td><td>0.58</td><td>+11.1%</td><td>-2.8%</td></tr><tr><td>Reserve x3</td><td>High risk / high reward</td><td>+10.3%</td><td>-49.9%</td><td>0.58</td><td>+8.6%</td><td>-1.6%</td></tr><tr><td>Quality x3</td><td>High risk / high reward</td><td>+16.6%</td><td>-83.6%</td><td>0.58</td><td>+25.1%</td><td>-10.4%</td></tr><tr><td>SPY x3</td><td>Extreme risk / weak reward quality</td><td>+5.4%</td><td>-93.4%</td><td>0.36</td><td>+26.1%</td><td>-10.2%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-panel">
+                <p class="eyebrow">Simple Read</p>
+                <h3>How To Use The Buckets</h3>
+                <ul>
+                    <li><strong>Lower risk / steadier reward:</strong> the reserve rule. This is the most usable sleeve for real capital because drawdown is controlled and turnover is low.</li>
+                    <li><strong>Balanced risk / strong reward:</strong> the unlevered quality rotation. This is the best pure alpha engine, but it asks for more turnover and a rougher path.</li>
+                    <li><strong>High risk / high reward:</strong> the reserve x3 sleeve and the quality x3 model. These are tactical ideas, not default policy portfolios.</li>
+                    <li><strong>Extreme risk / weak reward quality:</strong> SPY x3. It proves that leverage alone is not a strategy.</li>
+                </ul>
+                <p class="callout" style="margin-top: 18px;">A 90% drawdown matters even if the final terminal wealth looks large. The path can disqualify the strategy even when the endpoint looks impressive.</p>
+            </div>
+        </div>
+
+        
+<div class="mini-chart">
+    <svg viewBox="0 0 920 220" role="img" aria-label="Bias control timeline">
+        <rect x="0" y="0" width="920" height="220" rx="18" fill="rgba(255,253,248,0.92)"></rect>
+        <text x="36" y="28" fill="#1b2430" font-size="18" font-family="Iowan Old Style, Georgia, serif">Why This Is Not Forward-Looking</text>
+        <rect x="36" y="58" width="220" height="72" rx="16" fill="#f3ebe1" stroke="#d5cfc5"></rect>
+        <text x="52" y="86" fill="#1b2430" font-size="15">Train</text>
+        <text x="52" y="108" fill="#5f6b76" font-size="12">5-year expanding window</text>
+        <text x="52" y="126" fill="#5f6b76" font-size="12">features lagged 1 bar</text>
+
+        <rect x="306" y="58" width="220" height="72" rx="16" fill="#f3ebe1" stroke="#d5cfc5"></rect>
+        <text x="322" y="86" fill="#1b2430" font-size="15">Validate</text>
+        <text x="322" y="108" fill="#5f6b76" font-size="12">1-year walk-forward test</text>
+        <text x="322" y="126" fill="#5f6b76" font-size="12">purge 5 bars, embargo 5 bars</text>
+
+        <rect x="576" y="58" width="308" height="72" rx="16" fill="#f3ebe1" stroke="#d5cfc5"></rect>
+        <text x="592" y="86" fill="#1b2430" font-size="15">Holdout And Execution</text>
+        <text x="592" y="108" fill="#5f6b76" font-size="12">untouched holdout starts 2025-01-01</text>
+        <text x="592" y="126" fill="#5f6b76" font-size="12">trade one bar later, hold 5 bars</text>
+
+        <line x1="256" y1="94" x2="306" y2="94" stroke="#7a3e2b" stroke-width="2"></line>
+        <line x1="526" y1="94" x2="576" y2="94" stroke="#7a3e2b" stroke-width="2"></line>
+        <text x="36" y="168" fill="#5f6b76" font-size="12">Macro regime labels are used to explain results, not to generate historical signals. Sector quality priors come only from the pre-holdout validation window.</text>
+        <text x="36" y="188" fill="#5f6b76" font-size="12">Reserve deployment uses only the SPY drawdown visible on the signal date. There is no future return, future regime, or future allocation leak in the benchmark path.</text>
+    </svg>
+</div>
+
+
+        <div class="two-col" style="margin-top: 18px;">
+            <div class="table-panel">
+                <p class="eyebrow">Why This Is Not Forward-Looking</p>
+                <h3>Controls Against Bias</h3>
+                <ul>
+                    <li>Features are lagged one bar before training and prediction.</li>
+                    <li>Each walk-forward fold uses a 5-bar purge and a 5-bar embargo.</li>
+                    <li>The final holdout starts on 2025-01-01 and is never used for model selection.</li>
+                    <li>Signals are executed one bar after the signal date and held for 5 bars.</li>
+                    <li>Validation quality priors are estimated only from the pre-holdout window.</li>
+                    <li>Macro regime labels explain the results but do not generate the historical trades.</li>
+                </ul>
+            </div>
+            <div class="table-panel">
+                <p class="eyebrow">Decision</p>
+                <h3>What To Stick To</h3>
+                <ul>
+                    <li><strong>Core portfolio:</strong> unlevered reserve cash rule.</li>
+                    <li><strong>Growth sleeve:</strong> unlevered quality rotation if you can tolerate higher turnover and deeper drawdowns.</li>
+                    <li><strong>Tactical only:</strong> reserve x3 drawdown sleeve, and only if you explicitly accept much deeper drawdowns.</li>
+                    <li><strong>Avoid as core:</strong> SPY x3 and the full x3 rotation variants. They generate striking terminal wealth and unacceptable path risk.</li>
+                </ul>
+                <p class="callout" style="margin-top: 18px;">The safest honest reading is: there is evidence of edge, there is no evidence that leverage improves the quality of that edge enough to deserve core capital.</p>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
