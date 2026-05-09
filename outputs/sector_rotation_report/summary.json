@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-09T15:08:33.691790+00:00",
+  "generated_at": "2026-05-09T15:21:57.063408+00:00",
   "current_regime": "Fragile Late-Cycle Watch",
   "current_quadrant": "Growth Down / Inflation Down",
   "cash_weight": 0.4,
@@ -893,6 +893,52 @@
           "turnover_per_year": 0.0
         }
       ]
+    },
+    "sector_diagnostics": {
+      "available": true,
+      "lookback_bars": 5,
+      "top_dip_sector": {
+        "symbol": "XLK",
+        "sector_label": "Information Technology",
+        "family": "Duration and innovation",
+        "all_windows": 4350,
+        "dip_windows": 1769,
+        "dip_share": 0.4066666666666667,
+        "avg_prior_return": -0.021325906551725924,
+        "worst_prior_return": -0.1586898779271131,
+        "avg_forward_return_after_drop": 0.004024538664803472,
+        "median_forward_return_after_drop": 0.005284516980064881,
+        "hit_rate_after_drop": 0.5833804409270774,
+        "compounded_return_after_drop": 519.5285841635817,
+        "best_forward_return_after_drop": 0.1546786119433508,
+        "worst_forward_return_after_drop": -0.1601898779271131,
+        "severe_drop_windows": 146,
+        "avg_forward_return_after_severe_drop": 0.013295778403965805,
+        "hit_rate_after_severe_drop": 0.6575342465753424,
+        "oos_cagr": 0.048581492729024234,
+        "oos_sharpe": 0.6598615466026412
+      },
+      "top_severe_drop_sector": {
+        "symbol": "XLP",
+        "sector_label": "Consumer Staples",
+        "family": "Defensive cash flow",
+        "all_windows": 4350,
+        "dip_windows": 1829,
+        "dip_share": 0.4204597701149425,
+        "avg_prior_return": -0.012775451440656563,
+        "worst_prior_return": -0.14754097994593285,
+        "avg_forward_return_after_drop": 0.0012610570553967455,
+        "median_forward_return_after_drop": 0.002277619736397675,
+        "hit_rate_after_drop": 0.5489338436303991,
+        "compounded_return_after_drop": 6.092654481982622,
+        "best_forward_return_after_drop": 0.10066025379359728,
+        "worst_forward_return_after_drop": -0.14904097994593285,
+        "severe_drop_windows": 31,
+        "avg_forward_return_after_severe_drop": 0.01793581396515572,
+        "hit_rate_after_severe_drop": 0.6129032258064516,
+        "oos_cagr": 0.009357402243166613,
+        "oos_sharpe": 0.20506281060118364
+      }
     },
     "live_allocation": {
       "signal_date": "2026-03-03 00:00:00",

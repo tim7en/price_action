@@ -119,7 +119,7 @@
   <h1>Macro-Regime Equity Rotation</h1>
   <p>This report isolates the sector rotation layer from the broader macro atlas. It focuses on which equity types have historically held up best, made higher highs most often, and offered the strongest 1-year to 3-year forward return profile inside similar macro regimes.</p>
   <div class="hero-meta">
-    <span>Generated 2026-05-09 15:08 UTC</span>
+    <span>Generated 2026-05-09 15:21 UTC</span>
     <span>Current regime: Fragile Late-Cycle Watch</span>
     <span>Quadrant: Growth Down / Inflation Down</span>
     <span>Cash rule: 40.0%</span>
@@ -385,6 +385,61 @@
   <table class="data-table">
     <thead><tr><th>Strategy</th><th>Total Return</th><th>CAGR</th><th>Sharpe</th><th>Sortino</th><th>Max DD</th><th>Calmar</th><th>Profit Factor</th><th>Hit Rate</th><th>Trades</th><th>Windows</th><th>Turnover</th></tr></thead>
     <tbody><tr><td>ML Probability Rotation</td><td>+730.8%</td><td>+11.1%</td><td>0.85</td><td>1.02</td><td>-34.0%</td><td>0.33</td><td>1.49</td><td>46%</td><td>683</td><td>870</td><td>31.4/yr</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>+755.4%</td><td>+11.2%</td><td>0.82</td><td>0.97</td><td>-35.6%</td><td>0.32</td><td>1.47</td><td>46%</td><td>683</td><td>870</td><td>31.3/yr</td></tr><tr><td>Sector Reserve Cash Rule</td><td>+585.9%</td><td>+10.0%</td><td>0.84</td><td>0.93</td><td>-31.5%</td><td>0.32</td><td>1.51</td><td>67%</td><td>246</td><td>870</td><td>5.6/yr</td></tr><tr><td>Reserve Cash Rule x3 Drawdown Sleeve @ 6%</td><td>+623.7%</td><td>+10.3%</td><td>0.58</td><td>0.61</td><td>-49.9%</td><td>0.21</td><td>1.36</td><td>65%</td><td>246</td><td>870</td><td>16.9/yr</td></tr><tr><td>SPY Buy And Hold</td><td>+378.5%</td><td>+8.1%</td><td>0.58</td><td>0.69</td><td>-50.3%</td><td>0.16</td><td>1.28</td><td>59%</td><td>1</td><td>870</td><td>0.0/yr</td></tr><tr><td>ML Probability Rotation x3 @ 6%</td><td>+2192.4%</td><td>+16.8%</td><td>0.59</td><td>0.77</td><td>-81.4%</td><td>0.21</td><td>1.32</td><td>44%</td><td>683</td><td>870</td><td>31.4/yr</td></tr><tr><td>ML Quality-Weighted Rotation x3 @ 6%</td><td>+2102.0%</td><td>+16.6%</td><td>0.58</td><td>0.75</td><td>-83.6%</td><td>0.20</td><td>1.31</td><td>44%</td><td>683</td><td>870</td><td>31.3/yr</td></tr><tr><td>SPY Buy And Hold x3 @ 6%</td><td>+188.6%</td><td>+5.4%</td><td>0.36</td><td>0.43</td><td>-93.4%</td><td>0.06</td><td>1.17</td><td>56%</td><td>1</td><td>870</td><td>0.0/yr</td></tr></tbody>
+  </table>
+</div>
+</section>
+        <section class="section">
+  <p class="eyebrow">Sector Dip Study</p>
+  <h2>Which Sectors Paid Best After They Dropped</h2>
+  <p>This ranking uses the full 2006-2026 out-of-sample sector signal history. A drop means the sector itself had a negative trailing 5-bar return on the signal date. The next-window return is the realized out-of-sample 5-bar forward return net of the base transaction-cost assumption.</p>
+  <div class="card-grid">
+<article class="stat-card">
+  <p class="card-tag">Buy-the-dip leader</p>
+  <h3>Best after any 5-bar drop: Information Technology (XLK)</h3>
+  <p>Average next-window return +0.4% after 1769 drop windows. Hit rate 58%.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Stress drop leader</p>
+  <h3>Best after 5%+ drop: Consumer Staples (XLP)</h3>
+  <p>Average next-window return +1.8% across 31 severe-drop windows. Hit rate 61%.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Rotation speed</p>
+  <h3>Fastest-rotating live sleeve: ML Probability Rotation</h3>
+  <p>About 32.1 basket changes per year, with 648 total changes in the 2006-2026 walk-forward history.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Selection frequency</p>
+  <h3>Most-used quality sleeve sector: Manufacturing / Industrials (XLI)</h3>
+  <p>Selected in 303 quality-rotation windows, or 47% of active quality windows.</p>
+</article>
+  </div>
+<div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Sector</th><th>Type</th><th>Drop Windows</th><th>Avg Prior Drop</th><th>Avg Next Return</th><th>Hit Rate</th><th>Compounded Return</th><th>5%+ Drop Windows</th><th>Avg Next Return 5%+</th><th>OOS CAGR</th></tr></thead>
+    <tbody><tr><td>Information Technology (XLK)</td><td>Duration and innovation</td><td>1769</td><td>-2.1%</td><td>+0.4%</td><td>58%</td><td>+51952.9%</td><td>146</td><td>+1.3%</td><td>+4.9%</td></tr><tr><td>Commodity / Materials (XLB)</td><td>Cyclical inflation beta</td><td>1894</td><td>-2.3%</td><td>+0.2%</td><td>56%</td><td>+3390.7%</td><td>207</td><td>+0.7%</td><td>+5.4%</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>Consumer cyclical</td><td>1847</td><td>-2.1%</td><td>+0.2%</td><td>57%</td><td>+2575.9%</td><td>180</td><td>+0.7%</td><td>+4.0%</td></tr><tr><td>Energy (XLE)</td><td>Real asset cyclical</td><td>1944</td><td>-2.8%</td><td>+0.2%</td><td>54%</td><td>+1557.0%</td><td>296</td><td>+0.7%</td><td>+4.2%</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>Growth and capex cyclical</td><td>1812</td><td>-2.0%</td><td>+0.2%</td><td>56%</td><td>+1853.8%</td><td>145</td><td>+0.1%</td><td>+4.7%</td></tr><tr><td>Health Care (XLV)</td><td>Defensive quality</td><td>1858</td><td>-1.6%</td><td>+0.1%</td><td>55%</td><td>+685.1%</td><td>51</td><td>+1.5%</td><td>+3.2%</td></tr><tr><td>Consumer Staples (XLP)</td><td>Defensive cash flow</td><td>1829</td><td>-1.3%</td><td>+0.1%</td><td>55%</td><td>+609.3%</td><td>31</td><td>+1.8%</td><td>+0.9%</td></tr><tr><td>Utilities (XLU)</td><td>Rate-sensitive defense</td><td>1868</td><td>-1.7%</td><td>+0.1%</td><td>55%</td><td>+150.5%</td><td>77</td><td>+0.2%</td><td>+0.6%</td></tr></tbody>
+  </table>
+</div>
+</section>
+        <section class="section">
+  <p class="eyebrow">Strategy Audit</p>
+  <h2>How Often Each Strategy Rotated And What It Earned</h2>
+  <p>This table uses the full 2006-2026 walk-forward history. Rotations count basket changes from one signal window to the next. The leveraged variants share the same underlying rotation path as their unlevered base strategy and only change the exposure profile.</p>
+<div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Strategy</th><th>Total Return</th><th>CAGR</th><th>Sharpe</th><th>Max DD</th><th>Hit Rate</th><th>Trades</th><th>Windows</th><th>Rotations</th><th>Rot/Yr</th><th>Turnover</th><th>Avg Sectors Held</th><th>Cash Windows</th><th>Most Common Basket</th><th>Most Used Sector</th></tr></thead>
+    <tbody><tr><td>ML Probability Rotation</td><td>+730.8%</td><td>+11.1%</td><td>0.85</td><td>-34.0%</td><td>46%</td><td>683</td><td>870</td><td>648</td><td>32.1</td><td>31.4/yr</td><td>1.7</td><td>222</td><td>Cash</td><td>Health Care</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>+755.4%</td><td>+11.2%</td><td>0.82</td><td>-35.6%</td><td>46%</td><td>683</td><td>870</td><td>630</td><td>31.2</td><td>31.3/yr</td><td>1.7</td><td>222</td><td>Cash</td><td>Manufacturing / Industrials</td></tr><tr><td>Sector Reserve Cash Rule</td><td>+585.9%</td><td>+10.0%</td><td>0.84</td><td>-31.5%</td><td>67%</td><td>246</td><td>870</td><td>397</td><td>19.7</td><td>5.6/yr</td><td>0.8</td><td>131</td><td>XLB</td><td>Commodity / Materials</td></tr><tr><td>Reserve Cash Rule x3 Drawdown Sleeve @ 6%</td><td>+623.7%</td><td>+10.3%</td><td>0.58</td><td>-49.9%</td><td>65%</td><td>246</td><td>870</td><td>397</td><td>19.7</td><td>16.9/yr</td><td>0.8</td><td>131</td><td>XLB</td><td>Commodity / Materials</td></tr><tr><td>SPY Buy And Hold</td><td>+378.5%</td><td>+8.1%</td><td>0.58</td><td>-50.3%</td><td>59%</td><td>1</td><td>870</td><td>0</td><td>0.0</td><td>0.0/yr</td><td>1.0</td><td>0</td><td>SPY</td><td>SPY</td></tr><tr><td>ML Probability Rotation x3 @ 6%</td><td>+2192.4%</td><td>+16.8%</td><td>0.59</td><td>-81.4%</td><td>44%</td><td>683</td><td>870</td><td>648</td><td>32.1</td><td>31.4/yr</td><td>1.7</td><td>222</td><td>Cash</td><td>Health Care</td></tr><tr><td>ML Quality-Weighted Rotation x3 @ 6%</td><td>+2102.0%</td><td>+16.6%</td><td>0.58</td><td>-83.6%</td><td>44%</td><td>683</td><td>870</td><td>630</td><td>31.2</td><td>31.3/yr</td><td>1.7</td><td>222</td><td>Cash</td><td>Manufacturing / Industrials</td></tr><tr><td>SPY Buy And Hold x3 @ 6%</td><td>+188.6%</td><td>+5.4%</td><td>0.36</td><td>-93.4%</td><td>56%</td><td>1</td><td>870</td><td>0</td><td>0.0</td><td>0.0/yr</td><td>1.0</td><td>0</td><td>SPY</td><td>SPY</td></tr></tbody>
+  </table>
+</div>
+</section>
+        <section class="section">
+  <p class="eyebrow">Constituent Usage</p>
+  <h2>Which Sectors The Rotation Strategies Actually Used</h2>
+  <p>For the quality and probability strategies, the return columns below are basket returns for windows where the sector was part of the selected basket, not isolated single-sector returns. Use the dip-study section above for isolated per-sector forward returns.</p>
+<div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Strategy</th><th>Sector</th><th>Selected Windows</th><th>Share Of Active Windows</th><th>Avg Strategy Return</th><th>Median Strategy Return</th><th>Avg SPY Drawdown At Entry</th><th>Last Seen</th></tr></thead>
+    <tbody><tr><td>ML Probability Rotation</td><td>Health Care (XLV)</td><td>278</td><td>43%</td><td>+0.2%</td><td>+0.4%</td><td>-7.9%</td><td>2024-03-07</td></tr><tr><td>ML Probability Rotation</td><td>Retail / Consumer Discretionary (XLY)</td><td>216</td><td>33%</td><td>+0.6%</td><td>+0.9%</td><td>-10.8%</td><td>2026-02-18</td></tr><tr><td>ML Probability Rotation</td><td>Consumer Staples (XLP)</td><td>206</td><td>32%</td><td>+0.2%</td><td>+0.4%</td><td>-15.3%</td><td>2025-01-13</td></tr><tr><td>ML Probability Rotation</td><td>Manufacturing / Industrials (XLI)</td><td>198</td><td>31%</td><td>+0.5%</td><td>+0.5%</td><td>-8.3%</td><td>2026-01-27</td></tr><tr><td>ML Probability Rotation</td><td>Information Technology (XLK)</td><td>153</td><td>24%</td><td>+0.6%</td><td>+0.5%</td><td>-9.2%</td><td>2024-08-08</td></tr><tr><td>ML Probability Rotation</td><td>Commodity / Materials (XLB)</td><td>139</td><td>21%</td><td>+0.6%</td><td>+0.6%</td><td>-13.6%</td><td>2025-01-13</td></tr><tr><td>ML Probability Rotation</td><td>Energy (XLE)</td><td>134</td><td>21%</td><td>+0.5%</td><td>+0.5%</td><td>-11.9%</td><td>2026-02-18</td></tr><tr><td>ML Probability Rotation</td><td>Utilities (XLU)</td><td>130</td><td>20%</td><td>+0.3%</td><td>+0.4%</td><td>-6.1%</td><td>2026-02-25</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>Manufacturing / Industrials (XLI)</td><td>303</td><td>47%</td><td>+0.5%</td><td>+0.5%</td><td>-9.8%</td><td>2026-02-18</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>Commodity / Materials (XLB)</td><td>244</td><td>38%</td><td>+0.7%</td><td>+0.7%</td><td>-12.2%</td><td>2025-01-13</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>Health Care (XLV)</td><td>234</td><td>36%</td><td>+0.2%</td><td>+0.3%</td><td>-7.8%</td><td>2024-03-07</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>Information Technology (XLK)</td><td>217</td><td>33%</td><td>+0.7%</td><td>+0.6%</td><td>-10.0%</td><td>2024-08-08</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>Retail / Consumer Discretionary (XLY)</td><td>166</td><td>26%</td><td>+0.4%</td><td>+0.6%</td><td>-11.2%</td><td>2026-02-18</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>Consumer Staples (XLP)</td><td>133</td><td>21%</td><td>+0.2%</td><td>+0.5%</td><td>-15.9%</td><td>2023-10-27</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>Utilities (XLU)</td><td>83</td><td>13%</td><td>+0.3%</td><td>+0.5%</td><td>-6.5%</td><td>2026-02-25</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>Energy (XLE)</td><td>74</td><td>11%</td><td>+0.3%</td><td>+0.4%</td><td>-7.8%</td><td>2026-02-18</td></tr><tr><td>Sector Reserve Cash Rule</td><td>Commodity / Materials (XLB)</td><td>165</td><td>22%</td><td>+0.5%</td><td>+0.4%</td><td>-12.7%</td><td>2025-01-21</td></tr><tr><td>Sector Reserve Cash Rule</td><td>Health Care (XLV)</td><td>149</td><td>20%</td><td>+0.2%</td><td>+0.1%</td><td>-6.7%</td><td>2023-06-05</td></tr><tr><td>Sector Reserve Cash Rule</td><td>Manufacturing / Industrials (XLI)</td><td>148</td><td>20%</td><td>+0.4%</td><td>+0.3%</td><td>-8.1%</td><td>2026-02-18</td></tr><tr><td>Sector Reserve Cash Rule</td><td>Information Technology (XLK)</td><td>108</td><td>15%</td><td>+0.3%</td><td>+0.4%</td><td>-7.9%</td><td>2024-08-29</td></tr><tr><td>Sector Reserve Cash Rule</td><td>Retail / Consumer Discretionary (XLY)</td><td>49</td><td>7%</td><td>+0.5%</td><td>+0.3%</td><td>-6.9%</td><td>2026-01-20</td></tr><tr><td>Sector Reserve Cash Rule</td><td>Consumer Staples (XLP)</td><td>49</td><td>7%</td><td>-0.5%</td><td>-0.1%</td><td>-16.4%</td><td>2023-10-20</td></tr><tr><td>Sector Reserve Cash Rule</td><td>Utilities (XLU)</td><td>48</td><td>6%</td><td>-0.2%</td><td>+0.1%</td><td>-6.4%</td><td>2026-02-25</td></tr><tr><td>Sector Reserve Cash Rule</td><td>Energy (XLE)</td><td>23</td><td>3%</td><td>-0.2%</td><td>-0.1%</td><td>-6.7%</td><td>2025-12-11</td></tr></tbody>
   </table>
 </div>
 </section>
