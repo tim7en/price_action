@@ -1662,6 +1662,280 @@ def _render_rotation_year_regime_section(
     )
 
 
+def _filter_strategy_rows(frame: pd.DataFrame, label: str, *, startswith: bool = False) -> pd.DataFrame:
+    strategy_labels = frame["strategy_label"].astype(str)
+    if startswith:
+        return frame.loc[strategy_labels.str.startswith(label)].copy()
+    return frame.loc[strategy_labels == label].copy()
+
+
+def _build_regime_vs_spy_frame(rotation_view: dict[str, Any] | None, *, leveraged: bool) -> pd.DataFrame:
+    if not isinstance(rotation_view, dict) or not rotation_view.get("available"):
+        return pd.DataFrame()
+
+    regime_frame = rotation_view["regime_summary_frame"].copy()
+    if leveraged:
+        quality_frame = _filter_strategy_rows(regime_frame, "ML Quality-Weighted Rotation x", startswith=True)
+        reserve_frame = _filter_strategy_rows(regime_frame, "Reserve Cash Rule x", startswith=True)
+        spy_frame = _filter_strategy_rows(regime_frame, "SPY Buy And Hold x", startswith=True)
+    else:
+        quality_frame = _filter_strategy_rows(regime_frame, "ML Quality-Weighted Rotation")
+        reserve_frame = _filter_strategy_rows(regime_frame, "Sector Reserve Cash Rule")
+        spy_frame = _filter_strategy_rows(regime_frame, "SPY Buy And Hold")
+
+    if quality_frame.empty or reserve_frame.empty or spy_frame.empty:
+        return pd.DataFrame()
+
+    comparison_frame = (
+        spy_frame[
+            [
+                "regime_label",
+                "period_count",
+                "total_return",
+                "max_drawdown",
+            ]
+        ]
+        .rename(
+            columns={
+                "period_count": "windows",
+                "total_return": "spy_total_return",
+                "max_drawdown": "spy_max_drawdown",
+            }
+        )
+        .merge(
+            quality_frame[["regime_label", "total_return", "max_drawdown"]].rename(
+                columns={
+                    "total_return": "quality_total_return",
+                    "max_drawdown": "quality_max_drawdown",
+                }
+            ),
+            on="regime_label",
+            how="inner",
+        )
+        .merge(
+            reserve_frame[["regime_label", "total_return", "max_drawdown"]].rename(
+                columns={
+                    "total_return": "reserve_total_return",
+                    "max_drawdown": "reserve_max_drawdown",
+                }
+            ),
+            on="regime_label",
+            how="inner",
+        )
+    )
+    if comparison_frame.empty:
+        return comparison_frame
+
+    comparison_frame["quality_minus_spy"] = (
+        comparison_frame["quality_total_return"] - comparison_frame["spy_total_return"]
+    )
+    comparison_frame["reserve_minus_spy"] = (
+        comparison_frame["reserve_total_return"] - comparison_frame["spy_total_return"]
+    )
+    return comparison_frame.sort_values("regime_label").reset_index(drop=True)
+
+
+def _build_regime_ranking_frame(rotation_view: dict[str, Any] | None) -> pd.DataFrame:
+    if not isinstance(rotation_view, dict) or not rotation_view.get("available"):
+        return pd.DataFrame()
+
+    regime_frame = rotation_view["regime_summary_frame"].copy()
+    if regime_frame.empty:
+        return regime_frame
+
+    ranking_rows: list[dict[str, Any]] = []
+    for strategy_label, group in regime_frame.groupby("strategy_label", sort=True):
+        ranked_group = group.sort_values(
+            ["total_return", "hit_rate", "max_drawdown"],
+            ascending=[False, False, False],
+        ).reset_index(drop=True)
+        group_size = len(ranked_group.index)
+        for rank, row in enumerate(ranked_group.itertuples(index=False), start=1):
+            ranking_rows.append(
+                {
+                    "strategy_label": str(strategy_label),
+                    "rank": rank,
+                    "regime_label": str(row.regime_label),
+                    "total_return": float(row.total_return),
+                    "cagr": float(row.cagr) if not pd.isna(row.cagr) else None,
+                    "max_drawdown": float(row.max_drawdown),
+                    "hit_rate": float(row.hit_rate) if not pd.isna(row.hit_rate) else None,
+                    "windows": int(getattr(row, "period_count", 0) or 0),
+                    "is_best": rank == 1,
+                    "is_worst": rank == group_size,
+                }
+            )
+
+    ranking_frame = pd.DataFrame(ranking_rows)
+    if not ranking_frame.empty:
+        ranking_frame = ranking_frame.sort_values(["strategy_label", "rank"]).reset_index(drop=True)
+    return ranking_frame
+
+
+def _render_leveraged_regime_vs_spy_section(sector_ml_view: dict[str, Any]) -> str:
+    rotation_view = sector_ml_view.get("historical_rotation_view") if isinstance(sector_ml_view, dict) else None
+    comparison_frame = _build_regime_vs_spy_frame(rotation_view, leveraged=True)
+    if comparison_frame.empty:
+        return ""
+
+    best_quality = comparison_frame.sort_values("quality_minus_spy", ascending=False).iloc[0]
+    worst_quality = comparison_frame.sort_values("quality_minus_spy", ascending=True).iloc[0]
+    best_reserve = comparison_frame.sort_values("reserve_minus_spy", ascending=False).iloc[0]
+    worst_spy = comparison_frame.sort_values("spy_total_return", ascending=True).iloc[0]
+
+    cards = [
+        _render_stat_card(
+            title=f"Best quality x3 regime: {best_quality.regime_label}",
+            body=(
+                f"Quality x3 beat SPY x3 by {_format_return_pct(best_quality.quality_minus_spy)} in this regime, with total return {_format_return_pct(best_quality.quality_total_return)} versus {_format_return_pct(best_quality.spy_total_return)} for SPY x3."
+            ),
+            tag="Leveraged edge",
+        ),
+        _render_stat_card(
+            title=f"Worst quality x3 regime: {worst_quality.regime_label}",
+            body=(
+                f"Quality x3 lagged SPY x3 by {_format_return_pct(abs(worst_quality.quality_minus_spy))} here. This is the regime where leverage on the model hurt the most against leveraged SPY."
+            ),
+            tag="Leveraged drag",
+        ),
+        _render_stat_card(
+            title=f"Best reserve x3 regime: {best_reserve.regime_label}",
+            body=(
+                f"Reserve sleeve x3 beat SPY x3 by {_format_return_pct(best_reserve.reserve_minus_spy)} in this regime, with total return {_format_return_pct(best_reserve.reserve_total_return)}."
+            ),
+            tag="Reserve x3",
+        ),
+        _render_stat_card(
+            title=f"Worst leveraged SPY regime: {worst_spy.regime_label}",
+            body=(
+                f"SPY x3 lost {_format_return_pct(worst_spy.spy_total_return)} with max drawdown {_format_return_pct(worst_spy.spy_max_drawdown)} in this regime."
+            ),
+            tag="SPY x3 stress",
+        ),
+    ]
+
+    rows: list[tuple[str, ...]] = []
+    for row in comparison_frame.itertuples(index=False):
+        rows.append(
+            (
+                str(row.regime_label),
+                str(int(row.windows)),
+                _format_return_pct(row.spy_total_return),
+                _format_return_pct(row.quality_total_return),
+                _format_return_pct(row.quality_minus_spy),
+                _format_return_pct(row.reserve_total_return),
+                _format_return_pct(row.reserve_minus_spy),
+                _format_return_pct(row.spy_max_drawdown),
+                _format_return_pct(row.quality_max_drawdown),
+                _format_return_pct(row.reserve_max_drawdown),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Leveraged Regime Comparison</p>',
+            '  <h2>x3 Regime Comparison Versus SPY x3</h2>',
+            '  <p>This is the same regime slice, but for the leveraged paths under the 6% financing assumption. It compares the quality-weighted x3 strategy and the reserve-sleeve x3 strategy against SPY x3 inside each tested regime.</p>',
+            '  <div class="card-grid">',
+            "\n".join(cards),
+            '  </div>',
+            _render_data_table(
+                headers=(
+                    'Regime',
+                    'Windows',
+                    'SPY x3',
+                    'Quality x3',
+                    'Quality x3 - SPY x3',
+                    'Reserve x3',
+                    'Reserve x3 - SPY x3',
+                    'SPY x3 Max DD',
+                    'Quality x3 Max DD',
+                    'Reserve x3 Max DD',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
+def _render_regime_ranking_section(sector_ml_view: dict[str, Any]) -> str:
+    rotation_view = sector_ml_view.get("historical_rotation_view") if isinstance(sector_ml_view, dict) else None
+    ranking_frame = _build_regime_ranking_frame(rotation_view)
+    if ranking_frame.empty:
+        return ""
+
+    strategy_list = [
+        "ML Quality-Weighted Rotation",
+        "Sector Reserve Cash Rule",
+        "SPY Buy And Hold",
+        "ML Quality-Weighted Rotation x3 @ 6%",
+        "Reserve Cash Rule x3 Drawdown Sleeve @ 6%",
+        "SPY Buy And Hold x3 @ 6%",
+    ]
+    cards: list[str] = []
+    for strategy_label in strategy_list:
+        strategy_rows = ranking_frame.loc[ranking_frame["strategy_label"] == strategy_label]
+        if strategy_rows.empty:
+            continue
+        best_row = strategy_rows.iloc[0]
+        worst_row = strategy_rows.iloc[-1]
+        cards.append(
+            _render_stat_card(
+                title=str(strategy_label),
+                body=(
+                    f"Best regime: {best_row.regime_label} at {_format_return_pct(best_row.total_return)}. "
+                    f"Worst regime: {worst_row.regime_label} at {_format_return_pct(worst_row.total_return)}."
+                ),
+                tag="Best vs worst",
+            )
+        )
+
+    rows: list[tuple[str, ...]] = []
+    for row in ranking_frame.itertuples(index=False):
+        rows.append(
+            (
+                str(row.strategy_label),
+                str(int(row.rank)),
+                str(row.regime_label),
+                _format_return_pct(row.total_return),
+                _format_return_pct(row.cagr),
+                _format_return_pct(row.max_drawdown),
+                _format_probability_pct(row.hit_rate),
+                str(int(row.windows)),
+                'Best' if bool(row.is_best) else ('Worst' if bool(row.is_worst) else ''),
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Regime Ranking</p>',
+            '  <h2>Best-To-Worst Regimes For Each Strategy</h2>',
+            '  <p>This table ranks every tested regime separately inside each strategy, using total return within that regime slice. It is a ranking of where each strategy historically worked best and worst, not a forecast.</p>',
+            '  <div class="card-grid">',
+            "\n".join(cards),
+            '  </div>',
+            _render_data_table(
+                headers=(
+                    'Strategy',
+                    'Rank',
+                    'Regime',
+                    'Total Return',
+                    'CAGR',
+                    'Max DD',
+                    'Hit Rate',
+                    'Windows',
+                    'Flag',
+                ),
+                rows=rows,
+            ),
+            '</section>',
+        ]
+    )
+
+
 def _render_holdout_year_regime_section(sector_ml_view: dict[str, Any]) -> str:
     rotation_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
     return _render_rotation_year_regime_section(
@@ -3007,6 +3281,8 @@ def _render_html(
         {_render_rebalance_sensitivity_section(sector_ml_view=sector_ml_view)}
         {_render_holdout_year_regime_section(sector_ml_view=sector_ml_view)}
         {_render_history_year_regime_section(sector_ml_view=sector_ml_view)}
+        {_render_leveraged_regime_vs_spy_section(sector_ml_view=sector_ml_view)}
+        {_render_regime_ranking_section(sector_ml_view=sector_ml_view)}
         {_render_history_drawdown_section(sector_ml_view=sector_ml_view)}
         {_render_holdout_period_log_section(sector_ml_view=sector_ml_view)}
     {_render_sector_mapping_section(sector_rotation_view=sector_rotation_view)}
@@ -3060,6 +3336,8 @@ def generate_sector_rotation_report(
     ml_history_period_log_path = report_dir / "sector_ml_history_period_log.csv"
     ml_history_yearly_path = report_dir / "sector_ml_history_yearly_summary.csv"
     ml_history_regime_path = report_dir / "sector_ml_history_regime_summary.csv"
+    ml_history_regime_vs_spy_x3_path = report_dir / "sector_ml_history_regime_vs_spy_x3.csv"
+    ml_history_regime_ranking_path = report_dir / "sector_ml_history_regime_rankings.csv"
     ml_rebalance_sensitivity_path = report_dir / "sector_ml_rebalance_sensitivity.csv"
     ml_live_allocation_path = report_dir / "sector_ml_live_allocation.csv"
     ml_dip_summary_path = report_dir / "sector_ml_dip_summary.csv"
@@ -3133,6 +3411,12 @@ def generate_sector_rotation_report(
             history_view["period_log_frame"].to_csv(ml_history_period_log_path, index=False)
             history_view["yearly_summary_frame"].to_csv(ml_history_yearly_path, index=False)
             history_view["regime_summary_frame"].to_csv(ml_history_regime_path, index=False)
+            regime_vs_spy_x3_frame = _build_regime_vs_spy_frame(history_view, leveraged=True)
+            if not regime_vs_spy_x3_frame.empty:
+                regime_vs_spy_x3_frame.to_csv(ml_history_regime_vs_spy_x3_path, index=False)
+            regime_ranking_frame = _build_regime_ranking_frame(history_view)
+            if not regime_ranking_frame.empty:
+                regime_ranking_frame.to_csv(ml_history_regime_ranking_path, index=False)
             summary_payload["ml"]["historical_rotation"] = {
                 "available": True,
                 "scope_label": history_view.get("scope_label"),
@@ -3224,6 +3508,8 @@ def generate_sector_rotation_report(
         "ml_history_period_log": str(ml_history_period_log_path) if ml_history_period_log_path.exists() else None,
         "ml_history_yearly": str(ml_history_yearly_path) if ml_history_yearly_path.exists() else None,
         "ml_history_regime": str(ml_history_regime_path) if ml_history_regime_path.exists() else None,
+        "ml_history_regime_vs_spy_x3": str(ml_history_regime_vs_spy_x3_path) if ml_history_regime_vs_spy_x3_path.exists() else None,
+        "ml_history_regime_rankings": str(ml_history_regime_ranking_path) if ml_history_regime_ranking_path.exists() else None,
         "ml_rebalance_sensitivity": str(ml_rebalance_sensitivity_path) if ml_rebalance_sensitivity_path.exists() else None,
         "ml_live_allocation": str(ml_live_allocation_path) if ml_live_allocation_path.exists() else None,
         "ml_dip_summary": str(ml_dip_summary_path) if ml_dip_summary_path.exists() else None,
