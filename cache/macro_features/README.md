@@ -1,6 +1,6 @@
 # Macro Feature Store
 
-Generated at: 2026-05-09T17:39:42.375060+00:00
+Generated at: 2026-05-09T18:24:56.438120+00:00
 
 Each feature is stored as its own CSV under `series/`, with a matching JSON summary under `summaries/`.
 Freshness checks are written to `series_health.csv`.
@@ -36,6 +36,7 @@ Freshness checks are written to `series_health.csv`.
 | NFCI | FRED | 1999-03-12 | 2026-03-27 | weekly | 0.141 | stale |
 | T10Y3M | FRED | 1999-03-10 | 2026-04-07 | daily | 0.678 | stale |
 | UMCSENT | unknown | 1999-01-01 | 2026-03-01 | monthly | 0.033 | stale |
+| consumer_sentiment_release_level | ALFRED | 1999-01-29 | 2026-03-27 | monthly | 0.010 | fresh |
 | USEPUINDXD | unknown | 1999-01-01 | 2026-05-07 | daily | 1.000 | fresh |
 | spot_vix | FRED | 1999-01-01 | 2026-04-06 | daily | 0.997 | stale |
 | VXOCLS | FRED | 1999-01-04 | 2021-09-23 | daily | 0.573 | stale |

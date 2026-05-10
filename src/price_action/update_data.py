@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import time
 from datetime import UTC, datetime
 from io import BytesIO
@@ -19,7 +20,6 @@ from .universe import DEFAULT_PANEL_SYMBOLS, expand_symbol_selection
 ALFRED_GRAPH_SERIES_URL = "https://alfred.stlouisfed.org/graph/api/series/"
 ALFRED_GRAPH_CSV_URL = "https://alfred.stlouisfed.org/graph/alfredgraph.csv"
 REQUEST_HEADERS = {
-    "User-Agent": "Mozilla/5.0",
     "Accept": "application/json",
 }
 
@@ -28,8 +28,17 @@ def _read_url_bytes(request: Request, timeout: int, attempts: int = 3) -> bytes:
     last_error: Exception | None = None
     for attempt in range(attempts):
         try:
-            with urlopen(request, timeout=timeout) as response:
-                return response.read()
+            curl_command = ["curl", "-fsSL"]
+            for header_name, header_value in request.header_items():
+                curl_command.extend(["-H", f"{header_name}: {header_value}"])
+            curl_command.append(request.full_url)
+            completed = subprocess.run(
+                curl_command,
+                check=True,
+                capture_output=True,
+                timeout=timeout,
+            )
+            return completed.stdout
         except Exception as exc:  # noqa: BLE001
             last_error = exc
             if attempt + 1 == attempts:

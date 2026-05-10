@@ -327,7 +327,7 @@
     <h1>Twenty Years Of Macro Regimes</h1>
                 <p>This report shifts the macro app from a flat variable inventory toward a Dalio-style regime map: growth and inflation quadrants, stress overlays, and the specific model inputs that matter inside each environment. The goal is to show how the macro machine has moved across the last twenty years, not just list the features beside price action.</p>
       <div class="hero-meta">
-        <span>Generated 2026-05-09 17:39 UTC</span>
+        <span>Generated 2026-05-09 18:24 UTC</span>
         <span>26 base macro series</span>
             <span>Lookback window: May 2006 to May 2026</span>
             <span>Current regime: Fragile Late-Cycle Watch</span>
@@ -1358,7 +1358,7 @@
   <div class="section-copy">
     <p class="eyebrow">Macro Channel</p>
     <h2>Policy Uncertainty And Sentiment</h2>
-    <p>Policy uncertainty and household sentiment are context gauges. They help distinguish noisy slowdowns from genuine stress, but sentiment should stay contextual unless first-release timestamps are tracked explicitly.</p>
+    <p>Policy uncertainty and household sentiment help distinguish noisy slowdowns from genuine stress. The active sentiment series is aligned to ALFRED revision dates so the model only sees readings after they were publicly available.</p>
   </div>
   <figure class="plot-frame">
     <img src="plots/uncertainty_sentiment.svg" alt="Policy Uncertainty And Sentiment timeline plots" />
@@ -1431,21 +1431,21 @@
 
 </article>
 <article class="series-card">
-  <p class="series-key">consumer_sentiment_level</p>
-  <h3>University of Michigan Consumer Sentiment</h3>
-  <p class="series-brief">Consumer sentiment is a slow household-demand context gauge. It helps frame confidence and recession risk, but without point-in-time release timestamps it should stay contextual rather than drive precise daily timing.</p>
+  <p class="series-key">consumer_sentiment_release_level</p>
+  <h3>University of Michigan Consumer Sentiment (Release-Aware)</h3>
+  <p class="series-brief">The release-aware sentiment series uses ALFRED revision dates so the model only sees the latest UMCSENT reading after it was publicly available. It is still slow-moving, but it is now safe to use as a daily step feature.</p>
   <dl class="series-meta">
-    <div><dt>Model role</dt><dd>Household confidence context gauge</dd></div>
+    <div><dt>Model role</dt><dd>Point-in-time household confidence gauge</dd></div>
     <div><dt>Latest</dt><dd>53.30</dd></div>
     <div><dt>Units</dt><dd>index level</dd></div>
-    <div><dt>History</dt><dd>1999-01-01 to 2026-03-01</dd></div>
+    <div><dt>History</dt><dd>1999-01-29 to 2026-03-27</dd></div>
     <div><dt>Frequency</dt><dd>monthly</dd></div>
-    <div><dt>Coverage</dt><dd>3.3%</dd></div>
-    <div><dt>Source</dt><dd><a href="https://fred.stlouisfed.org/series/UMCSENT">FRED</a></dd></div>
+    <div><dt>Coverage</dt><dd>1.0%</dd></div>
+    <div><dt>Source</dt><dd><a href="https://alfred.stlouisfed.org/series?seid=UMCSENT">ALFRED</a></dd></div>
   </dl>
 <div class="detail-block">
   <p class="detail-label">Data Notes</p>
-  <ul class="chip-list"><li>Monthly household sentiment context from FRED.</li><li>Kept as contextual macro information rather than a primary daily trading trigger because the repo does not store first-release vintage timestamps.</li></ul>
+  <ul class="chip-list"><li>Release-aware daily step series built from the latest UMCSENT value available on each ALFRED revision date.</li><li>This is the no-lookahead sentiment input used by the model; repo-wide feature_lag=1 still delays it one more bar before trading decisions.</li></ul>
 </div>
 <div class="detail-block">
   <p class="detail-label">Engineer Next</p>

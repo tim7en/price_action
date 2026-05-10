@@ -59,11 +59,21 @@ def build_feature_frame(
         frame["atr_pct"] = frame["atr"] / frame["close"]
 
     context_columns = _existing(MODEL_MACRO_CONTEXT_COLUMNS, frame)
+    if context_columns:
+        context_features: dict[str, pd.Series] = {}
+        for column in context_columns:
+            normalized = pd.to_numeric(frame[column], errors="coerce").ffill()
+            context_features[column] = normalized
+            context_features[f"{column}_z63"] = rolling_zscore(normalized, window=63)
+            context_features[f"{column}_delta5"] = normalized.diff(5)
 
-    for column in context_columns:
-        frame[column] = pd.to_numeric(frame[column], errors="coerce").ffill()
-        frame[f"{column}_z63"] = rolling_zscore(frame[column], window=63)
-        frame[f"{column}_delta5"] = frame[column].diff(5)
+        frame = pd.concat(
+            [
+                frame.drop(columns=context_columns, errors="ignore"),
+                pd.DataFrame(context_features, index=frame.index),
+            ],
+            axis=1,
+        ).copy()
 
     risk_votes: list[pd.Series] = []
     if "spot_vix_z63" in frame.columns:
