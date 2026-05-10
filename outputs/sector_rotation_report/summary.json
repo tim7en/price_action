@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-10T03:44:21.645685+00:00",
+  "generated_at": "2026-05-10T06:32:32.019156+00:00",
   "current_regime": "Fragile Late-Cycle Watch",
   "current_quadrant": "Growth Down / Inflation Down",
   "cash_weight": 0.4,
@@ -939,6 +939,11 @@
         "oos_cagr": 0.0026606951118850475,
         "oos_sharpe": 0.09586484616109135
       }
+    },
+    "regime_episodes": {
+      "available": true,
+      "episode_count": 155,
+      "activation_note": "Episodes are contiguous 5-bar regime windows from the walk-forward history. The ETF-versus-SPY comparison starts only after one full 5-bar confirmation window, then runs until the regime episode ends. The strategy columns keep the report's existing next-bar execution and reserve-deployment rules."
     },
     "live_allocation": {
       "signal_date": "2026-03-03 00:00:00",

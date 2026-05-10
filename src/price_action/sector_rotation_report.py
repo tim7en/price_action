@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.patches import FancyBboxPatch
@@ -21,6 +22,7 @@ from .macro_report import (
     MUTED_TEXT_COLOR,
     PAGE_BACKGROUND,
     PANEL_BACKGROUND,
+    REGIME_COLORS,
     REPORT_LOOKBACK_YEARS,
     TEXT_COLOR,
     _build_regime_overview,
@@ -1947,6 +1949,706 @@ def _render_regime_ranking_section(sector_ml_view: dict[str, Any]) -> str:
     )
 
 
+def _compound_total_return(series: pd.Series) -> float | None:
+    numeric = pd.to_numeric(series, errors="coerce").dropna()
+    if numeric.empty:
+        return None
+    return float((1.0 + numeric).prod() - 1.0)
+
+
+def _load_price_history_frame(
+    symbols: list[str],
+    *,
+    project_root: Path,
+    start_date: pd.Timestamp | None = None,
+    end_date: pd.Timestamp | None = None,
+) -> pd.DataFrame:
+    series_rows: list[pd.Series] = []
+    for symbol in symbols:
+        try:
+            asset_frame = load_asset_daily(symbol, project_root=project_root)
+        except FileNotFoundError:
+            continue
+        if "close" not in asset_frame.columns:
+            continue
+        close = pd.to_numeric(asset_frame["close"], errors="coerce").dropna().rename(symbol)
+        if close.empty:
+            continue
+        series_rows.append(close)
+
+    if not series_rows:
+        return pd.DataFrame()
+
+    frame = pd.concat(series_rows, axis=1).sort_index()
+    if start_date is not None:
+        frame = frame.loc[frame.index >= pd.Timestamp(start_date)]
+    if end_date is not None:
+        frame = frame.loc[frame.index <= pd.Timestamp(end_date)]
+    return frame
+
+
+def _window_total_return(series: pd.Series, start_date: pd.Timestamp, end_date: pd.Timestamp) -> float | None:
+    numeric = pd.to_numeric(series, errors="coerce").dropna()
+    window = numeric.loc[(numeric.index >= pd.Timestamp(start_date)) & (numeric.index <= pd.Timestamp(end_date))]
+    if window.empty:
+        return None
+    if len(window.index) == 1:
+        return 0.0
+    return float(window.iloc[-1] / window.iloc[0] - 1.0)
+
+
+def _normalise_price_window(
+    price_frame: pd.DataFrame,
+    symbols: list[str],
+    *,
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
+) -> pd.DataFrame:
+    if price_frame.empty:
+        return pd.DataFrame()
+
+    available_symbols = [symbol for symbol in symbols if symbol in price_frame.columns]
+    if not available_symbols:
+        return pd.DataFrame()
+
+    window = price_frame.loc[(price_frame.index >= pd.Timestamp(start_date)) & (price_frame.index <= pd.Timestamp(end_date)), available_symbols].copy()
+    normalised: dict[str, pd.Series] = {}
+    for symbol in available_symbols:
+        series = pd.to_numeric(window[symbol], errors="coerce").dropna()
+        if len(series.index) < 2:
+            continue
+        normalised[symbol] = series / float(series.iloc[0])
+
+    if not normalised:
+        return pd.DataFrame()
+    return pd.DataFrame(normalised).sort_index()
+
+
+def _sample_frame_rows(frame: pd.DataFrame, max_points: int) -> pd.DataFrame:
+    if frame.empty or len(frame.index) <= max_points:
+        return frame
+    positions = np.linspace(0, len(frame.index) - 1, num=max_points, dtype=int)
+    positions = np.unique(np.concatenate(([0], positions, [len(frame.index) - 1])))
+    return frame.iloc[positions]
+
+
+def _symbol_color_map(symbols: list[str]) -> dict[str, str]:
+    palette = (
+        "#7a3e2b",
+        "#0f4c5c",
+        "#2d6a4f",
+        "#bc6c25",
+        "#c1121f",
+        "#4361ee",
+        "#588157",
+        "#9c6644",
+        "#006d77",
+        "#ae2012",
+        "#5a189a",
+        "#3a5a40",
+    )
+    colors = {"SPY": "#6c757d"}
+    offset = 0
+    for symbol in symbols:
+        if symbol == "SPY":
+            continue
+        colors[symbol] = palette[offset % len(palette)]
+        offset += 1
+    return colors
+
+
+def _render_regime_price_chart(
+    normalised_frame: pd.DataFrame,
+    *,
+    title: str,
+    subtitle: str,
+    aria_label: str,
+    color_map: dict[str, str],
+    background_bands: list[dict[str, Any]] | None = None,
+    highlight_symbols: set[str] | None = None,
+    max_points: int = 180,
+) -> str:
+    if normalised_frame.empty:
+        return ""
+
+    sampled = _sample_frame_rows(normalised_frame, max_points=max_points)
+    plot_symbols = [symbol for symbol in sampled.columns if symbol in color_map]
+    if not plot_symbols:
+        return ""
+    if "SPY" in plot_symbols:
+        plot_symbols = ["SPY", *[symbol for symbol in plot_symbols if symbol != "SPY"]]
+
+    start_date = pd.Timestamp(sampled.index.min())
+    end_date = pd.Timestamp(sampled.index.max())
+    if end_date <= start_date:
+        return ""
+
+    numeric_values = sampled[plot_symbols].to_numpy(dtype=float)
+    min_value = float(min(np.nanmin(numeric_values), 1.0))
+    max_value = float(max(np.nanmax(numeric_values), 1.0))
+    value_span = max(max_value - min_value, 1e-9)
+    width = 960.0
+    height = 320.0
+    left = 64.0
+    right = 24.0
+    top = 34.0
+    bottom = 42.0
+    span_seconds = max((end_date - start_date).total_seconds(), 1.0)
+    highlight_set = set(highlight_symbols or set())
+
+    def x_position(timestamp: pd.Timestamp) -> float:
+        return left + ((pd.Timestamp(timestamp) - start_date).total_seconds() / span_seconds) * (width - left - right)
+
+    def y_position(value: float) -> float:
+        return height - bottom - ((float(value) - min_value) / value_span) * (height - top - bottom)
+
+    grid_lines: list[str] = []
+    for fraction in (0.0, 0.5, 1.0):
+        y = top + fraction * (height - top - bottom)
+        grid_value = max_value - fraction * value_span
+        grid_lines.append(
+            f'<line x1="{left:.1f}" y1="{y:.1f}" x2="{width - right:.1f}" y2="{y:.1f}" stroke="rgba(125, 139, 153, 0.16)" stroke-width="1"></line>'
+        )
+        grid_lines.append(
+            f'<text x="12" y="{y + 4:.1f}" fill="#5f6b76" font-size="11">{html.escape(_format_return_pct(grid_value - 1.0))}</text>'
+        )
+
+    band_markup: list[str] = []
+    for band in background_bands or []:
+        band_start = max(pd.Timestamp(band["start_date"]), start_date)
+        band_end = min(pd.Timestamp(band["end_date"]), end_date)
+        if band_end <= band_start:
+            continue
+        x_start = x_position(band_start)
+        x_end = x_position(band_end)
+        band_markup.append(
+            f'<rect x="{x_start:.1f}" y="{top:.1f}" width="{max(x_end - x_start, 1.0):.1f}" height="{height - top - bottom:.1f}" fill="{html.escape(str(band["color"]))}" fill-opacity="0.10"></rect>'
+        )
+        label = str(band.get("label") or "")
+        if label and (x_end - x_start) >= 94.0:
+            band_markup.append(
+                f'<text x="{x_start + 8.0:.1f}" y="{top + 14.0:.1f}" fill="#5f6b76" font-size="11">{html.escape(label)}</text>'
+            )
+
+    polyline_markup: list[str] = []
+    legend_markup: list[str] = []
+    legend_columns = 4
+    legend_spacing = 205.0
+    legend_row_height = 18.0
+    legend_count = 0
+
+    for symbol in plot_symbols:
+        series = pd.to_numeric(sampled[symbol], errors="coerce").dropna()
+        if len(series.index) < 2:
+            continue
+        points = " ".join(
+            f"{x_position(pd.Timestamp(timestamp)):.1f},{y_position(float(value)):.1f}"
+            for timestamp, value in series.items()
+        )
+        stroke_width = 4.0 if symbol == "SPY" else (3.0 if symbol in highlight_set else 1.8)
+        opacity = 0.98 if symbol == "SPY" else (0.88 if symbol in highlight_set else 0.58)
+        polyline_markup.append(
+            f'<polyline fill="none" stroke="{html.escape(color_map.get(symbol, "#7d8b99"))}" stroke-width="{stroke_width:.1f}" stroke-linejoin="round" stroke-linecap="round" opacity="{opacity:.2f}" points="{points}"></polyline>'
+        )
+        legend_row = legend_count // legend_columns
+        legend_column = legend_count % legend_columns
+        legend_x = left + legend_column * legend_spacing
+        legend_y = 22.0 + legend_row * legend_row_height
+        legend_markup.append(
+            f'<circle cx="{legend_x:.1f}" cy="{legend_y:.1f}" r="4.5" fill="{html.escape(color_map.get(symbol, "#7d8b99"))}"></circle>'
+        )
+        legend_markup.append(
+            f'<text x="{legend_x + 10.0:.1f}" y="{legend_y + 4.0:.1f}" fill="#1b2430" font-size="11">{html.escape(symbol)}</text>'
+        )
+        legend_count += 1
+
+    return "\n".join(
+        [
+            '<div class="chart-shell">',
+            f'  <svg viewBox="0 0 960 320" role="img" aria-label="{html.escape(aria_label)}">',
+            '    <rect x="0" y="0" width="960" height="320" rx="18" fill="rgba(255, 253, 248, 0.92)"></rect>',
+            f'    <text x="{left:.1f}" y="20" fill="#1b2430" font-size="18" font-family="Iowan Old Style, Georgia, serif">{html.escape(title)}</text>',
+            f'    <text x="{left:.1f}" y="40" fill="#5f6b76" font-size="12">{html.escape(subtitle)}</text>',
+            *band_markup,
+            *grid_lines,
+            f'    <line x1="{left:.1f}" y1="{height - bottom:.1f}" x2="{width - right:.1f}" y2="{height - bottom:.1f}" stroke="#b8b1a7" stroke-width="1.2"></line>',
+            f'    <line x1="{left:.1f}" y1="{top:.1f}" x2="{left:.1f}" y2="{height - bottom:.1f}" stroke="#b8b1a7" stroke-width="1.2"></line>',
+            *polyline_markup,
+            *legend_markup,
+            f'    <text x="{left:.1f}" y="{height - 10.0:.1f}" fill="#5f6b76" font-size="11">{html.escape(start_date.strftime("%Y-%m-%d"))}</text>',
+            f'    <text x="{width - right:.1f}" y="{height - 10.0:.1f}" fill="#5f6b76" font-size="11" text-anchor="end">{html.escape(end_date.strftime("%Y-%m-%d"))}</text>',
+            '  </svg>',
+            '</div>',
+        ]
+    )
+
+
+def _build_regime_episode_view(project_root: Path, sector_ml_view: dict[str, Any]) -> dict[str, Any]:
+    history_view = sector_ml_view.get("historical_rotation_view") if isinstance(sector_ml_view, dict) else None
+    sector_summary_frame = sector_ml_view.get("sector_summary_frame") if isinstance(sector_ml_view, dict) else None
+    if not isinstance(history_view, dict) or not history_view.get("available"):
+        return {"available": False, "message": "Historical rotation view unavailable."}
+    if not isinstance(sector_summary_frame, pd.DataFrame) or sector_summary_frame.empty:
+        return {"available": False, "message": "Sector summary frame unavailable."}
+
+    period_log_frame = history_view["period_log_frame"].copy().sort_values("signal_date").reset_index(drop=True)
+    if period_log_frame.empty:
+        return {"available": False, "message": "Historical rotation period log is empty."}
+
+    for column in ("signal_date", "entry_date", "exit_date"):
+        period_log_frame[column] = pd.to_datetime(period_log_frame[column])
+
+    symbol_lookup = (
+        sector_summary_frame[["symbol", "sector_label"]]
+        .drop_duplicates(subset=["symbol"])
+        .set_index("symbol")["sector_label"]
+        .to_dict()
+    )
+    sector_symbols = sorted(symbol_lookup)
+    benchmark_start = pd.Timestamp(history_view["benchmark_start"])
+    benchmark_end = pd.Timestamp(history_view["benchmark_end"])
+    price_frame = _load_price_history_frame(
+        ["SPY", *sector_symbols],
+        project_root=project_root,
+        start_date=benchmark_start,
+        end_date=benchmark_end,
+    )
+    if price_frame.empty or "SPY" not in price_frame.columns:
+        return {"available": False, "message": "Price history required for regime episodes is unavailable."}
+
+    color_map = _symbol_color_map(["SPY", *sector_symbols])
+    summary_rows: list[dict[str, Any]] = []
+    detail_rows: list[dict[str, Any]] = []
+    episodes: list[dict[str, Any]] = []
+    episode_id = 0
+    start_index = 0
+
+    while start_index < len(period_log_frame.index):
+        current_label = str(period_log_frame.loc[start_index, "regime_label"])
+        end_index = start_index + 1
+        while end_index < len(period_log_frame.index) and str(period_log_frame.loc[end_index, "regime_label"]) == current_label:
+            end_index += 1
+
+        episode_frame = period_log_frame.iloc[start_index:end_index].copy().reset_index(drop=True)
+        actionable_frame = episode_frame.iloc[1:].copy()
+        first_row = episode_frame.iloc[0]
+        activation_row = actionable_frame.iloc[0] if not actionable_frame.empty else None
+        episode_id += 1
+
+        start_signal_date = pd.Timestamp(first_row["signal_date"])
+        end_exit_date = pd.Timestamp(episode_frame["exit_date"].iloc[-1])
+        activation_signal_date = pd.Timestamp(activation_row["signal_date"]) if activation_row is not None else None
+        activation_entry_date = pd.Timestamp(activation_row["entry_date"]) if activation_row is not None else None
+
+        quality_return = _compound_total_return(actionable_frame["quality_return"]) if not actionable_frame.empty else None
+        probability_return = _compound_total_return(actionable_frame["probability_return"]) if not actionable_frame.empty else None
+        reserve_return = _compound_total_return(actionable_frame["reserve_rule_return"]) if not actionable_frame.empty else None
+        spy_strategy_return = _compound_total_return(actionable_frame["spy_return"]) if not actionable_frame.empty else None
+        reserve_peak_fraction = (
+            float(pd.to_numeric(actionable_frame["reserve_deployed_fraction"], errors="coerce").fillna(0.0).max())
+            if not actionable_frame.empty
+            else 0.0
+        )
+
+        quality_counter: Counter[str] = Counter()
+        for value in actionable_frame["quality_selection"] if not actionable_frame.empty else []:
+            quality_counter.update(_split_sector_selection(value))
+        reserve_tokens: list[str] = []
+        for value in actionable_frame["reserve_sector"] if not actionable_frame.empty else []:
+            if value is None or pd.isna(value):
+                continue
+            token = str(value).strip()
+            if token and token.lower() != "cash":
+                reserve_tokens.append(token)
+        reserve_counter: Counter[str] = Counter(reserve_tokens)
+        quality_primary_symbol = quality_counter.most_common(1)[0][0] if quality_counter else None
+        reserve_primary_symbol = reserve_counter.most_common(1)[0][0] if reserve_counter else None
+
+        detail_frame = pd.DataFrame()
+        best_detail: dict[str, Any] | None = None
+        spy_raw_return = None
+        spy_reference_return = spy_strategy_return
+        chart_frame = pd.DataFrame()
+
+        if activation_entry_date is not None:
+            spy_raw_return = _window_total_return(price_frame["SPY"], activation_entry_date, end_exit_date)
+            if spy_reference_return is None:
+                spy_reference_return = spy_raw_return
+
+            local_detail_rows: list[dict[str, Any]] = []
+            for symbol in sector_symbols:
+                if symbol not in price_frame.columns:
+                    continue
+                total_return = _window_total_return(price_frame[symbol], activation_entry_date, end_exit_date)
+                if total_return is None:
+                    continue
+                local_detail_rows.append(
+                    {
+                        "symbol": symbol,
+                        "sector_label": str(symbol_lookup.get(symbol, symbol)),
+                        "total_return": total_return,
+                    }
+                )
+
+            detail_frame = pd.DataFrame(local_detail_rows)
+            if not detail_frame.empty:
+                if spy_reference_return is None:
+                    detail_frame["return_minus_spy"] = np.nan
+                else:
+                    detail_frame["return_minus_spy"] = detail_frame["total_return"] - float(spy_reference_return)
+                detail_frame["is_quality_primary"] = detail_frame["symbol"] == quality_primary_symbol
+                detail_frame["is_reserve_primary"] = detail_frame["symbol"] == reserve_primary_symbol
+                detail_frame = detail_frame.sort_values(["total_return", "symbol"], ascending=[False, True]).reset_index(drop=True)
+                detail_frame["rank"] = np.arange(1, len(detail_frame.index) + 1)
+                best_detail = detail_frame.iloc[0].to_dict()
+
+                chart_symbols = ["SPY", *detail_frame["symbol"].head(4).tolist()]
+                for symbol in (quality_primary_symbol, reserve_primary_symbol):
+                    if symbol and symbol not in chart_symbols:
+                        chart_symbols.append(symbol)
+                chart_frame = _normalise_price_window(
+                    price_frame,
+                    chart_symbols,
+                    start_date=activation_entry_date,
+                    end_date=end_exit_date,
+                )
+                if not chart_frame.empty and "SPY" in chart_frame.columns:
+                    ordered_symbols = ["SPY", *[symbol for symbol in chart_symbols if symbol != "SPY" and symbol in chart_frame.columns]]
+                    chart_frame = chart_frame[ordered_symbols]
+
+                detail_export = detail_frame.copy()
+                detail_export.insert(0, "episode_id", episode_id)
+                detail_export.insert(1, "regime_label", current_label)
+                detail_export.insert(2, "start_signal_date", start_signal_date)
+                detail_export.insert(3, "activation_entry_date", activation_entry_date)
+                detail_export.insert(4, "end_exit_date", end_exit_date)
+                detail_rows.extend(detail_export.to_dict(orient="records"))
+
+        summary_row = {
+            "episode_id": episode_id,
+            "regime_label": current_label,
+            "start_signal_date": start_signal_date,
+            "activation_signal_date": activation_signal_date,
+            "activation_entry_date": activation_entry_date,
+            "end_exit_date": end_exit_date,
+            "window_count": int(len(episode_frame.index)),
+            "actionable_window_count": int(len(actionable_frame.index)),
+            "calendar_days": int((end_exit_date - start_signal_date).days),
+            "status": "actionable" if activation_entry_date is not None else "too_short_for_5_bar_shift",
+            "spy_total_return": spy_reference_return,
+            "spy_raw_total_return": spy_raw_return,
+            "quality_strategy_return": quality_return,
+            "probability_strategy_return": probability_return,
+            "reserve_rule_return": reserve_return,
+            "reserve_peak_fraction": reserve_peak_fraction,
+            "quality_primary_symbol": quality_primary_symbol,
+            "quality_primary_sector_label": str(symbol_lookup.get(quality_primary_symbol, quality_primary_symbol)) if quality_primary_symbol else None,
+            "reserve_primary_symbol": reserve_primary_symbol,
+            "reserve_primary_sector_label": str(symbol_lookup.get(reserve_primary_symbol, reserve_primary_symbol)) if reserve_primary_symbol else None,
+            "best_etf_symbol": best_detail.get("symbol") if isinstance(best_detail, dict) else None,
+            "best_etf_sector_label": best_detail.get("sector_label") if isinstance(best_detail, dict) else None,
+            "best_etf_total_return": float(best_detail["total_return"]) if isinstance(best_detail, dict) and best_detail.get("total_return") is not None else None,
+            "best_etf_minus_spy": (
+                float(best_detail["return_minus_spy"])
+                if isinstance(best_detail, dict) and best_detail.get("return_minus_spy") is not None and not pd.isna(best_detail["return_minus_spy"])
+                else None
+            ),
+            "quality_minus_spy": (
+                float(quality_return - spy_reference_return)
+                if quality_return is not None and spy_reference_return is not None
+                else None
+            ),
+            "reserve_minus_spy": (
+                float(reserve_return - spy_reference_return)
+                if reserve_return is not None and spy_reference_return is not None
+                else None
+            ),
+        }
+        summary_rows.append(summary_row)
+        episodes.append(
+            {
+                **summary_row,
+                "chart_frame": chart_frame,
+                "top_return_frame": detail_frame.head(5).copy() if not detail_frame.empty else pd.DataFrame(),
+            }
+        )
+
+        start_index = end_index
+
+    summary_frame = pd.DataFrame(summary_rows)
+    detail_frame = pd.DataFrame(detail_rows)
+    overview_frame = _normalise_price_window(
+        price_frame,
+        ["SPY", *sector_symbols],
+        start_date=benchmark_start,
+        end_date=benchmark_end,
+    )
+    overview_bands = [
+        {
+            "start_date": row["start_signal_date"],
+            "end_date": row["end_exit_date"],
+            "label": row["regime_label"],
+            "color": REGIME_COLORS.get(str(row["regime_label"]), "#e9c46a"),
+        }
+        for row in summary_rows
+    ]
+
+    return {
+        "available": True,
+        "activation_note": (
+            "Episodes are contiguous 5-bar regime windows from the walk-forward history. The ETF-versus-SPY comparison starts only after one full 5-bar confirmation window, then runs until the regime episode ends. The strategy columns keep the report's existing next-bar execution and reserve-deployment rules."
+        ),
+        "summary_frame": summary_frame,
+        "detail_frame": detail_frame,
+        "episodes": episodes,
+        "overview_frame": overview_frame,
+        "overview_bands": overview_bands,
+        "color_map": color_map,
+    }
+
+
+def _render_regime_episode_section(regime_episode_view: dict[str, Any]) -> str:
+    if not isinstance(regime_episode_view, dict) or not regime_episode_view.get("available"):
+        return ""
+
+    summary_frame = regime_episode_view.get("summary_frame")
+    if not isinstance(summary_frame, pd.DataFrame) or summary_frame.empty:
+        return ""
+
+    actionable_summary = summary_frame.loc[summary_frame["actionable_window_count"] > 0].copy()
+    cards: list[str] = []
+    if not actionable_summary.empty:
+        best_raw = actionable_summary.sort_values("best_etf_minus_spy", ascending=False).iloc[0]
+        best_quality = actionable_summary.sort_values("quality_minus_spy", ascending=False).iloc[0]
+        best_reserve = actionable_summary.sort_values("reserve_minus_spy", ascending=False).iloc[0]
+        reserve_triggered = actionable_summary.loc[actionable_summary["reserve_peak_fraction"] > 0.0]
+        reserve_focus = reserve_triggered.sort_values("reserve_peak_fraction", ascending=False).iloc[0] if not reserve_triggered.empty else None
+
+        cards.extend(
+            [
+                _render_stat_card(
+                    title=f"Best raw ETF lead: {best_raw.best_etf_symbol}",
+                    body=(
+                        f"Episode {int(best_raw.episode_id)} in {best_raw.regime_label} finished with {best_raw.best_etf_symbol} at {_format_return_pct(best_raw.best_etf_total_return)} versus SPY at {_format_return_pct(best_raw.spy_total_return)}, a lead of {_format_return_pct(best_raw.best_etf_minus_spy)}."
+                    ),
+                    tag="Raw ETF winner",
+                ),
+                _render_stat_card(
+                    title=f"Best quality episode: {best_quality.regime_label}",
+                    body=(
+                        f"Quality rotation compounded {_format_return_pct(best_quality.quality_strategy_return)} in episode {int(best_quality.episode_id)}, beating SPY by {_format_return_pct(best_quality.quality_minus_spy)} after the one-cadence wait."
+                    ),
+                    tag="Quality sleeve",
+                ),
+                _render_stat_card(
+                    title=f"Best reserve episode: {best_reserve.regime_label}",
+                    body=(
+                        f"The reserve rule returned {_format_return_pct(best_reserve.reserve_rule_return)} in episode {int(best_reserve.episode_id)}, a spread of {_format_return_pct(best_reserve.reserve_minus_spy)} over SPY while retaining the 40% cash sleeve logic."
+                    ),
+                    tag="Reserve sleeve",
+                ),
+            ]
+        )
+        if reserve_focus is not None:
+            cards.append(
+                _render_stat_card(
+                    title=f"Largest reserve deployment: {reserve_focus.regime_label}",
+                    body=(
+                        f"Episode {int(reserve_focus.episode_id)} pushed the reserve sleeve to {_format_weight_pct(reserve_focus.reserve_peak_fraction)} of the reserve bucket. The associated reserve sector was {reserve_focus.reserve_primary_symbol or 'Cash'}."
+                    ),
+                    tag="Cash mobilization",
+                )
+            )
+        else:
+            cards.append(
+                _render_stat_card(
+                    title="No reserve trigger inside sampled episodes",
+                    body="Across the actionable regime episodes, SPY drawdowns did not persist long enough to activate a reserve tier beyond cash retention.",
+                    tag="Cash mobilization",
+                )
+            )
+
+    overview_chart = _render_regime_price_chart(
+        regime_episode_view["overview_frame"],
+        title="SPY vs Sector ETFs With Regime Bands",
+        subtitle="Normalized to 1.0 at the start of the 2006+ historical benchmark. Background bands are contiguous regime episodes from the walk-forward signal log.",
+        aria_label="SPY versus sector ETFs with regime overlays",
+        color_map=regime_episode_view["color_map"],
+        background_bands=regime_episode_view["overview_bands"],
+        max_points=360,
+    )
+
+    summary_rows: list[tuple[str, ...]] = []
+    for row in summary_frame.itertuples(index=False):
+        best_label = (
+            f"{row.best_etf_sector_label} ({row.best_etf_symbol})"
+            if getattr(row, "best_etf_symbol", None)
+            else "n/a"
+        )
+        summary_rows.append(
+            (
+                str(int(row.episode_id)),
+                str(row.regime_label),
+                pd.Timestamp(row.start_signal_date).strftime("%Y-%m-%d"),
+                pd.Timestamp(row.activation_entry_date).strftime("%Y-%m-%d") if not pd.isna(row.activation_entry_date) else "n/a",
+                pd.Timestamp(row.end_exit_date).strftime("%Y-%m-%d"),
+                str(int(row.window_count)),
+                best_label,
+                _format_return_pct(row.best_etf_total_return),
+                _format_return_pct(row.spy_total_return),
+                _format_return_pct(row.best_etf_minus_spy),
+                _format_return_pct(row.quality_strategy_return),
+                _format_return_pct(row.reserve_rule_return),
+                _format_weight_pct(row.reserve_peak_fraction),
+                str(row.status).replace("_", " "),
+            )
+        )
+
+    episode_markup: list[str] = []
+    for episode in regime_episode_view.get("episodes") or []:
+        chart_frame = episode.get("chart_frame")
+        top_return_frame = episode.get("top_return_frame")
+        chart_html = ""
+        if isinstance(chart_frame, pd.DataFrame) and not chart_frame.empty:
+            highlight_symbols = {
+                symbol
+                for symbol in (
+                    episode.get("best_etf_symbol"),
+                    episode.get("quality_primary_symbol"),
+                    episode.get("reserve_primary_symbol"),
+                )
+                if isinstance(symbol, str) and symbol
+            }
+            chart_html = _render_regime_price_chart(
+                chart_frame,
+                title=f"Episode {int(episode['episode_id'])}: {episode['regime_label']}",
+                subtitle="Normalized from the first actionable entry after one full 5-bar confirmation window.",
+                aria_label=f"Episode {int(episode['episode_id'])} SPY versus ETF chart",
+                color_map=regime_episode_view["color_map"],
+                background_bands=[
+                    {
+                        "start_date": chart_frame.index.min(),
+                        "end_date": chart_frame.index.max(),
+                        "label": str(episode["regime_label"]),
+                        "color": REGIME_COLORS.get(str(episode["regime_label"]), "#e9c46a"),
+                    }
+                ],
+                highlight_symbols=highlight_symbols,
+                max_points=120,
+            )
+
+        note_parts = []
+        if episode.get("best_etf_symbol"):
+            note_parts.append(
+                f"Best raw ETF: {episode['best_etf_symbol']} at {_format_return_pct(episode.get('best_etf_total_return'))}, {_format_return_pct(episode.get('best_etf_minus_spy'))} versus SPY"
+            )
+        if episode.get("quality_primary_symbol"):
+            note_parts.append(
+                f"Most-used quality ETF: {episode['quality_primary_symbol']}"
+            )
+        if episode.get("reserve_primary_symbol"):
+            note_parts.append(
+                f"Reserve ETF: {episode['reserve_primary_symbol']}"
+            )
+        note_parts.append(f"Quality rotation: {_format_return_pct(episode.get('quality_strategy_return'))}")
+        note_parts.append(f"Reserve rule: {_format_return_pct(episode.get('reserve_rule_return'))}")
+        note_parts.append(f"Peak reserve deployed: {_format_weight_pct(episode.get('reserve_peak_fraction'))}")
+        subtitle = ". ".join(note_parts) + "."
+
+        meta_items = [
+            f"Episode {int(episode['episode_id'])}",
+            str(episode["regime_label"]),
+            f"Start {pd.Timestamp(episode['start_signal_date']).strftime('%Y-%m-%d')}",
+            (
+                f"Activated {pd.Timestamp(episode['activation_entry_date']).strftime('%Y-%m-%d')}"
+                if episode.get("activation_entry_date") is not None and not pd.isna(episode.get("activation_entry_date"))
+                else "No actionable 5-bar shift"
+            ),
+            f"End {pd.Timestamp(episode['end_exit_date']).strftime('%Y-%m-%d')}",
+            f"{int(episode['window_count'])} windows",
+        ]
+
+        if isinstance(top_return_frame, pd.DataFrame) and not top_return_frame.empty:
+            top_rows: list[tuple[str, ...]] = []
+            for row in top_return_frame.itertuples(index=False):
+                role = []
+                if bool(row.is_quality_primary):
+                    role.append("Quality")
+                if bool(row.is_reserve_primary):
+                    role.append("Reserve")
+                top_rows.append(
+                    (
+                        str(int(row.rank)),
+                        f"{row.sector_label} ({row.symbol})",
+                        _format_return_pct(row.total_return),
+                        _format_return_pct(row.return_minus_spy),
+                        ", ".join(role) if role else "",
+                    )
+                )
+            top_table = _render_data_table(
+                headers=(
+                    "Rank",
+                    "ETF",
+                    "Total Return",
+                    "Minus SPY",
+                    "Role",
+                ),
+                rows=top_rows,
+            )
+        else:
+            top_table = '<p class="episode-subtitle">This regime lasted only one 5-bar window, so the delayed sector-rotation rule never activated before the next regime change.</p>'
+
+        episode_markup.append(
+            "\n".join(
+                [
+                    '<article class="episode-card">',
+                    f'  <div class="episode-meta">{"".join(f"<span>{html.escape(item)}</span>" for item in meta_items)}</div>',
+                    f'  <h3>{html.escape(str(episode["regime_label"]))}</h3>',
+                    f'  <p class="episode-subtitle">{html.escape(subtitle)}</p>',
+                    chart_html or '<p class="episode-subtitle">No ETF price path was available for this episode window.</p>',
+                    top_table,
+                    '</article>',
+                ]
+            )
+        )
+
+    return "\n".join(
+        [
+            '<section class="section">',
+            '  <p class="eyebrow">Regime Episodes</p>',
+            '  <h2>SPY Versus ETFs After A Regime Shift</h2>',
+            f'  <p>{html.escape(str(regime_episode_view.get("activation_note") or ""))}</p>',
+            '  <div class="card-grid">',
+            "\n".join(cards),
+            '  </div>',
+            overview_chart,
+            _render_data_table(
+                headers=(
+                    'Episode',
+                    'Regime',
+                    'Signal Start',
+                    'Action Start',
+                    'Episode End',
+                    'Windows',
+                    'Best ETF',
+                    'ETF Return',
+                    'SPY',
+                    'ETF - SPY',
+                    'Quality',
+                    'Reserve',
+                    'Peak Reserve',
+                    'Status',
+                ),
+                rows=summary_rows,
+            ),
+            '  <div class="episode-grid">',
+            "\n".join(episode_markup),
+            '  </div>',
+            '</section>',
+        ]
+    )
+
+
 def _render_holdout_year_regime_section(sector_ml_view: dict[str, Any]) -> str:
     rotation_view = sector_ml_view.get("holdout_rotation_view") if isinstance(sector_ml_view, dict) else None
     return _render_rotation_year_regime_section(
@@ -3588,6 +4290,7 @@ def _render_html(
     sector_ml_view: dict[str, Any],
     live_ml_view: dict[str, Any],
     sector_diagnostics_view: dict[str, Any],
+    regime_episode_view: dict[str, Any],
 ) -> str:
     return f"""<!DOCTYPE html>
 <html lang=\"en\">
@@ -3697,6 +4400,26 @@ def _render_html(
     }}
     .data-table tr:last-child td {{ border-bottom: none; }}
         .chart-shell {{ margin-top: 18px; overflow-x: auto; }}
+        .episode-grid {{ display: grid; gap: 20px; margin-top: 18px; }}
+        .episode-card {{
+            background: rgba(255, 253, 248, 0.88);
+            border: 1px solid rgba(213, 207, 197, 0.88);
+            border-radius: 22px;
+            padding: 22px;
+            box-shadow: 0 14px 34px rgba(27, 36, 48, 0.06);
+        }}
+        .episode-meta {{ display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }}
+        .episode-meta span {{
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(244, 237, 225, 0.88);
+            color: var(--muted);
+            border: 1px solid rgba(122, 62, 43, 0.10);
+            font-size: 0.78rem;
+        }}
+        .episode-subtitle {{ margin: 0 0 14px; color: var(--muted); }}
     @media (max-width: 720px) {{
       .page {{ padding: 24px 16px 56px; }}
       .hero, .section {{ padding: 22px; }}
@@ -3718,6 +4441,7 @@ def _render_html(
         {_render_rebalance_sensitivity_section(sector_ml_view=sector_ml_view)}
         {_render_holdout_year_regime_section(sector_ml_view=sector_ml_view)}
         {_render_history_year_regime_section(sector_ml_view=sector_ml_view)}
+        {_render_regime_episode_section(regime_episode_view=regime_episode_view)}
         {_render_leveraged_regime_vs_spy_section(sector_ml_view=sector_ml_view)}
         {_render_regime_ranking_section(sector_ml_view=sector_ml_view)}
         {_render_history_drawdown_section(sector_ml_view=sector_ml_view)}
@@ -3746,6 +4470,7 @@ def generate_sector_rotation_report(
     sector_rotation_view = _build_sector_rotation_view(project_root=root, regime_overview=regime_overview)
     sector_ml_view = build_sector_ml_view(project_root=root)
     sector_diagnostics_view = _build_sector_diagnostics_view(project_root=root, sector_ml_view=sector_ml_view)
+    regime_episode_view = _build_regime_episode_view(project_root=root, sector_ml_view=sector_ml_view)
     live_ml_view = _build_live_ml_allocation_view(
         sector_rotation_view=sector_rotation_view,
         sector_ml_view=sector_ml_view,
@@ -3780,6 +4505,8 @@ def generate_sector_rotation_report(
     ml_dip_summary_path = report_dir / "sector_ml_dip_summary.csv"
     ml_strategy_detail_path = report_dir / "sector_ml_strategy_detail.csv"
     ml_strategy_usage_path = report_dir / "sector_ml_strategy_sector_usage.csv"
+    ml_regime_episode_summary_path = report_dir / "sector_ml_regime_episode_summary.csv"
+    ml_regime_episode_detail_path = report_dir / "sector_ml_regime_episode_detail.csv"
     executive_summary_path = report_dir / "executive_summary.html"
     executive_summary_pdf_path = report_dir / "executive_summary.pdf"
     rotation_playbook_path = report_dir / "rotation_playbook.html"
@@ -3884,6 +4611,20 @@ def generate_sector_rotation_report(
     else:
         summary_payload["ml"]["message"] = str(sector_ml_view.get("message") or "Sector ML study unavailable.")
 
+    if regime_episode_view.get("available"):
+        regime_episode_view["summary_frame"].to_csv(ml_regime_episode_summary_path, index=False)
+        regime_episode_view["detail_frame"].to_csv(ml_regime_episode_detail_path, index=False)
+        summary_payload["ml"]["regime_episodes"] = {
+            "available": True,
+            "episode_count": int(len(regime_episode_view["summary_frame"].index)),
+            "activation_note": regime_episode_view.get("activation_note"),
+        }
+    else:
+        summary_payload["ml"]["regime_episodes"] = {
+            "available": False,
+            "message": str(regime_episode_view.get("message") or "Regime episode view unavailable."),
+        }
+
     if live_ml_view.get("available"):
         live_ml_view["allocation_frame"].to_csv(ml_live_allocation_path, index=False)
         summary_payload["ml"]["live_allocation"] = {
@@ -3912,6 +4653,7 @@ def generate_sector_rotation_report(
         sector_ml_view=sector_ml_view,
         live_ml_view=live_ml_view,
         sector_diagnostics_view=sector_diagnostics_view,
+        regime_episode_view=regime_episode_view,
     )
     executive_summary_html = _render_executive_summary_html(
         generated_at=generated_at,
@@ -3964,6 +4706,8 @@ def generate_sector_rotation_report(
         "ml_dip_summary": str(ml_dip_summary_path) if ml_dip_summary_path.exists() else None,
         "ml_strategy_detail": str(ml_strategy_detail_path) if ml_strategy_detail_path.exists() else None,
         "ml_strategy_usage": str(ml_strategy_usage_path) if ml_strategy_usage_path.exists() else None,
+        "ml_regime_episode_summary": str(ml_regime_episode_summary_path) if ml_regime_episode_summary_path.exists() else None,
+        "ml_regime_episode_detail": str(ml_regime_episode_detail_path) if ml_regime_episode_detail_path.exists() else None,
     }
 
 
