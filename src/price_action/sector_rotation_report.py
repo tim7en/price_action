@@ -34,7 +34,9 @@ from .macro_report import (
     _render_data_table,
     load_model_macro_frame,
 )
-from .sector_ml import build_sector_ml_view
+from .sector_ml import RESERVE_STRATEGY_LABEL, build_sector_ml_view
+
+RESERVE_LEVERAGE_LABEL_PREFIX = f"{RESERVE_STRATEGY_LABEL} x"
 
 
 def _format_decimal(value: float | int | None, digits: int = 2) -> str:
@@ -261,7 +263,7 @@ def _build_sector_diagnostics_view(
     base_strategy_specs = {
         "ML Probability Rotation": {"selection_column": "probability_selection", "return_column": "probability_return"},
         "ML Quality-Weighted Rotation": {"selection_column": "quality_selection", "return_column": "quality_return"},
-        "Sector Reserve Cash Rule": {"selection_column": "reserve_sector", "return_column": "reserve_rule_return"},
+        RESERVE_STRATEGY_LABEL: {"selection_column": "reserve_asset", "return_column": "reserve_rule_return"},
     }
     rotation_profile_rows: list[dict[str, Any]] = []
     usage_event_rows: list[dict[str, Any]] = []
@@ -327,8 +329,8 @@ def _build_sector_diagnostics_view(
             return rotation_profile_lookup.get("ML Probability Rotation", {})
         if label.startswith("ML Quality-Weighted Rotation"):
             return rotation_profile_lookup.get("ML Quality-Weighted Rotation", {})
-        if label == "Sector Reserve Cash Rule" or label.startswith("Reserve Cash Rule x"):
-            return rotation_profile_lookup.get("Sector Reserve Cash Rule", {})
+        if label == RESERVE_STRATEGY_LABEL or label.startswith(RESERVE_LEVERAGE_LABEL_PREFIX):
+            return rotation_profile_lookup.get(RESERVE_STRATEGY_LABEL, {})
         if label.startswith("SPY Buy And Hold"):
             return {
                 "rotation_count": 0,
@@ -495,21 +497,21 @@ def _render_rebalance_tradeoff_chart(sensitivity_frame: pd.DataFrame) -> str:
         sensitivity_frame["strategy_label"].astype(str).isin(
             [
                 "ML Quality-Weighted Rotation",
-                "Sector Reserve Cash Rule",
+                RESERVE_STRATEGY_LABEL,
                 "SPY Buy And Hold",
             ]
         )
-        | sensitivity_frame["strategy_label"].astype(str).str.startswith("Reserve Cash Rule x")
+        | sensitivity_frame["strategy_label"].astype(str).str.startswith(RESERVE_LEVERAGE_LABEL_PREFIX)
     ].copy()
     if selected_frame.empty:
         return ""
 
     colors = {
         "ML Quality-Weighted Rotation": "#7a3e2b",
-        "Sector Reserve Cash Rule": "#2d6a4f",
+        RESERVE_STRATEGY_LABEL: "#2d6a4f",
         "SPY Buy And Hold": "#7d8b99",
     }
-    reserve_leverage_rows = selected_frame.loc[selected_frame["strategy_label"].astype(str).str.startswith("Reserve Cash Rule x")]
+    reserve_leverage_rows = selected_frame.loc[selected_frame["strategy_label"].astype(str).str.startswith(RESERVE_LEVERAGE_LABEL_PREFIX)]
     reserve_leverage_label = str(reserve_leverage_rows["strategy_label"].iloc[0]) if not reserve_leverage_rows.empty else None
     if reserve_leverage_label is not None:
         colors[reserve_leverage_label] = "#9c6644"
@@ -597,9 +599,9 @@ def _render_rebalance_sensitivity_section(sector_ml_view: dict[str, Any]) -> str
         return ""
 
     quality_rows = sensitivity_frame.loc[sensitivity_frame["strategy_label"] == "ML Quality-Weighted Rotation"].copy()
-    reserve_rows = sensitivity_frame.loc[sensitivity_frame["strategy_label"] == "Sector Reserve Cash Rule"].copy()
+    reserve_rows = sensitivity_frame.loc[sensitivity_frame["strategy_label"] == RESERVE_STRATEGY_LABEL].copy()
     reserve_leverage_rows = sensitivity_frame.loc[
-        sensitivity_frame["strategy_label"].astype(str).str.startswith("Reserve Cash Rule x")
+        sensitivity_frame["strategy_label"].astype(str).str.startswith(RESERVE_LEVERAGE_LABEL_PREFIX)
     ].copy()
     spy_rows = sensitivity_frame.loc[sensitivity_frame["strategy_label"] == "SPY Buy And Hold"].copy()
 
@@ -1124,8 +1126,8 @@ def _render_rotation_backtest_section(
 
     summary_frame = rotation_view["strategy_summary_frame"].copy()
     quality_row = summary_frame.loc[summary_frame["strategy_label"] == "ML Quality-Weighted Rotation"].iloc[0]
-    reserve_row = summary_frame.loc[summary_frame["strategy_label"] == "Sector Reserve Cash Rule"].iloc[0]
-    reserve_leverage_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith("Reserve Cash Rule x")].iloc[0]
+    reserve_row = summary_frame.loc[summary_frame["strategy_label"] == RESERVE_STRATEGY_LABEL].iloc[0]
+    reserve_leverage_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith(RESERVE_LEVERAGE_LABEL_PREFIX)].iloc[0]
     spy_row = summary_frame.loc[summary_frame["strategy_label"] == "SPY Buy And Hold"].iloc[0]
     quality_x3_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith("ML Quality-Weighted Rotation x")].iloc[0]
     spy_x3_row = summary_frame.loc[summary_frame["strategy_label"].astype(str).str.startswith("SPY Buy And Hold x")].iloc[0]
@@ -1165,9 +1167,9 @@ def _render_rotation_backtest_section(
             tag="Benchmark",
         ),
         _render_stat_card(
-            title="Sector Reserve Cash Rule",
+            title=RESERVE_STRATEGY_LABEL,
             body=(
-                f"CAGR {_format_return_pct(reserve_row.cagr)}, Sharpe {_format_decimal(reserve_row.sharpe)}, max drawdown {_format_return_pct(reserve_row.max_drawdown)}, turnover {_format_turnover(reserve_row.turnover_per_year)}."
+                f"CAGR {_format_return_pct(reserve_row.cagr)}, Sharpe {_format_decimal(reserve_row.sharpe)}, max drawdown {_format_return_pct(reserve_row.max_drawdown)}, turnover {_format_turnover(reserve_row.turnover_per_year)}. The 60% core stays in the quality basket while the reserve sleeve only buys SPY during drawdowns."
             ),
             tag="Reserve rule",
         ),
@@ -1265,7 +1267,7 @@ def _render_holdout_backtest_section(sector_ml_view: dict[str, Any]) -> str:
     return _render_rotation_backtest_section(
         rotation_view,
         eyebrow="Holdout Benchmark",
-        title="Strict Holdout: ML Rotation, Reserve Cash Rule, And SPY",
+        title="Strict Holdout: ML Rotation, SPY Reserve Sleeve, And SPY",
     )
 
 
@@ -1274,7 +1276,7 @@ def _render_history_backtest_section(sector_ml_view: dict[str, Any]) -> str:
     return _render_rotation_backtest_section(
         rotation_view,
         eyebrow="Walk-Forward History",
-        title="Crisis-Inclusive History: ML Rotation, Reserve Cash Rule, And SPY",
+        title="Crisis-Inclusive History: ML Rotation, SPY Reserve Sleeve, And SPY",
     )
 
 
@@ -1302,7 +1304,7 @@ def _render_rotation_period_log_section(
                 _format_return_pct(row.spy_drawdown_signal),
                 str(row.regime_label),
                 str(row.quality_selection),
-                str(row.reserve_sector),
+                str(row.reserve_asset),
                 _format_weight_pct(row.reserve_deployed_fraction),
                 _format_weight_pct(row.reserve_cash_weight),
                 _format_return_pct(row.quality_return),
@@ -1330,7 +1332,7 @@ def _render_rotation_period_log_section(
                     'SPY Drawdown',
                     'Regime',
                     'Quality Selection',
-                    'Reserve Sector',
+                    'Reserve Asset',
                     'Reserve Deployed',
                     'Reserve Cash',
                     'Quality Return',
@@ -1536,7 +1538,7 @@ def _render_strategy_rotation_detail_section(sector_diagnostics_view: dict[str, 
                     'Avg Sectors Held',
                     'Cash Windows',
                     'Most Common Basket',
-                    'Most Used Sector',
+                    'Most Used Asset',
                 ),
                 rows=rows,
             ),
@@ -1572,12 +1574,12 @@ def _render_strategy_sector_usage_section(sector_diagnostics_view: dict[str, Any
         [
             '<section class="section">',
             '  <p class="eyebrow">Constituent Usage</p>',
-            '  <h2>Which Sectors The Rotation Strategies Actually Used</h2>',
-            '  <p>For the quality and probability strategies, the return columns below are basket returns for windows where the sector was part of the selected basket, not isolated single-sector returns. Use the dip-study section above for isolated per-sector forward returns.</p>',
+            '  <h2>Which Assets The Rotation Strategies Actually Used</h2>',
+            '  <p>For the quality and probability strategies, the return columns below are basket returns for windows where the sector was part of the selected basket, not isolated single-sector returns. For the reserve strategy, the asset is SPY whenever the reserve sleeve is mobilized. Use the dip-study section above for isolated per-sector forward returns.</p>',
             _render_data_table(
                 headers=(
                     'Strategy',
-                    'Sector',
+                    'Asset',
                     'Selected Windows',
                     'Share Of Active Windows',
                     'Avg Strategy Return',
@@ -1689,11 +1691,11 @@ def _build_regime_vs_spy_frame(rotation_view: dict[str, Any] | None, *, leverage
     regime_frame = rotation_view["regime_summary_frame"].copy()
     if leveraged:
         quality_frame = _filter_strategy_rows(regime_frame, "ML Quality-Weighted Rotation x", startswith=True)
-        reserve_frame = _filter_strategy_rows(regime_frame, "Reserve Cash Rule x", startswith=True)
+        reserve_frame = _filter_strategy_rows(regime_frame, RESERVE_LEVERAGE_LABEL_PREFIX, startswith=True)
         spy_frame = _filter_strategy_rows(regime_frame, "SPY Buy And Hold x", startswith=True)
     else:
         quality_frame = _filter_strategy_rows(regime_frame, "ML Quality-Weighted Rotation")
-        reserve_frame = _filter_strategy_rows(regime_frame, "Sector Reserve Cash Rule")
+        reserve_frame = _filter_strategy_rows(regime_frame, RESERVE_STRATEGY_LABEL)
         spy_frame = _filter_strategy_rows(regime_frame, "SPY Buy And Hold")
 
     if quality_frame.empty or reserve_frame.empty or spy_frame.empty:
@@ -1879,12 +1881,13 @@ def _render_regime_ranking_section(sector_ml_view: dict[str, Any]) -> str:
     if ranking_frame.empty:
         return ""
 
+    reserve_leverage_label = str(rotation_view.get("reserve_leverage_label") or RESERVE_LEVERAGE_LABEL_PREFIX)
     strategy_list = [
         "ML Quality-Weighted Rotation",
-        "Sector Reserve Cash Rule",
+        RESERVE_STRATEGY_LABEL,
         "SPY Buy And Hold",
         "ML Quality-Weighted Rotation x3 @ 6%",
-        "Reserve Cash Rule x3 Drawdown Sleeve @ 6%",
+        reserve_leverage_label,
         "SPY Buy And Hold x3 @ 6%",
     ]
     cards: list[str] = []
@@ -2254,7 +2257,8 @@ def _build_regime_episode_view(project_root: Path, sector_ml_view: dict[str, Any
         for value in actionable_frame["quality_selection"] if not actionable_frame.empty else []:
             quality_counter.update(_split_sector_selection(value))
         reserve_tokens: list[str] = []
-        for value in actionable_frame["reserve_sector"] if not actionable_frame.empty else []:
+        reserve_series = actionable_frame["reserve_asset"] if "reserve_asset" in actionable_frame.columns else actionable_frame.get("reserve_sector", pd.Series(dtype="object"))
+        for value in reserve_series if not actionable_frame.empty else []:
             if value is None or pd.isna(value):
                 continue
             token = str(value).strip()
@@ -2396,7 +2400,7 @@ def _build_regime_episode_view(project_root: Path, sector_ml_view: dict[str, Any
     return {
         "available": True,
         "activation_note": (
-            "Episodes are contiguous 5-bar regime windows from the walk-forward history. The ETF-versus-SPY comparison starts only after one full 5-bar confirmation window, then runs until the regime episode ends. The strategy columns keep the report's existing next-bar execution and reserve-deployment rules."
+            "Episodes are contiguous 5-bar regime windows from the walk-forward history. The ETF-versus-SPY comparison starts only after one full 5-bar confirmation window, then runs until the regime episode ends. The strategy columns keep the report's existing next-bar execution, with the reserve sleeve deploying into SPY during drawdowns and rotating back to cash at a fresh SPY high."
         ),
         "summary_frame": summary_frame,
         "detail_frame": detail_frame,
@@ -2454,7 +2458,7 @@ def _render_regime_episode_section(regime_episode_view: dict[str, Any]) -> str:
                 _render_stat_card(
                     title=f"Largest reserve deployment: {reserve_focus.regime_label}",
                     body=(
-                        f"Episode {int(reserve_focus.episode_id)} pushed the reserve sleeve to {_format_weight_pct(reserve_focus.reserve_peak_fraction)} of the reserve bucket. The associated reserve sector was {reserve_focus.reserve_primary_symbol or 'Cash'}."
+                        f"Episode {int(reserve_focus.episode_id)} pushed the reserve sleeve to {_format_weight_pct(reserve_focus.reserve_peak_fraction)} of the reserve bucket. The associated reserve asset was {reserve_focus.reserve_primary_symbol or 'Cash'}."
                     ),
                     tag="Cash mobilization",
                 )
@@ -2548,7 +2552,7 @@ def _render_regime_episode_section(regime_episode_view: dict[str, Any]) -> str:
             )
         if episode.get("reserve_primary_symbol"):
             note_parts.append(
-                f"Reserve ETF: {episode['reserve_primary_symbol']}"
+                f"Reserve asset: {episode['reserve_primary_symbol']}"
             )
         note_parts.append(f"Quality rotation: {_format_return_pct(episode.get('quality_strategy_return'))}")
         note_parts.append(f"Reserve rule: {_format_return_pct(episode.get('reserve_rule_return'))}")
@@ -2991,9 +2995,9 @@ def _build_executive_summary_view(
 
     history_frame = history_view["strategy_summary_frame"].copy()
     holdout_frame = holdout_view["strategy_summary_frame"].copy()
-    reserve_leverage_label = str(history_view.get("reserve_leverage_label") or "Reserve Cash Rule x")
+    reserve_leverage_label = str(history_view.get("reserve_leverage_label") or RESERVE_LEVERAGE_LABEL_PREFIX)
     selected_specs = [
-        ("Sector Reserve Cash Rule", "Reserve Rule"),
+        (RESERVE_STRATEGY_LABEL, "Quality + SPY Reserve"),
         ("ML Quality-Weighted Rotation", "Quality Rotation"),
         ("SPY Buy And Hold", "SPY"),
         (reserve_leverage_label, "Reserve x3"),
@@ -4007,7 +4011,7 @@ def _render_rotation_playbook_html(
                 ),
                 (
                         "SPY returns to a fresh high",
-                        "Rotate the deployed reserve sleeve back to cash.",
+                    "Rotate the deployed SPY reserve sleeve back to cash.",
                         "The reserve bucket rebuilds only after the drawdown is fully repaired.",
                 ),
         ]
@@ -4041,7 +4045,7 @@ def _render_rotation_playbook_html(
                 (
                         "Step 6",
                         "Use reserve deployment only in drawdowns",
-                        "The reserve rule is separate from the sector basket. It reacts only to visible SPY drawdowns and moves back to cash after a new high.",
+                        "The reserve rule is separate from the sector basket. It reacts only to visible SPY drawdowns, buys SPY with the reserve sleeve, and moves back to cash after a new high.",
                 ),
         ]
 
@@ -4261,7 +4265,7 @@ def _render_rotation_playbook_html(
                 <div>
                     <p class=\"eyebrow\">Reserve Sleeve</p>
                     <h2>Drawdown Deployment Rules</h2>
-                    <p>This is separate from the rotating sector basket. The reserve sleeve is a cash buffer that only becomes active when SPY is already in drawdown on the signal date.</p>
+                    <p>This is separate from the rotating sector basket. The reserve sleeve is a cash buffer that only becomes active when SPY is already in drawdown on the signal date, then stays in SPY until SPY gets back to a fresh high.</p>
                     {_render_data_table(headers=("Trigger", "Action", "Comment"), rows=reserve_rows)}
                 </div>
                 <div>

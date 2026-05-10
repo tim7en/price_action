@@ -75,6 +75,9 @@ CRISIS_REGIMES: frozenset[str] = frozenset(
     }
 )
 
+RESERVE_STRATEGY_LABEL = "Quality Rotation + SPY Reserve Sleeve"
+RESERVE_SLEEVE_SYMBOL = "SPY"
+
 
 def _safe_float(value: Any) -> float | None:
     if value is None or pd.isna(value):
@@ -512,28 +515,24 @@ def _build_rotation_backtest_view(
         )
 
         quality_selected = signal_slice.sort_values("quality_weighted_score", ascending=False)
-        reserve_top_symbol = str(quality_selected["symbol"].iloc[0]) if not quality_selected.empty else None
         reserve_target_fraction = _reserve_target_fraction(
             current_drawdown=spy_drawdown_signal,
             current_fraction=reserve_deployed_fraction,
             config=config,
         )
-        if reserve_top_symbol is None and previous_weights["reserve"] and reserve_target_fraction > 0.0:
-            reserve_top_symbol = next(iter(previous_weights["reserve"].keys()))
-        if reserve_top_symbol is None:
-            reserve_target_fraction = 0.0 if reserve_deployed_fraction == 0.0 else reserve_deployed_fraction
-        reserve_invested_weight = reserve_cash_weight * reserve_target_fraction if reserve_top_symbol else 0.0
-        reserve_weights = {reserve_top_symbol: reserve_invested_weight} if reserve_invested_weight > 0.0 and reserve_top_symbol else {}
+        reserve_asset_symbol = RESERVE_SLEEVE_SYMBOL if reserve_target_fraction > 0.0 else None
+        reserve_invested_weight = reserve_cash_weight * reserve_target_fraction if reserve_asset_symbol else 0.0
+        reserve_weights = {reserve_asset_symbol: reserve_invested_weight} if reserve_invested_weight > 0.0 and reserve_asset_symbol else {}
         reserve_turnover, reserve_cost = _turnover_cost(previous_weights["reserve"], reserve_weights, cost_rate)
-        reserve_sector_return = (
-            reserve_invested_weight * float(period_returns.get(reserve_top_symbol, 0.0))
-            if reserve_top_symbol is not None and reserve_invested_weight > 0.0
+        reserve_spy_return = (
+            reserve_invested_weight * spy_gross_return
+            if reserve_asset_symbol is not None and reserve_invested_weight > 0.0
             else 0.0
         )
         reserve_leverage_notional_weight = reserve_invested_weight * leverage_multiple
-        reserve_leverage_sector_return = (
-            reserve_leverage_notional_weight * float(period_returns.get(reserve_top_symbol, 0.0))
-            if reserve_top_symbol is not None and reserve_leverage_notional_weight > 0.0
+        reserve_leverage_spy_return = (
+            reserve_leverage_notional_weight * spy_gross_return
+            if reserve_asset_symbol is not None and reserve_leverage_notional_weight > 0.0
             else 0.0
         )
         reserve_leverage_turnover = reserve_turnover * leverage_multiple
@@ -548,10 +547,10 @@ def _build_rotation_backtest_view(
         core_component = core_sector_weight * quality_return
         if quality_selected.empty:
             core_component += core_sector_weight * cash_period_return
-        reserve_rule_return = core_component + reserve_sector_return - reserve_cost + reserve_cash_return
+        reserve_rule_return = core_component + reserve_spy_return - reserve_cost + reserve_cash_return
         reserve_leverage_rule_return = (
             core_component
-            + reserve_leverage_sector_return
+            + reserve_leverage_spy_return
             - reserve_leverage_cost
             - reserve_leverage_financing_cost
             + reserve_cash_return
@@ -567,7 +566,8 @@ def _build_rotation_backtest_view(
                 "regime_label": regime_label,
                 "probability_selection": probability_labels,
                 "quality_selection": quality_labels,
-                "reserve_sector": reserve_top_symbol or "Cash",
+                "reserve_asset": reserve_asset_symbol or "Cash",
+                "reserve_sector": reserve_asset_symbol or "Cash",
                 "spy_drawdown_signal": spy_drawdown_signal,
                 "period_year_fraction": period_year_fraction,
                 "cash_period_return": cash_period_return,
@@ -614,11 +614,11 @@ def _build_rotation_backtest_view(
     period_log_frame["equity_spy_x3"] = (1.0 + period_log_frame["spy_return_x3"]).cumprod()
 
     strategy_rows = []
-    reserve_leverage_label = f"Reserve Cash Rule x{leverage_multiple:.0f} Drawdown Sleeve @ {annual_financing_rate:.0%}"
+    reserve_leverage_label = f"{RESERVE_STRATEGY_LABEL} x{leverage_multiple:.0f} Drawdown Sleeve @ {annual_financing_rate:.0%}"
     for label, return_column, turnover_column in (
         ("ML Probability Rotation", "probability_return", "probability_turnover"),
         ("ML Quality-Weighted Rotation", "quality_return", "quality_turnover"),
-        ("Sector Reserve Cash Rule", "reserve_rule_return", "reserve_turnover"),
+        (RESERVE_STRATEGY_LABEL, "reserve_rule_return", "reserve_turnover"),
         (reserve_leverage_label, "reserve_leverage_rule_return", "reserve_leverage_turnover"),
         ("SPY Buy And Hold", "spy_return", None),
         (f"ML Probability Rotation x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "probability_return_x3", "probability_turnover"),
@@ -638,7 +638,7 @@ def _build_rotation_backtest_view(
     for label, return_column, turnover_column in (
         ("ML Probability Rotation", "probability_return", "probability_turnover"),
         ("ML Quality-Weighted Rotation", "quality_return", "quality_turnover"),
-        ("Sector Reserve Cash Rule", "reserve_rule_return", "reserve_turnover"),
+        (RESERVE_STRATEGY_LABEL, "reserve_rule_return", "reserve_turnover"),
         (reserve_leverage_label, "reserve_leverage_rule_return", "reserve_leverage_turnover"),
         ("SPY Buy And Hold", "spy_return", None),
         (f"ML Probability Rotation x{leverage_multiple:.0f} @ {annual_financing_rate:.0%}", "probability_return_x3", "probability_turnover"),
@@ -706,9 +706,9 @@ def _build_rotation_backtest_view(
         "method_note": (
             f"{scope_note} Signals are generated from walk-forward out-of-sample sector predictions, executed one bar after the signal date, and held for {holding_period} bars before the next rebalance. "
             "The quality-weighted variant mixes live ensemble probability with a sector quality prior estimated only from the pre-holdout validation window. "
-            "The reserve-cash rule keeps 40% of the portfolio in cash earning 5% annually, deploys 10% of that reserve after a 5% SPY drawdown, another 10% after a 10% drawdown, and the rest after a 20% drawdown, then rebuilds the reserve only after SPY gets back to its prior high. "
+            "The reserve sleeve keeps 40% of the portfolio in cash earning 5% annually, deploys 10% of that reserve into SPY after a 5% SPY drawdown, another 10% after a 10% drawdown, and the rest after a 20% drawdown, then rotates that deployed sleeve back to cash only after SPY gets back to its prior high. "
             f"The leveraged scenario applies {leverage_multiple:.0f}x gross exposure and charges {annual_financing_rate:.0%} annual interest on the borrowed {max(leverage_multiple - 1.0, 0.0):.0f}x capital over each realized holding period. "
-            f"{reserve_leverage_label} only levers the deployed reserve sleeve during drawdowns and rotates that sleeve back to cash once SPY returns to a fresh high."
+            f"{reserve_leverage_label} only levers the deployed SPY reserve sleeve during drawdowns and rotates that sleeve back to cash once SPY returns to a fresh high."
         ),
     }
 
