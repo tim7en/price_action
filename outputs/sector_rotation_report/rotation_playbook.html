@@ -130,7 +130,7 @@
                     <h1>What To Rotate Into, And When</h1>
                     <p>This page translates the sector rotation model into operating rules. It tells you the current destination for the rotating equity sleeve, the conditions that trigger a change, and the separate reserve-cash drawdown rule.</p>
                     <div class="hero-meta">
-                        <span>Generated 2026-05-10 06:32 UTC</span>
+                        <span>Generated 2026-05-10 07:05 UTC</span>
                         <span>Current regime: Fragile Late-Cycle Watch</span>
                         <span>Quadrant: Growth Down / Inflation Down</span>
                         <span>Latest complete signal: 2026-03-03</span>
@@ -188,7 +188,7 @@
             <div class="table-shell">
   <table class="data-table">
     <thead><tr><th>Step</th><th>Rule</th><th>What it means</th></tr></thead>
-    <tbody><tr><td>Step 1</td><td>Classify the macro regime</td><td>Use the current regime and quadrant as the macro prior. Right now that is Fragile Late-Cycle Watch in Growth Down / Inflation Down.</td></tr><tr><td>Step 2</td><td>Read the latest complete ML signal</td><td>Only the fully known signal dated 2026-03-03 is allowed into the live basket. There is no intraperiod look-ahead refresh.</td></tr><tr><td>Step 3</td><td>Filter sectors by live probability</td><td>Require ensemble probability &gt;= 55% before a sector can enter the live basket.</td></tr><tr><td>Step 4</td><td>Rank the eligible sectors</td><td>Score sectors with 35% macro regime rank, 18% live probability rank, 13% quality-weighted ML rank, 10% validation quality, 9% model stability, 5% holdout Sharpe, and 10% run-up headroom so already-extended sectors are less likely to dominate the basket.</td></tr><tr><td>Step 5</td><td>Allocate the equity sleeve</td><td>Spread the 60.0% equity sleeve across the highest combined scores. The rest stays in cash by design.</td></tr><tr><td>Step 6</td><td>Use reserve deployment only in drawdowns</td><td>The reserve rule is separate from the sector basket. It reacts only to visible SPY drawdowns and moves back to cash after a new high.</td></tr></tbody>
+    <tbody><tr><td>Step 1</td><td>Classify the macro regime</td><td>Use the current regime and quadrant as the macro prior. Right now that is Fragile Late-Cycle Watch in Growth Down / Inflation Down.</td></tr><tr><td>Step 2</td><td>Read the latest complete ML signal</td><td>Only the fully known signal dated 2026-03-03 is allowed into the live basket. There is no intraperiod look-ahead refresh.</td></tr><tr><td>Step 3</td><td>Filter sectors by live probability</td><td>Require ensemble probability &gt;= 55% before a sector can enter the live basket.</td></tr><tr><td>Step 4</td><td>Rank the eligible sectors</td><td>Score sectors with 35% macro regime rank, 18% live probability rank, 13% quality-weighted ML rank, 10% validation quality, 9% model stability, 5% holdout Sharpe, and 10% run-up headroom so already-extended sectors are less likely to dominate the basket.</td></tr><tr><td>Step 5</td><td>Allocate the equity sleeve</td><td>Spread the 60.0% equity sleeve across the highest combined scores. The rest stays in cash by design.</td></tr><tr><td>Step 6</td><td>Use reserve deployment only in drawdowns</td><td>The reserve rule is separate from the sector basket. It reacts only to visible SPY drawdowns, buys SPY with the reserve sleeve, and moves back to cash after a new high.</td></tr></tbody>
   </table>
 </div>
         </section>
@@ -222,11 +222,11 @@
                 <div>
                     <p class="eyebrow">Reserve Sleeve</p>
                     <h2>Drawdown Deployment Rules</h2>
-                    <p>This is separate from the rotating sector basket. The reserve sleeve is a cash buffer that only becomes active when SPY is already in drawdown on the signal date.</p>
+                    <p>This is separate from the rotating sector basket. The reserve sleeve is a cash buffer that only becomes active when SPY is already in drawdown on the signal date, then stays in SPY until SPY gets back to a fresh high.</p>
                     <div class="table-shell">
   <table class="data-table">
     <thead><tr><th>Trigger</th><th>Action</th><th>Comment</th></tr></thead>
-    <tbody><tr><td>SPY drawdown at least -5.0%</td><td>Deploy 4.0% of the full portfolio from reserve cash.</td><td>Keep the rest of the reserve in cash until a deeper drawdown appears.</td></tr><tr><td>SPY drawdown at least -10.0%</td><td>Deploy another 8.0% of the full portfolio.</td><td>This is cumulative on top of the first tier.</td></tr><tr><td>SPY drawdown at least -20.0%</td><td>Deploy the remaining 28.0% of the full portfolio.</td><td>The reserve sleeve is fully mobilized only at deep stress.</td></tr><tr><td>SPY returns to a fresh high</td><td>Rotate the deployed reserve sleeve back to cash.</td><td>The reserve bucket rebuilds only after the drawdown is fully repaired.</td></tr></tbody>
+    <tbody><tr><td>SPY drawdown at least -5.0%</td><td>Deploy 4.0% of the full portfolio from reserve cash.</td><td>Keep the rest of the reserve in cash until a deeper drawdown appears.</td></tr><tr><td>SPY drawdown at least -10.0%</td><td>Deploy another 8.0% of the full portfolio.</td><td>This is cumulative on top of the first tier.</td></tr><tr><td>SPY drawdown at least -20.0%</td><td>Deploy the remaining 28.0% of the full portfolio.</td><td>The reserve sleeve is fully mobilized only at deep stress.</td></tr><tr><td>SPY returns to a fresh high</td><td>Rotate the deployed SPY reserve sleeve back to cash.</td><td>The reserve bucket rebuilds only after the drawdown is fully repaired.</td></tr></tbody>
   </table>
 </div>
                 </div>

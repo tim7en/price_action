@@ -2997,7 +2997,7 @@ def _build_executive_summary_view(
     holdout_frame = holdout_view["strategy_summary_frame"].copy()
     reserve_leverage_label = str(history_view.get("reserve_leverage_label") or RESERVE_LEVERAGE_LABEL_PREFIX)
     selected_specs = [
-        (RESERVE_STRATEGY_LABEL, "Quality + SPY Reserve"),
+        (RESERVE_STRATEGY_LABEL, "Reserve Rule"),
         ("ML Quality-Weighted Rotation", "Quality Rotation"),
         ("SPY Buy And Hold", "SPY"),
         (reserve_leverage_label, "Reserve x3"),
