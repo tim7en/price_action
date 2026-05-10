@@ -40,6 +40,49 @@ from .sector_ml import RESERVE_STRATEGY_LABEL, build_sector_ml_view
 RESERVE_LEVERAGE_LABEL_PREFIX = f"{RESERVE_STRATEGY_LABEL} x"
 
 
+def _load_sector_pe_overlay(project_root: Path) -> dict[str, Any]:
+    """Load the user-maintained sector PE overlay if present.
+
+    The overlay is a context layer (current forward PE vs 10y average per sector
+    ETF). It is NOT used as an ML feature to avoid point-in-time leakage, since
+    the values in this file are restated/snapshot rather than vintage-correct.
+    """
+    overlay_path = project_root / "config" / "sector_pe_overlay.json"
+    if not overlay_path.exists():
+        return {"available": False, "reason": "config/sector_pe_overlay.json not found."}
+    try:
+        payload = json.loads(overlay_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return {"available": False, "reason": f"Could not parse sector_pe_overlay.json: {exc}"}
+    sectors_raw = payload.get("sectors") or {}
+    sectors: dict[str, dict[str, Any]] = {}
+    for symbol, info in sectors_raw.items():
+        if not isinstance(info, dict):
+            continue
+        try:
+            forward_pe = float(info.get("forward_pe")) if info.get("forward_pe") is not None else None
+            ten_year = float(info.get("ten_year_avg_pe")) if info.get("ten_year_avg_pe") is not None else None
+        except (TypeError, ValueError):
+            continue
+        sectors[str(symbol).upper()] = {
+            "name": str(info.get("name") or symbol),
+            "forward_pe": forward_pe,
+            "ten_year_avg_pe": ten_year,
+            "comment": str(info.get("comment") or ""),
+            "premium_pct": (
+                ((forward_pe / ten_year) - 1.0)
+                if forward_pe is not None and ten_year not in (None, 0.0)
+                else None
+            ),
+        }
+    return {
+        "available": bool(sectors),
+        "as_of_date": str(payload.get("as_of_date") or ""),
+        "source_note": str(payload.get("source_note") or ""),
+        "sectors": sectors,
+    }
+
+
 def _format_decimal(value: float | int | None, digits: int = 2) -> str:
     if value is None or pd.isna(value):
         return "n/a"
@@ -4011,11 +4054,83 @@ def _render_executive_summary_pdf(
     return True
 
 
+REGIME_DALIO_TEMPLATES: dict[str, dict[str, str]] = {
+    "Disinflationary Growth": {
+        "narrative": "Real growth is improving while inflation pressure is easing. Equities and duration can both breathe in this box. Risk premia compress. Long-cycle growth and quality compounders tend to lead.",
+        "lean_into": "Information Technology, Consumer Discretionary, Industrials, Health Care quality.",
+        "avoid": "Energy on the way down, deep value if disinflation persists. Commodity beta lags here.",
+        "watch_for": "Inflation re-acceleration or credit stress that flips the box.",
+    },
+    "Liquidity Bubble Or Valuation Stretch": {
+        "narrative": "Late-stage of a long expansion. Liquidity is abundant but valuations are rich. Returns concentrate in fewer names. Tail risk is asymmetric.",
+        "lean_into": "Quality with cash flow, defensives that still earn (Staples, Health Care). Selective Tech with real cash returns.",
+        "avoid": "Highest-multiple speculative growth. Levered cyclicals. Anything where the bull case requires further multiple expansion.",
+        "watch_for": "Volatility spikes, rising real rates, breadth divergence — these usually break this box.",
+    },
+    "Inflationary Boom": {
+        "narrative": "Nominal growth is strong and inflation is hot. Real assets, commodity beta, and short-duration earnings beat long-duration earnings.",
+        "lean_into": "Energy, Materials, Industrials, Financials with positive curve sensitivity.",
+        "avoid": "Long-duration unprofitable growth, rate-sensitive defensives, fixed-coupon duration.",
+        "watch_for": "Demand destruction, central bank tightening that breaks the boom.",
+    },
+    "Stagflation Squeeze": {
+        "narrative": "Growth is weakening while inflation is still high. The hardest box for diversified portfolios — both stocks and bonds can sell off together.",
+        "lean_into": "Cash, energy, gold-linked exposure, very-short-duration debt. Selectively Staples with pricing power.",
+        "avoid": "Discretionary cyclicals, leveraged growth, long duration. Avoid forcing risk-on positioning.",
+        "watch_for": "A hard inflection in inflation prints — that releases the squeeze in either direction.",
+    },
+    "Rate-Shock Regime": {
+        "narrative": "Rates are repricing faster than the economy can adjust. Equity multiples compress mechanically; the cross-sectional pain is greatest in the longest-duration earnings.",
+        "lean_into": "Cash, Financials with curve benefit, Energy as a hedge to inflation persistence.",
+        "avoid": "High-multiple Tech, REITs, Utilities, and unprofitable growth. Anything that needs cheap capital.",
+        "watch_for": "Yields stalling out — that lets multiples re-rate.",
+    },
+    "Credit Deleveraging": {
+        "narrative": "Credit is contracting and risk pricing is widening. Cash and quality survive; lower-quality balance sheets compound losses.",
+        "lean_into": "Cash, Staples with self-funded cash flow, Treasuries if the central bank is easing.",
+        "avoid": "Financials with credit exposure, high-yield names, levered cyclicals, anything trading on hope of refinancing.",
+        "watch_for": "Spreads peaking and credit-default rates rolling over.",
+    },
+    "Panic Or Forced Liquidation": {
+        "narrative": "Forced selling phase. Correlations go to one. Quality is sold to fund margin calls. Worst drawdowns happen here.",
+        "lean_into": "Cash. Wait. Survival comes before optimization. Reserve sleeve deploys here.",
+        "avoid": "Adding leverage, averaging into losers, picking bottoms in single names.",
+        "watch_for": "VIX peaks, breadth thrust, central bank backstop announcement.",
+    },
+    "Recovery And Reflation": {
+        "narrative": "Stress is fading and policy is supportive. Cyclicals lead from a low base. Beta to the cycle is rewarded.",
+        "lean_into": "Industrials, Financials, Materials, Discretionary, beaten-down Energy.",
+        "avoid": "Pure defensives that already worked through the panic. Long duration if reflation accelerates.",
+        "watch_for": "The recovery becoming an inflationary boom — the box rotation continues.",
+    },
+    "Sideways Low-Volatility Regime": {
+        "narrative": "No regime conviction. Range-bound returns. Carry and quality dominate; macro bets are coin flips.",
+        "lean_into": "Carry assets, dividend quality, options-overlay style. Reduce active rotation.",
+        "avoid": "High-conviction macro bets, expensive options, forcing alpha.",
+        "watch_for": "A break-out of the range in either direction.",
+    },
+    "Fragile Late-Cycle Watch": {
+        "narrative": "Growth is soft but not broken. Inflation is balanced. Valuation is rich and credit is mixed rather than clean. The 'walk carefully' regime — risk asymmetry favors the downside if a catalyst hits.",
+        "lean_into": "Quality defensives (Staples, Health Care), Utilities for rate relief, selective Industrials with real cash flow.",
+        "avoid": "Highest-multiple growth, lowest-quality cyclicals, anything that needs the credit window to stay wide open.",
+        "watch_for": "Credit spreads widening, breadth narrowing, real yields rising — any of these can flip this into Credit Deleveraging or Rate-Shock.",
+    },
+    "Cash": {
+        "narrative": "The model is signaling no qualifying basket. The rotation engine has stepped aside until a new signal clears the threshold.",
+        "lean_into": "Cash earning the policy rate. Reserve sleeve stays armed for drawdowns.",
+        "avoid": "Forcing entries. Discretionary overrides of the model.",
+        "watch_for": "The next complete signal — re-evaluate at the next rebalance bar.",
+    },
+}
+
+
 def _render_rotation_playbook_html(
         generated_at: str,
         regime_overview: dict[str, Any],
         sector_ml_view: dict[str, Any],
         live_ml_view: dict[str, Any],
+        pe_overlay: dict[str, Any] | None = None,
+        sector_rotation_view: dict[str, Any] | None = None,
 ) -> str:
         current = regime_overview["current"]
         current_regime = str(current["regime_label"])
@@ -4235,6 +4350,129 @@ def _render_rotation_playbook_html(
                         rows=watch_rows,
                 )
 
+        # ----- Dalio-style sections -----
+        template = REGIME_DALIO_TEMPLATES.get(current_regime) or {
+            "narrative": "No regime template is registered for this label. Treat the model output as the primary guide and apply tight risk discipline.",
+            "lean_into": "Refer to the live basket above.",
+            "avoid": "Refer to the bottom-ranked sectors below.",
+            "watch_for": "A regime change at the next macro update.",
+        }
+        cycle_phase_label = {
+            "Disinflationary Growth": "Mid expansion / disinflation",
+            "Liquidity Bubble Or Valuation Stretch": "Late expansion / valuation stretch",
+            "Inflationary Boom": "Late expansion / inflation",
+            "Stagflation Squeeze": "Stagflation",
+            "Rate-Shock Regime": "Rate-shock",
+            "Credit Deleveraging": "Credit contraction",
+            "Panic Or Forced Liquidation": "Forced liquidation",
+            "Recovery And Reflation": "Early-cycle reflation",
+            "Sideways Low-Volatility Regime": "Range-bound / no-conviction",
+            "Fragile Late-Cycle Watch": "Late-cycle / fragile",
+            "Cash": "Stand-aside",
+        }.get(current_regime, "Custom regime")
+
+        # Lean-in / avoid lists from the actual model ranking
+        lean_in_rows: list[tuple[str, str, str, str]] = []
+        avoid_rows: list[tuple[str, str, str, str]] = []
+        if isinstance(full_frame, pd.DataFrame) and not full_frame.empty:
+            ranked = full_frame.copy()
+            top_lean = ranked.head(3)
+            bottom_avoid = ranked.tail(3).iloc[::-1]  # worst first
+            for row in top_lean.itertuples(index=False):
+                pe_info = (pe_overlay or {}).get("sectors", {}).get(str(row.symbol), {}) if pe_overlay and pe_overlay.get("available") else {}
+                pe_text = "n/a"
+                if pe_info.get("forward_pe") is not None and pe_info.get("ten_year_avg_pe") is not None:
+                    premium = pe_info.get("premium_pct")
+                    pe_text = f"{pe_info['forward_pe']:.1f} vs {pe_info['ten_year_avg_pe']:.1f} 10y avg ({_format_return_pct(premium) if premium is not None else 'n/a'})"
+                lean_in_rows.append(
+                    (
+                        f"{row.sector_label} ({row.symbol})",
+                        _format_probability_pct(row.ensemble_probability),
+                        _format_decimal(row.combined_live_score, 3),
+                        pe_text,
+                    )
+                )
+            for row in bottom_avoid.itertuples(index=False):
+                pe_info = (pe_overlay or {}).get("sectors", {}).get(str(row.symbol), {}) if pe_overlay and pe_overlay.get("available") else {}
+                pe_text = "n/a"
+                if pe_info.get("forward_pe") is not None and pe_info.get("ten_year_avg_pe") is not None:
+                    premium = pe_info.get("premium_pct")
+                    pe_text = f"{pe_info['forward_pe']:.1f} vs {pe_info['ten_year_avg_pe']:.1f} 10y avg ({_format_return_pct(premium) if premium is not None else 'n/a'})"
+                avoid_rows.append(
+                    (
+                        f"{row.sector_label} ({row.symbol})",
+                        _format_probability_pct(row.ensemble_probability),
+                        _format_decimal(row.combined_live_score, 3),
+                        pe_text,
+                    )
+                )
+        lean_table = _render_data_table(
+            headers=("Lean into", "ML probability", "Combined score", "Forward PE vs 10y avg"),
+            rows=lean_in_rows,
+        ) if lean_in_rows else "<p>No live basket available — see model output.</p>"
+        avoid_table = _render_data_table(
+            headers=("Avoid", "ML probability", "Combined score", "Forward PE vs 10y avg"),
+            rows=avoid_rows,
+        ) if avoid_rows else "<p>No avoid list available — see model output.</p>"
+
+        # Quadrant matrix (Dalio's four boxes)
+        quadrant_cards = [
+            ("Growth Up / Inflation Down", "Disinflationary growth — equities + duration both work.", "Lean: Tech, Discretionary, Industrials, Quality compounders.", "Avoid: Energy on the way down, deep value bets."),
+            ("Growth Up / Inflation Up", "Inflationary boom — real assets and short-duration earnings beat long-duration earnings.", "Lean: Energy, Materials, Industrials, Financials.", "Avoid: Long-duration unprofitable growth, fixed-coupon duration."),
+            ("Growth Down / Inflation Up", "Stagflation squeeze — both stocks and bonds can sell off together.", "Lean: Cash, Energy, gold-linked, very-short duration. Selectively Staples with pricing power.", "Avoid: Discretionary cyclicals, leveraged growth, long duration."),
+            ("Growth Down / Inflation Down", "Disinflationary slowdown — duration and quality defensives work; cyclicals stall.", "Lean: Staples, Utilities, Health Care, Treasuries if policy turns easier.", "Avoid: Levered cyclicals, deep cyclicals dependent on a re-acceleration."),
+        ]
+        is_current = lambda quad: quad == current_quadrant  # noqa: E731
+        quadrant_html = "\n".join(
+            f"""<article class=\"stat-card{' current' if is_current(q[0]) else ''}\">\n  <p class=\"card-tag\">{html.escape(q[0])}{' · CURRENT' if is_current(q[0]) else ''}</p>\n  <h3>{html.escape(q[1])}</h3>\n  <p>{html.escape(q[2])}</p>\n  <p style=\"color:#9a4a35\">{html.escape(q[3])}</p>\n</article>"""
+            for q in quadrant_cards
+        )
+
+        # PE overlay section
+        if pe_overlay and pe_overlay.get("available"):
+            pe_rows: list[tuple[str, ...]] = []
+            sectors_overlay = pe_overlay.get("sectors", {})
+            sorted_overlay = sorted(
+                sectors_overlay.items(),
+                key=lambda kv: (kv[1].get("premium_pct") if kv[1].get("premium_pct") is not None else 0.0),
+                reverse=True,
+            )
+            for symbol, info in sorted_overlay:
+                premium = info.get("premium_pct")
+                pe_rows.append(
+                    (
+                        f"{info.get('name', symbol)} ({symbol})",
+                        _format_decimal(info.get("forward_pe"), 1),
+                        _format_decimal(info.get("ten_year_avg_pe"), 1),
+                        _format_return_pct(premium) if premium is not None else "n/a",
+                        str(info.get("comment") or ""),
+                    )
+                )
+            pe_table = _render_data_table(
+                headers=("Sector", "Forward PE", "10y avg PE", "Premium / discount", "Note"),
+                rows=pe_rows,
+            )
+            pe_meta = (
+                f"As-of {html.escape(pe_overlay.get('as_of_date') or 'unspecified')}. "
+                f"{html.escape(pe_overlay.get('source_note') or '')}"
+            )
+            pe_section = f"""
+        <section class="section">
+          <p class="eyebrow">Valuation Context</p>
+          <h2>Forward PE vs 10-Year Average</h2>
+          <p>This is a context overlay, not an ML feature. The values are user-maintained in <code>config/sector_pe_overlay.json</code> and represent a current snapshot rather than point-in-time history. Use this to sanity-check whether the model's lean-in sectors are also reasonably priced.</p>
+          {pe_table}
+          <p style="font-size:0.85rem;margin-top:10px">{pe_meta}</p>
+        </section>"""
+        else:
+            reason = (pe_overlay or {}).get("reason", "PE overlay file missing.")
+            pe_section = f"""
+        <section class="section">
+          <p class="eyebrow">Valuation Context</p>
+          <h2>Forward PE vs 10-Year Average</h2>
+          <p>The valuation overlay is currently disabled — {html.escape(reason)} Populate <code>config/sector_pe_overlay.json</code> to enable a current forward-PE / 10y-average comparison per sector ETF. The overlay is informational only and never enters ML training.</p>
+        </section>"""
+
         return f"""<!DOCTYPE html>
 <html lang=\"en\">
 <head>
@@ -4349,8 +4587,14 @@ def _render_rotation_playbook_html(
         }}
         .data-table tr:last-child td {{ border-bottom: none; }}
         ul.simple {{ margin: 14px 0 0; padding-left: 18px; color: var(--muted); }}
+        .quadrant-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 16px; }}
+        .stat-card.current {{ background: linear-gradient(160deg, rgba(122, 62, 43, 0.10), rgba(21, 76, 92, 0.10)); border: 1.5px solid rgba(122, 62, 43, 0.30); }}
+        .lean-avoid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }}
+        .lean-block {{ background: rgba(95, 143, 91, 0.08); border: 1px solid rgba(95, 143, 91, 0.25); border-radius: 18px; padding: 18px; }}
+        .avoid-block {{ background: rgba(154, 74, 53, 0.08); border: 1px solid rgba(154, 74, 53, 0.25); border-radius: 18px; padding: 18px; }}
+        .lean-block h3, .avoid-block h3 {{ font-size: 1.05rem; margin-bottom: 8px; }}
         @media (max-width: 920px) {{
-            .hero-grid, .split {{ grid-template-columns: 1fr; }}
+            .hero-grid, .split, .lean-avoid {{ grid-template-columns: 1fr; }}
         }}
         @media (max-width: 720px) {{
             .page {{ padding: 24px 16px 56px; }}
@@ -4363,33 +4607,74 @@ def _render_rotation_playbook_html(
         <section class=\"hero\">
             <div class=\"hero-grid\">
                 <div>
-                    <p class=\"eyebrow\">Rotation Playbook</p>
-                    <h1>What To Rotate Into, And When</h1>
-                    <p>This page translates the sector rotation model into operating rules. It tells you the current destination for the rotating equity sleeve, the conditions that trigger a change, and the separate reserve-cash drawdown rule.</p>
+                    <p class=\"eyebrow\">Rotation Playbook · Dalio-style guidebook</p>
+                    <h1>Today's Box: {html.escape(cycle_phase_label)}</h1>
+                    <p>{html.escape(template['narrative'])}</p>
                     <div class=\"hero-meta\">
                         <span>{html.escape(generated_at)}</span>
-                        <span>Current regime: {html.escape(current_regime)}</span>
+                        <span>Regime: {html.escape(current_regime)}</span>
                         <span>Quadrant: {html.escape(current_quadrant)}</span>
                         <span>Latest complete signal: {html.escape(signal_date)}</span>
                     </div>
                 </div>
                 <aside class=\"focus-box\">
-                    <p class=\"eyebrow\">Plain English</p>
-                    <h3>Current instruction</h3>
-                    <p>{html.escape(' '.join(instruction_lines) if instruction_lines else 'No sector currently clears the live entry filter, so wait for the next complete signal rather than forcing a rotation.')}</p>
+                    <p class=\"eyebrow\">Today's instruction</p>
+                    <h3>What the model is saying</h3>
+                    <p>{html.escape(' '.join(instruction_lines) if instruction_lines else 'No sector currently clears the live entry filter. The right move is to wait, not to force a rotation.')}</p>
                     <ul class=\"simple\">
                         <li>Keep {html.escape(_format_weight_pct(cash_weight))} in cash by rule.</li>
                         <li>Rotate only the {html.escape(_format_weight_pct(core_weight))} equity sleeve.</li>
-                        <li>Use the reserve sleeve only when SPY drawdown thresholds are hit.</li>
+                        <li>Reserve sleeve activates only on SPY drawdown thresholds.</li>
                     </ul>
                 </aside>
             </div>
         </section>
 
         <section class=\"section\">
+            <p class=\"eyebrow\">The Four Boxes</p>
+            <h2>Growth × Inflation Quadrant Map</h2>
+            <p>Dalio's framing: every macro environment lives in one of four boxes defined by growth direction × inflation direction. Each box rewards a different exposure profile. Today's box is highlighted; the others are how the playbook should change if the regime flips.</p>
+            <div class=\"quadrant-grid\">
+                {quadrant_html}
+            </div>
+        </section>
+
+        <section class=\"section\">
+            <p class=\"eyebrow\">Today's Read</p>
+            <h2>What This Regime Has Looked Like</h2>
+            <p>{html.escape(template['narrative'])} The historical episodes for this regime are listed in the main report under "SPY Versus ETFs After A Regime Shift" — use them as the empirical reference for what to expect.</p>
+            <div class=\"split\">
+                <div class=\"lean-block\">
+                    <p class=\"eyebrow\" style=\"color:#3f7f78\">Lean into</p>
+                    <h3>{html.escape(template['lean_into'])}</h3>
+                    <p>The model agrees with this template when the live basket below leans into these areas. If the basket disagrees, treat the disagreement as information — usually a near-term factor the macro template alone misses.</p>
+                </div>
+                <div class=\"avoid-block\">
+                    <p class=\"eyebrow\" style=\"color:#9a4a35\">Avoid</p>
+                    <h3>{html.escape(template['avoid'])}</h3>
+                    <p>Watch for: {html.escape(template['watch_for'])}</p>
+                </div>
+            </div>
+        </section>
+
+        <section class=\"section\">
+            <p class=\"eyebrow\">Where The Model Says To Lean Now</p>
+            <h2>Top 3 Sectors From The Combined Score</h2>
+            <p>These are the highest-ranked sectors from the live ML output combined with the regime prior, the validation-quality prior, the run-up guardrail, and the model-stability score.</p>
+            {lean_table}
+        </section>
+
+        <section class=\"section\">
+            <p class=\"eyebrow\">Where The Model Says To Avoid Now</p>
+            <h2>Bottom 3 Sectors</h2>
+            <p>These are the lowest-ranked sectors right now. Avoid means do not size up here — it does not mean short. The combined score blends regime fit, model probability, valuation guardrail, and stability.</p>
+            {avoid_table}
+        </section>
+
+        <section class=\"section\">
             <p class=\"eyebrow\">Operating Rules</p>
             <h2>How The Rotation Decision Is Made</h2>
-            <p>The rotation is rule-based. The page below is not discretionary commentary. It is a direct translation of the live sector ranking and the reserve cash trigger logic already used in the report.</p>
+            <p>The rotation is rule-based. The page below is not discretionary commentary — it is a direct translation of the live sector ranking and the reserve cash trigger logic already used in the report.</p>
             <div class=\"card-grid\">
                 {'\n'.join(cards)}
             </div>
@@ -4397,7 +4682,7 @@ def _render_rotation_playbook_html(
         </section>
 
         <section class=\"section\">
-            <p class=\"eyebrow\">Current Rotation</p>
+            <p class=\"eyebrow\">Current Rotation Detail</p>
             <h2>Where The Equity Sleeve Should Sit Now</h2>
             <p>The live basket only includes sectors that clear the probability filter on the latest complete signal. If the filter is tight, the basket can shrink below the normal target breadth rather than forcing weak ideas into the portfolio.</p>
             {current_table}
@@ -4419,17 +4704,42 @@ def _render_rotation_playbook_html(
                     {_render_data_table(headers=("Trigger", "Action", "Comment"), rows=reserve_rows)}
                 </div>
                 <div>
-                    <p class=\"eyebrow\">Bias Controls</p>
-                    <h2>Why This Is Not Forward Looking</h2>
-                    <p>The live page uses the same no-leak controls as the benchmark report.</p>
+                    <p class=\"eyebrow\">Risk Discipline</p>
+                    <h2>When To Flip Defensive</h2>
                     <ul class=\"simple\">
-                        <li>Features are lagged by {feature_lag} bar before training and prediction.</li>
-                        <li>The signal executes one bar after it is observed and then holds for {hold_bars} bars.</li>
-                        <li>The model used a five-year expanding train and one-year validation with purge and embargo controls already baked into the report engine.</li>
-                        <li>The current rotation instruction comes from the latest complete holdout signal, not from future returns or revised macro labels.</li>
+                        <li>If the regime flips into Credit Deleveraging, Rate-Shock, or Panic — abandon the lean-in basket and rotate to cash + Staples + Utilities. The model will signal this through the regime score collapsing.</li>
+                        <li>If the live basket cannot find any sector clearing the probability threshold — accept that as a signal in itself. The historical record shows that "Cash" episodes are a real edge, not a failure mode.</li>
+                        <li>Use position sizing, not exits, to manage uncertainty. The 60% equity sleeve is the maximum risk budget — never lever it up because the regime template is bullish.</li>
+                        <li>The reserve sleeve deploys mechanically. Never override the SPY-drawdown triggers based on a regime narrative — the rule was designed to act when narratives feel worst.</li>
                     </ul>
                 </div>
             </div>
+        </section>
+
+        {pe_section}
+
+        <section class=\"section\">
+            <p class=\"eyebrow\">Caveats</p>
+            <h2>What The Model Cannot See</h2>
+            <ul class=\"simple\">
+                <li><strong>ETF composition drifts.</strong> Sector ETFs rebalance with market cap and corporate cash flow. XLK today is dominated by mega-caps that did not exist at this weight in 2006. The model trains on the price series of the ETF as it was, but the underlying business mix has changed — the historical "Information Technology" return is partly a story about which companies grew into the index.</li>
+                <li><strong>No point-in-time fundamentals.</strong> Forward EPS, balance-sheet quality, and PE history are not in the training pipeline. The valuation overlay above is informational only — it never feeds the ML signal, because using restated PE history would create look-ahead bias.</li>
+                <li><strong>Macro labels are revised.</strong> The macro regime label uses the local store, which is built from currently-available data series. It is not a vintage database. Treat regime labels in the deep past as approximate, not as live signals you could have acted on.</li>
+                <li><strong>The reserve sleeve assumes funded cash.</strong> The 5%/10%/20% drawdown deployments require having the cash actually available. In a tax-deferred account this is straightforward; in a taxable account, capital-gains friction can change the optimal trigger.</li>
+                <li><strong>The model is short-horizon.</strong> Each signal targets a {hold_bars}-bar holding window. Do not interpret a single rebalance as a multi-quarter view. The right time horizon for "the model" is the rolling next 5 trading days.</li>
+            </ul>
+        </section>
+
+        <section class=\"section\">
+            <p class=\"eyebrow\">Bias Controls</p>
+            <h2>Why This Is Not Forward Looking</h2>
+            <p>The live page uses the same no-leak controls as the benchmark report.</p>
+            <ul class=\"simple\">
+                <li>Features are lagged by {feature_lag} bar before training and prediction.</li>
+                <li>The signal executes one bar after it is observed and then holds for {hold_bars} bars.</li>
+                <li>The model used a five-year expanding train and one-year validation with purge and embargo controls already baked into the report engine.</li>
+                <li>The current rotation instruction comes from the latest complete holdout signal, not from future returns or revised macro labels.</li>
+            </ul>
         </section>
     </main>
 </body>
@@ -4814,11 +5124,14 @@ def generate_sector_rotation_report(
         regime_overview=regime_overview,
         sector_ml_view=sector_ml_view,
     )
+    pe_overlay = _load_sector_pe_overlay(root)
     rotation_playbook_html = _render_rotation_playbook_html(
         generated_at=generated_at,
         regime_overview=regime_overview,
         sector_ml_view=sector_ml_view,
         live_ml_view=live_ml_view,
+        pe_overlay=pe_overlay,
+        sector_rotation_view=sector_rotation_view,
     )
     _render_executive_summary_pdf(
         pdf_path=executive_summary_pdf_path,

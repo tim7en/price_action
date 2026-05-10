@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "as_of_date": "2026-04-30",
+  "source_note": "User-maintained. Update forward_pe and ten_year_avg_pe per sector ETF from a trusted feed (Bloomberg, FactSet, S&P, ETF.com factsheets). Values below are rough placeholders and should be replaced before relying on the valuation overlay. The overlay is informational only and does NOT enter ML training to avoid point-in-time leakage.",
+  "sectors": {
+    "XLK": {
+      "name": "Information Technology",
+      "forward_pe": 28.5,
+      "ten_year_avg_pe": 21.0,
+      "comment": "Heavy weight in mega-cap names; PE elevated vs decade average."
+    },
+    "XLV": {
+      "name": "Health Care",
+      "forward_pe": 17.8,
+      "ten_year_avg_pe": 17.5,
+      "comment": "Near long-run average; defensive cash flows."
+    },
+    "XLF": {
+      "name": "Financials",
+      "forward_pe": 14.5,
+      "ten_year_avg_pe": 13.5,
+      "comment": "Slight premium to history; sensitive to curve and credit."
+    },
+    "XLY": {
+      "name": "Consumer Discretionary",
+      "forward_pe": 24.0,
+      "ten_year_avg_pe": 21.5,
+      "comment": "Concentration risk in top names; cyclical earnings."
+    },
+    "XLP": {
+      "name": "Consumer Staples",
+      "forward_pe": 20.5,
+      "ten_year_avg_pe": 19.5,
+      "comment": "Defensive cash flow; modest premium to history."
+    },
+    "XLE": {
+      "name": "Energy",
+      "forward_pe": 12.0,
+      "ten_year_avg_pe": 16.0,
+      "comment": "Discount to history; commodity-cycle dependent."
+    },
+    "XLI": {
+      "name": "Industrials",
+      "forward_pe": 19.5,
+      "ten_year_avg_pe": 17.0,
+      "comment": "Above 10y average; sensitive to capex cycle."
+    },
+    "XLB": {
+      "name": "Materials",
+      "forward_pe": 17.0,
+      "ten_year_avg_pe": 16.5,
+      "comment": "Near history; commodity beta."
+    },
+    "XLU": {
+      "name": "Utilities",
+      "forward_pe": 18.5,
+      "ten_year_avg_pe": 17.5,
+      "comment": "Slight premium; rate-sensitive defensive."
+    }
+  }
+}
