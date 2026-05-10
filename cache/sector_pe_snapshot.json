@@ -1,0 +1,78 @@
+{
+  "fetched_at": "2026-05-10T15:27:46.643484+00:00",
+  "source": "yfinance.Ticker.info + funds_data.top_holdings",
+  "sectors": {
+    "XLK": {
+      "trailing_pe": 38.449997,
+      "dividend_yield": 0.0047999998,
+      "top_1_weight": 0.1478415,
+      "top_3_weight": 0.361599305,
+      "top_10_weight": 0.615355004,
+      "top_holding_name": "NVIDIA Corp"
+    },
+    "XLV": {
+      "trailing_pe": 26.449825,
+      "dividend_yield": 0.0172,
+      "top_1_weight": 0.14069511,
+      "top_3_weight": 0.31687791,
+      "top_10_weight": 0.593422509,
+      "top_holding_name": "Eli Lilly and Co"
+    },
+    "XLF": {
+      "trailing_pe": 16.387585,
+      "dividend_yield": 0.0152,
+      "top_1_weight": 0.1165718,
+      "top_3_weight": 0.30436140500000003,
+      "top_10_weight": 0.562300405,
+      "top_holding_name": "Berkshire Hathaway Inc Class B"
+    },
+    "XLY": {
+      "trailing_pe": 30.907839,
+      "dividend_yield": 0.0075,
+      "top_1_weight": 0.2757897,
+      "top_3_weight": 0.5098272,
+      "top_10_weight": 0.715529599,
+      "top_holding_name": "Amazon.com Inc"
+    },
+    "XLP": {
+      "trailing_pe": 25.529482,
+      "dividend_yield": 0.025799999,
+      "top_1_weight": 0.121389,
+      "top_3_weight": 0.2876588,
+      "top_10_weight": 0.629664597,
+      "top_holding_name": "Walmart Inc"
+    },
+    "XLE": {
+      "trailing_pe": 20.251146,
+      "dividend_yield": 0.025,
+      "top_1_weight": 0.22184019,
+      "top_3_weight": 0.45851729,
+      "top_10_weight": 0.748152193,
+      "top_holding_name": "Exxon Mobil Corp"
+    },
+    "XLI": {
+      "trailing_pe": 29.927462,
+      "dividend_yield": 0.0117,
+      "top_1_weight": 0.0760566,
+      "top_3_weight": 0.185531202,
+      "top_10_weight": 0.4027207,
+      "top_holding_name": "Caterpillar Inc"
+    },
+    "XLB": {
+      "trailing_pe": 26.054888,
+      "dividend_yield": 0.017,
+      "top_1_weight": 0.1414303,
+      "top_3_weight": 0.2714913,
+      "top_10_weight": 0.600586795,
+      "top_holding_name": "Linde PLC"
+    },
+    "XLU": {
+      "trailing_pe": 21.708797,
+      "dividend_yield": 0.0254,
+      "top_1_weight": 0.13995309,
+      "top_3_weight": 0.282223995,
+      "top_10_weight": 0.585361303,
+      "top_holding_name": "NextEra Energy Inc"
+    }
+  }
+}

@@ -136,7 +136,7 @@
                     <h1>Today's Box: Late-cycle / fragile</h1>
                     <p>Growth is soft but not broken. Inflation is balanced. Valuation is rich and credit is mixed rather than clean. The &#x27;walk carefully&#x27; regime — risk asymmetry favors the downside if a catalyst hits.</p>
                     <div class="hero-meta">
-                        <span>Generated 2026-05-10 15:09 UTC</span>
+                        <span>Generated 2026-05-10 15:27 UTC</span>
                         <span>Regime: Fragile Late-Cycle Watch</span>
                         <span>Quadrant: Growth Down / Inflation Down</span>
                         <span>Latest complete signal: 2026-03-03</span>
@@ -211,8 +211,8 @@
             <p>These are the highest-ranked sectors from the live ML output combined with the regime prior, the validation-quality prior, the run-up guardrail, and the model-stability score.</p>
             <div class="table-shell">
   <table class="data-table">
-    <thead><tr><th>Lean into</th><th>ML probability</th><th>Combined score</th><th>Forward PE vs 10y avg</th></tr></thead>
-    <tbody><tr><td>Consumer Staples (XLP)</td><td>49%</td><td>0.673</td><td>20.5 vs 19.5 10y avg (+5.1%)</td></tr><tr><td>Utilities (XLU)</td><td>64%</td><td>0.647</td><td>18.5 vs 17.5 10y avg (+5.7%)</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>49%</td><td>0.644</td><td>24.0 vs 21.5 10y avg (+11.6%)</td></tr></tbody>
+    <thead><tr><th>Lean into</th><th>ML probability</th><th>Combined score</th><th>Trailing PE vs 10y avg</th><th>Concentration</th></tr></thead>
+    <tbody><tr><td>Consumer Staples (XLP)</td><td>49%</td><td>0.673</td><td>25.5 vs 19.5 10y avg (+30.9%)</td><td>12.1% top Walmart Inc · top-10 63%</td></tr><tr><td>Utilities (XLU)</td><td>64%</td><td>0.647</td><td>21.7 vs 17.5 10y avg (+24.1%)</td><td>14.0% top NextEra Energy Inc · top-10 59%</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>49%</td><td>0.644</td><td>30.9 vs 21.5 10y avg (+43.8%)</td><td>27.6% top Amazon.com Inc · top-10 72%</td></tr></tbody>
   </table>
 </div>
         </section>
@@ -223,8 +223,8 @@
             <p>These are the lowest-ranked sectors right now. Avoid means do not size up here — it does not mean short. The combined score blends regime fit, model probability, valuation guardrail, and stability.</p>
             <div class="table-shell">
   <table class="data-table">
-    <thead><tr><th>Avoid</th><th>ML probability</th><th>Combined score</th><th>Forward PE vs 10y avg</th></tr></thead>
-    <tbody><tr><td>Energy (XLE)</td><td>38%</td><td>0.352</td><td>12.0 vs 16.0 10y avg (-25.0%)</td></tr><tr><td>Commodity / Materials (XLB)</td><td>28%</td><td>0.487</td><td>17.0 vs 16.5 10y avg (+3.0%)</td></tr><tr><td>Financials (XLF)</td><td>50%</td><td>0.504</td><td>14.5 vs 13.5 10y avg (+7.4%)</td></tr></tbody>
+    <thead><tr><th>Avoid</th><th>ML probability</th><th>Combined score</th><th>Trailing PE vs 10y avg</th><th>Concentration</th></tr></thead>
+    <tbody><tr><td>Energy (XLE)</td><td>38%</td><td>0.352</td><td>20.3 vs 16.0 10y avg (+26.6%)</td><td>22.2% top Exxon Mobil Corp · top-10 75%</td></tr><tr><td>Commodity / Materials (XLB)</td><td>28%</td><td>0.487</td><td>26.1 vs 16.5 10y avg (+57.9%)</td><td>14.1% top Linde PLC · top-10 60%</td></tr><tr><td>Financials (XLF)</td><td>50%</td><td>0.504</td><td>16.4 vs 13.5 10y avg (+21.4%)</td><td>11.7% top Berkshire Hathaway Inc Class B · top-10 56%</td></tr></tbody>
   </table>
 </div>
         </section>
@@ -325,24 +325,25 @@
 
         
         <section class="section">
-          <p class="eyebrow">Valuation Context</p>
-          <h2>Forward PE vs 10-Year Average</h2>
-          <p>This is a context overlay, not an ML feature. The values are user-maintained in <code>config/sector_pe_overlay.json</code> and represent a current snapshot rather than point-in-time history. Use this to sanity-check whether the model's lean-in sectors are also reasonably priced.</p>
+          <p class="eyebrow">Valuation &amp; Composition Snapshot</p>
+          <h2>Trailing PE vs 10-Year Average · Concentration Risk</h2>
+          <p>This is a context overlay, not an ML feature. Trailing PE and top-holding weights are auto-fetched from yfinance each build (cached for 7 days). 10-year average PE comes from the manual config file because Yahoo does not expose history. <strong>Yahoo does not publish forward PE for sector ETFs</strong>, so we use trailing PE as the available proxy. Use this to sanity-check whether the model's lean-in sectors are reasonably priced and to flag concentration drift.</p>
           <div class="table-shell">
   <table class="data-table">
-    <thead><tr><th>Sector</th><th>Forward PE</th><th>10y avg PE</th><th>Premium / discount</th><th>Note</th></tr></thead>
-    <tbody><tr><td>Information Technology (XLK)</td><td>28.5</td><td>21.0</td><td>+35.7%</td><td>Heavy weight in mega-cap names; PE elevated vs decade average.</td></tr><tr><td>Industrials (XLI)</td><td>19.5</td><td>17.0</td><td>+14.7%</td><td>Above 10y average; sensitive to capex cycle.</td></tr><tr><td>Consumer Discretionary (XLY)</td><td>24.0</td><td>21.5</td><td>+11.6%</td><td>Concentration risk in top names; cyclical earnings.</td></tr><tr><td>Financials (XLF)</td><td>14.5</td><td>13.5</td><td>+7.4%</td><td>Slight premium to history; sensitive to curve and credit.</td></tr><tr><td>Utilities (XLU)</td><td>18.5</td><td>17.5</td><td>+5.7%</td><td>Slight premium; rate-sensitive defensive.</td></tr><tr><td>Consumer Staples (XLP)</td><td>20.5</td><td>19.5</td><td>+5.1%</td><td>Defensive cash flow; modest premium to history.</td></tr><tr><td>Materials (XLB)</td><td>17.0</td><td>16.5</td><td>+3.0%</td><td>Near history; commodity beta.</td></tr><tr><td>Health Care (XLV)</td><td>17.8</td><td>17.5</td><td>+1.7%</td><td>Near long-run average; defensive cash flows.</td></tr><tr><td>Energy (XLE)</td><td>12.0</td><td>16.0</td><td>-25.0%</td><td>Discount to history; commodity-cycle dependent.</td></tr></tbody>
+    <thead><tr><th>Sector</th><th>Trailing PE (now)</th><th>10y avg PE</th><th>Premium / discount</th><th>Top holding</th><th>Top-10 weight</th></tr></thead>
+    <tbody><tr><td>Information Technology (XLK)</td><td>38.4</td><td>21.0</td><td>+83.1%</td><td>14.8% NVIDIA Corp</td><td>62%</td></tr><tr><td>Industrials (XLI)</td><td>29.9</td><td>17.0</td><td>+76.0%</td><td>7.6% Caterpillar Inc</td><td>40%</td></tr><tr><td>Materials (XLB)</td><td>26.1</td><td>16.5</td><td>+57.9%</td><td>14.1% Linde PLC</td><td>60%</td></tr><tr><td>Health Care (XLV)</td><td>26.4</td><td>17.5</td><td>+51.1%</td><td>14.1% Eli Lilly and Co</td><td>59%</td></tr><tr><td>Consumer Discretionary (XLY)</td><td>30.9</td><td>21.5</td><td>+43.8%</td><td>27.6% Amazon.com Inc</td><td>72%</td></tr><tr><td>Consumer Staples (XLP)</td><td>25.5</td><td>19.5</td><td>+30.9%</td><td>12.1% Walmart Inc</td><td>63%</td></tr><tr><td>Energy (XLE)</td><td>20.3</td><td>16.0</td><td>+26.6%</td><td>22.2% Exxon Mobil Corp</td><td>75%</td></tr><tr><td>Utilities (XLU)</td><td>21.7</td><td>17.5</td><td>+24.1%</td><td>14.0% NextEra Energy Inc</td><td>59%</td></tr><tr><td>Financials (XLF)</td><td>16.4</td><td>13.5</td><td>+21.4%</td><td>11.7% Berkshire Hathaway Inc Class B</td><td>56%</td></tr></tbody>
   </table>
 </div>
-          <p style="font-size:0.85rem;margin-top:10px">As-of 2026-04-30. User-maintained. Update forward_pe and ten_year_avg_pe per sector ETF from a trusted feed (Bloomberg, FactSet, S&amp;P, ETF.com factsheets). Values below are rough placeholders and should be replaced before relying on the valuation overlay. The overlay is informational only and does NOT enter ML training to avoid point-in-time leakage.</p>
+          <p style="font-size:0.85rem;margin-top:10px">Auto-fetched 2026-05-10 15:27 UTC from yfinance. 10y averages are user-maintained in <code>config/sector_pe_overlay.json</code>. User-maintained. Update forward_pe and ten_year_avg_pe per sector ETF from a trusted feed (Bloomberg, FactSet, S&amp;P, ETF.com factsheets). Values below are rough placeholders and should be replaced before relying on the valuation overlay. The overlay is informational only and does NOT enter ML training to avoid point-in-time leakage.</p>
         </section>
 
         <section class="section">
             <p class="eyebrow">Caveats</p>
             <h2>What The Model Cannot See</h2>
             <ul class="simple">
-                <li><strong>ETF composition drifts.</strong> Sector ETFs rebalance with market cap and corporate cash flow. XLK today is dominated by mega-caps that did not exist at this weight in 2006. The model trains on the price series of the ETF as it was, but the underlying business mix has changed — the historical "Information Technology" return is partly a story about which companies grew into the index.</li>
-                <li><strong>No point-in-time fundamentals.</strong> Forward EPS, balance-sheet quality, and PE history are not in the training pipeline. The valuation overlay above is informational only — it never feeds the ML signal, because using restated PE history would create look-ahead bias.</li>
+                <li><strong>ETF composition drifts with cash flow.</strong> Sector ETFs rebalance to market cap, so winners get bigger weights as their cash flow and price compound. The "Top holding" and "Top-10 weight" columns above show how concentrated each ETF is right now — when one name is more than ~12% of the basket, the ETF is functionally a single-name proxy at the margin. The model trains on the price series of the ETF as it was, so historical "Information Technology" returns are partly a story about which names grew into the index, not a stable definition of the sector.</li>
+                <li><strong>No point-in-time fundamentals.</strong> Forward EPS, balance-sheet quality, and PE history are not in the training pipeline. The trailing PE in the overlay is a current snapshot from yfinance (refreshed weekly) and is informational only — it never feeds the ML signal, because using restated PE history would create look-ahead bias.</li>
+                <li><strong>Forward PE is not available for ETFs from Yahoo.</strong> The free Yahoo endpoint computes forward PE for individual stocks, not for sector ETFs. To get a true forward PE we would need to compute the weighted average across each ETF's holdings (Bloomberg/FactSet) or pay for a sector-level estimate.</li>
                 <li><strong>Macro labels are revised.</strong> The macro regime label uses the local store, which is built from currently-available data series. It is not a vintage database. Treat regime labels in the deep past as approximate, not as live signals you could have acted on.</li>
                 <li><strong>The reserve sleeve assumes funded cash.</strong> The 5%/10%/20% drawdown deployments require having the cash actually available. In a tax-deferred account this is straightforward; in a taxable account, capital-gains friction can change the optimal trigger.</li>
                 <li><strong>The model is short-horizon.</strong> Each signal targets a 5-bar holding window. Do not interpret a single rebalance as a multi-quarter view. The right time horizon for "the model" is the rolling next 5 trading days.</li>
