@@ -170,6 +170,13 @@ SECTOR_BUCKETS: tuple[dict[str, str], ...] = (
         "role": "Tends to lead in recovery and reflation regimes when production broadens.",
     },
     {
+        "symbol": "XLF",
+        "label": "Financials",
+        "family": "Credit and curve cyclical",
+        "earnings_proxy": "Sensitive to credit creation, net interest margins, capital markets activity, and balance-sheet stress.",
+        "role": "Usually matters most when credit conditions, the yield curve, and policy stress drive equity leadership.",
+    },
+    {
         "symbol": "XLY",
         "label": "Retail / Consumer Discretionary",
         "family": "Consumer cyclical",
