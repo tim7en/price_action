@@ -416,12 +416,12 @@ def _build_sector_diagnostics_view(
     }
 
 
-def _render_equity_curve_chart(period_log_frame: pd.DataFrame, leveraged: bool = False) -> str:
+def _render_equity_curve_chart(period_log_frame: pd.DataFrame, leveraged: bool = False, title_prefix: str = "Holdout") -> str:
     if period_log_frame.empty:
         return ""
 
     if leveraged:
-        title = "Holdout Equity Curves x3 @ 6% Financing"
+        title = f"{title_prefix} Equity Curves x3 @ 6% Financing"
         quality_column = "equity_quality_x3"
         probability_column = "equity_probability_x3"
         spy_column = "equity_spy_x3"
@@ -431,7 +431,7 @@ def _render_equity_curve_chart(period_log_frame: pd.DataFrame, leveraged: bool =
         reserve_leverage_label = "Reserve drawdown sleeve x3"
         spy_label = "SPY x3"
     else:
-        title = "Holdout Equity Curves"
+        title = f"{title_prefix} Equity Curves"
         quality_column = "equity_quality"
         probability_column = "equity_probability"
         spy_column = "equity_spy"
@@ -1215,6 +1215,7 @@ def _render_rotation_backtest_section(
     *,
     eyebrow: str,
     title: str,
+    chart_title_prefix: str = "Holdout",
 ) -> str:
     if not isinstance(rotation_view, dict) or not rotation_view.get("available"):
         message = str(rotation_view.get("message") if isinstance(rotation_view, dict) else "Benchmark unavailable.")
@@ -1342,8 +1343,8 @@ def _render_rotation_backtest_section(
             '  <div class="card-grid">',
             "\n".join(cards),
             '  </div>',
-            _render_equity_curve_chart(rotation_view["period_log_frame"]),
-            _render_equity_curve_chart(rotation_view["period_log_frame"], leveraged=True),
+            _render_equity_curve_chart(rotation_view["period_log_frame"], title_prefix=chart_title_prefix),
+            _render_equity_curve_chart(rotation_view["period_log_frame"], leveraged=True, title_prefix=chart_title_prefix),
             _render_data_table(
                 headers=(
                     'Strategy',
@@ -1381,6 +1382,7 @@ def _render_history_backtest_section(sector_ml_view: dict[str, Any]) -> str:
         rotation_view,
         eyebrow="Walk-Forward History",
         title="Crisis-Inclusive History: ML Rotation, SPY Reserve Sleeve, And SPY",
+        chart_title_prefix="Walk-Forward 2006-2026",
     )
 
 
@@ -2528,12 +2530,17 @@ def _build_regime_episode_view(project_root: Path, sector_ml_view: dict[str, Any
         start_date=benchmark_start,
         end_date=benchmark_end,
     )
+    extended_regime_colors = {
+        **REGIME_COLORS,
+        "Cash": "#a7a097",
+        "Unknown": "#cfc7b9",
+    }
     overview_bands = [
         {
             "start_date": row["start_signal_date"],
             "end_date": row["end_exit_date"],
             "label": row["regime_label"],
-            "color": REGIME_COLORS.get(str(row["regime_label"]), "#e9c46a"),
+            "color": extended_regime_colors.get(str(row["regime_label"]), "#cfc7b9"),
         }
         for row in summary_rows
     ]
@@ -2677,7 +2684,7 @@ def _render_regime_episode_section(regime_episode_view: dict[str, Any]) -> str:
                         "start_date": chart_frame.index.min(),
                         "end_date": chart_frame.index.max(),
                         "label": str(episode["regime_label"]),
-                        "color": REGIME_COLORS.get(str(episode["regime_label"]), "#e9c46a"),
+                        "color": {**REGIME_COLORS, "Cash": "#a7a097", "Unknown": "#cfc7b9"}.get(str(episode["regime_label"]), "#cfc7b9"),
                     }
                 ],
                 highlight_symbols=highlight_symbols,

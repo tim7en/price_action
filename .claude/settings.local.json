@@ -6,7 +6,10 @@
       "Bash(awk 'NR>=499 && NR<=540' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
       "Bash(awk 'NR>=580 && NR<=670' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
       "Bash(awk 'NR>=700 && NR<=820' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
-      "Bash(awk 'NR>=665 && NR<=685' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)"
+      "Bash(awk 'NR>=665 && NR<=685' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
+      "Bash(awk 'NR>=748 && NR<=850' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
+      "Bash(awk -F, 'NR>1 {print $4}' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/sector_ml_history_period_log.csv)",
+      "Bash(python build_sector_rotation_report.py)"
     ]
   }
 }
