@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk 'NR>=370 && NR<=420' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
+      "Bash(awk 'NR>=405 && NR<=510' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
+      "Bash(awk 'NR>=499 && NR<=540' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
+      "Bash(awk 'NR>=580 && NR<=670' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
+      "Bash(awk 'NR>=700 && NR<=820' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
+      "Bash(awk 'NR>=665 && NR<=685' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)"
+    ]
+  }
+}

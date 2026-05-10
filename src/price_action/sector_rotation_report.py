@@ -4,6 +4,7 @@ import argparse
 from collections import Counter
 import html
 import json
+import math
 import textwrap
 from datetime import UTC, datetime
 from pathlib import Path
@@ -446,6 +447,7 @@ def _render_equity_curve_chart(period_log_frame: pd.DataFrame, leveraged: bool =
     if not leveraged:
         plot_columns.insert(3, reserve_column)
     plot_frame = period_log_frame[plot_columns].copy()
+    plot_frame["exit_date"] = pd.to_datetime(plot_frame["exit_date"])
     value_columns = [quality_column, probability_column, spy_column]
     if leveraged and reserve_leverage_column in plot_frame.columns:
         value_columns.append(reserve_leverage_column)
@@ -454,39 +456,114 @@ def _render_equity_curve_chart(period_log_frame: pd.DataFrame, leveraged: bool =
     values = plot_frame[value_columns].to_numpy(dtype=float)
     min_value = float(min(values.min(), 1.0))
     max_value = float(max(values.max(), 1.0))
+    pad = max((max_value - min_value) * 0.06, 0.005)
+    min_value = min_value - pad
+    max_value = max_value + pad
     span = max(max_value - min_value, 1e-9)
     width = 960.0
-    height = 280.0
-    padding = 24.0
+    height = 320.0
+    left = 64.0
+    right = 24.0
+    top = 70.0
+    bottom = 56.0
+    plot_width = width - left - right
+    plot_height = height - top - bottom
 
     def points(column: str) -> str:
         coordinates: list[str] = []
         total = max(len(plot_frame.index) - 1, 1)
         for position, value in enumerate(plot_frame[column].astype(float)):
-            x = padding + (position / total) * (width - 2 * padding)
-            y = height - padding - ((float(value) - min_value) / span) * (height - 2 * padding)
+            x = left + (position / total) * plot_width
+            y = top + plot_height - ((float(value) - min_value) / span) * plot_height
             coordinates.append(f"{x:.1f},{y:.1f}")
         return " ".join(coordinates)
+
+    grid_lines: list[str] = []
+    for fraction in (0.0, 0.25, 0.5, 0.75, 1.0):
+        y = top + fraction * plot_height
+        grid_value = max_value - fraction * span
+        grid_lines.append(
+            f'<line x1="{left:.1f}" y1="{y:.1f}" x2="{width - right:.1f}" y2="{y:.1f}" stroke="rgba(125, 139, 153, 0.18)" stroke-width="1"></line>'
+        )
+        grid_lines.append(
+            f'<text x="12" y="{y + 4:.1f}" fill="#5f6b76" font-size="11">{html.escape(_format_return_pct(grid_value - 1.0))}</text>'
+        )
+
+    date_count = max(len(plot_frame.index) - 1, 1)
+    tick_count = min(6, max(2, len(plot_frame.index)))
+    date_ticks: list[str] = []
+    for tick_index in range(tick_count):
+        position = round(tick_index * date_count / max(tick_count - 1, 1))
+        position = min(position, len(plot_frame.index) - 1)
+        x = left + (position / date_count) * plot_width
+        date_label = pd.Timestamp(plot_frame["exit_date"].iloc[position]).strftime("%Y-%m-%d")
+        anchor = "start" if tick_index == 0 else ("end" if tick_index == tick_count - 1 else "middle")
+        date_ticks.append(
+            f'<text x="{x:.1f}" y="{height - bottom + 18:.1f}" fill="#5f6b76" font-size="11" text-anchor="{anchor}">{html.escape(date_label)}</text>'
+        )
+        date_ticks.append(
+            f'<line x1="{x:.1f}" y1="{height - bottom:.1f}" x2="{x:.1f}" y2="{height - bottom + 4:.1f}" stroke="#b8b1a7" stroke-width="1"></line>'
+        )
 
     end_quality = float(plot_frame[quality_column].iloc[-1])
     end_probability = float(plot_frame[probability_column].iloc[-1])
     end_spy = float(plot_frame[spy_column].iloc[-1])
     end_reserve_leverage = float(plot_frame[reserve_leverage_column].iloc[-1]) if leveraged and reserve_leverage_column in plot_frame.columns else None
     end_reserve = float(plot_frame[reserve_column].iloc[-1]) if not leveraged else None
-    return f"""
-<div class=\"chart-shell\">
-  <svg viewBox=\"0 0 960 280\" role=\"img\" aria-label=\"Holdout equity curves\">
-    <rect x=\"0\" y=\"0\" width=\"960\" height=\"280\" rx=\"18\" fill=\"rgba(255, 253, 248, 0.92)\"></rect>
-        <polyline fill=\"none\" stroke=\"#7a3e2b\" stroke-width=\"4\" points=\"{points(quality_column)}\"></polyline>
-        <polyline fill=\"none\" stroke=\"#0f4c5c\" stroke-width=\"3\" stroke-dasharray=\"7 6\" points=\"{points(probability_column)}\"></polyline>
-        {f'<polyline fill="none" stroke="#9c6644" stroke-width="3" points="{points(reserve_leverage_column)}"></polyline>' if leveraged and reserve_leverage_column in plot_frame.columns else ''}
-        {f'<polyline fill="none" stroke="#2d6a4f" stroke-width="3" points="{points(reserve_column)}"></polyline>' if not leveraged else ''}
-        <polyline fill=\"none\" stroke=\"#7d8b99\" stroke-width=\"3\" points=\"{points(spy_column)}\"></polyline>
-        <text x=\"28\" y=\"34\" fill=\"#1b2430\" font-size=\"18\" font-family=\"Iowan Old Style, Georgia, serif\">{title}</text>
-        <text x=\"28\" y=\"56\" fill=\"#5f6b76\" font-size=\"13\">{quality_label}: {_format_return_pct(end_quality - 1.0)} | {probability_label}: {_format_return_pct(end_probability - 1.0)}{f' | {reserve_leverage_label}: {_format_return_pct(end_reserve_leverage - 1.0)}' if leveraged and end_reserve_leverage is not None else ''}{f' | {reserve_label}: {_format_return_pct(end_reserve - 1.0)}' if not leveraged and end_reserve is not None else ''} | {spy_label}: {_format_return_pct(end_spy - 1.0)}</text>
-  </svg>
-</div>
-"""
+
+    legend_entries: list[tuple[str, str, str]] = [
+        (quality_label, "#7a3e2b", _format_return_pct(end_quality - 1.0)),
+        (probability_label, "#0f4c5c", _format_return_pct(end_probability - 1.0)),
+    ]
+    if leveraged and end_reserve_leverage is not None:
+        legend_entries.append((reserve_leverage_label, "#9c6644", _format_return_pct(end_reserve_leverage - 1.0)))
+    if not leveraged and end_reserve is not None:
+        legend_entries.append((reserve_label, "#2d6a4f", _format_return_pct(end_reserve - 1.0)))
+    legend_entries.append((spy_label, "#7d8b99", _format_return_pct(end_spy - 1.0)))
+
+    legend_markup: list[str] = []
+    legend_columns = 3
+    legend_spacing_x = 290.0
+    legend_row_height = 18.0
+    for index, (label, color, end_text) in enumerate(legend_entries):
+        col = index % legend_columns
+        row = index // legend_columns
+        legend_x = left + col * legend_spacing_x
+        legend_y = 52.0 + row * legend_row_height
+        legend_markup.append(
+            f'<circle cx="{legend_x:.1f}" cy="{legend_y - 4:.1f}" r="4.5" fill="{color}"></circle>'
+        )
+        legend_markup.append(
+            f'<text x="{legend_x + 10:.1f}" y="{legend_y:.1f}" fill="#1b2430" font-size="12">{html.escape(label)}: {html.escape(end_text)}</text>'
+        )
+
+    polylines: list[str] = []
+    polylines.append(f'<polyline fill="none" stroke="#7a3e2b" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" points="{points(quality_column)}"></polyline>')
+    polylines.append(f'<polyline fill="none" stroke="#0f4c5c" stroke-width="2.5" stroke-dasharray="7 6" stroke-linejoin="round" stroke-linecap="round" points="{points(probability_column)}"></polyline>')
+    if leveraged and reserve_leverage_column in plot_frame.columns:
+        polylines.append(f'<polyline fill="none" stroke="#9c6644" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="{points(reserve_leverage_column)}"></polyline>')
+    if not leveraged:
+        polylines.append(f'<polyline fill="none" stroke="#2d6a4f" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="{points(reserve_column)}"></polyline>')
+    polylines.append(f'<polyline fill="none" stroke="#7d8b99" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="{points(spy_column)}"></polyline>')
+
+    return "\n".join(
+        [
+            '<div class="chart-shell">',
+            f'  <svg viewBox="0 0 {width:.0f} {height:.0f}" role="img" aria-label="{html.escape(title)}">',
+            f'    <rect x="0" y="0" width="{width:.0f}" height="{height:.0f}" rx="18" fill="rgba(255, 253, 248, 0.92)"></rect>',
+            f'    <text x="{left:.1f}" y="28" fill="#1b2430" font-size="18" font-family="Iowan Old Style, Georgia, serif">{html.escape(title)}</text>',
+            *grid_lines,
+            f'    <line x1="{left:.1f}" y1="{height - bottom:.1f}" x2="{width - right:.1f}" y2="{height - bottom:.1f}" stroke="#b8b1a7" stroke-width="1.2"></line>',
+            f'    <line x1="{left:.1f}" y1="{top:.1f}" x2="{left:.1f}" y2="{height - bottom:.1f}" stroke="#b8b1a7" stroke-width="1.2"></line>',
+            *polylines,
+            *date_ticks,
+            *legend_markup,
+            f'    <text x="12" y="{top - 4:.1f}" fill="#5f6b76" font-size="11">Cumulative return</text>',
+            f'    <text x="{(left + width - right) / 2:.1f}" y="{height - 12:.1f}" fill="#5f6b76" font-size="11" text-anchor="middle">Holdout exit dates (5-bar windows)</text>',
+            '  </svg>',
+            '</div>',
+        ]
+    )
 
 
 def _render_rebalance_tradeoff_chart(sensitivity_frame: pd.DataFrame) -> str:
@@ -516,6 +593,14 @@ def _render_rebalance_tradeoff_chart(sensitivity_frame: pd.DataFrame) -> str:
     if reserve_leverage_label is not None:
         colors[reserve_leverage_label] = "#9c6644"
 
+    short_labels = {
+        "ML Quality-Weighted Rotation": "ML Quality",
+        RESERVE_STRATEGY_LABEL: "Reserve sleeve",
+    }
+    if reserve_leverage_label is not None:
+        short_labels[reserve_leverage_label] = "Reserve sleeve x3"
+    short_labels["SPY Buy And Hold"] = "SPY"
+
     selected_frame["turnover_per_year"] = pd.to_numeric(selected_frame["turnover_per_year"], errors="coerce").fillna(0.0)
     selected_frame["cagr"] = pd.to_numeric(selected_frame["cagr"], errors="coerce")
     x_min = float(selected_frame["turnover_per_year"].min())
@@ -525,23 +610,40 @@ def _render_rebalance_tradeoff_chart(sensitivity_frame: pd.DataFrame) -> str:
     x_span = max(x_max - x_min, 1e-9)
     y_span = max(y_max - y_min, 1e-9)
     width = 960.0
-    height = 320.0
+    height = 360.0
     left = 72.0
     right = 24.0
-    top = 28.0
-    bottom = 42.0
+    top = 64.0
+    bottom = 78.0
+    plot_width = width - left - right
+    plot_height = height - top - bottom
 
     def x_position(value: float) -> float:
-        return left + ((value - x_min) / x_span) * (width - left - right)
+        return left + ((value - x_min) / x_span) * plot_width
 
     def y_position(value: float) -> float:
-        return height - bottom - ((value - y_min) / y_span) * (height - top - bottom)
+        return height - bottom - ((value - y_min) / y_span) * plot_height
 
-    legend_items = []
+    legend_items: list[str] = []
+    legend_columns = 2
+    legend_spacing_x = 240.0
+    legend_row_height = 18.0
+    legend_count = 0
+    seen_labels = set(selected_frame["strategy_label"].astype(str))
     for label, color in colors.items():
-        if label not in set(selected_frame["strategy_label"].astype(str)):
+        if label not in seen_labels:
             continue
-        legend_items.append(f'<text x="{left + 22 + len(legend_items) * 220:.1f}" y="22" fill="#1b2430" font-size="12">{html.escape(label)}</text><circle cx="{left + 10 + len(legend_items) * 220:.1f}" cy="18" r="5" fill="{color}"></circle>')
+        col = legend_count % legend_columns
+        row = legend_count // legend_columns
+        legend_x = left + col * legend_spacing_x
+        legend_y = 28.0 + row * legend_row_height
+        legend_items.append(
+            f'<circle cx="{legend_x:.1f}" cy="{legend_y - 4:.1f}" r="4.5" fill="{color}"></circle>'
+        )
+        legend_items.append(
+            f'<text x="{legend_x + 10:.1f}" y="{legend_y:.1f}" fill="#1b2430" font-size="12">{html.escape(short_labels.get(label, label))}</text>'
+        )
+        legend_count += 1
 
     points_markup: list[str] = []
     for row in selected_frame.itertuples(index=False):
@@ -550,43 +652,45 @@ def _render_rebalance_tradeoff_chart(sensitivity_frame: pd.DataFrame) -> str:
         x = x_position(float(row.turnover_per_year))
         y = y_position(float(row.cagr))
         cadence_text = f"{int(row.cadence_bars)}d"
-        points_markup.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="{color}"></circle>')
-        points_markup.append(f'<text x="{x + 8:.1f}" y="{y - 8:.1f}" fill="#5f6b76" font-size="11">{cadence_text}</text>')
+        points_markup.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5.5" fill="{color}" stroke="#fffdf8" stroke-width="1.5"></circle>')
+        points_markup.append(f'<text x="{x + 8:.1f}" y="{y - 8:.1f}" fill="#37404a" font-size="10">{cadence_text}</text>')
 
-    grid_lines = []
+    grid_lines: list[str] = []
     for fraction in (0.0, 0.25, 0.5, 0.75, 1.0):
-        y = top + fraction * (height - top - bottom)
+        y = top + fraction * plot_height
         cagr_value = y_max - fraction * y_span
         grid_lines.append(f'<line x1="{left:.1f}" y1="{y:.1f}" x2="{width - right:.1f}" y2="{y:.1f}" stroke="rgba(125, 139, 153, 0.18)" stroke-width="1"></line>')
         grid_lines.append(f'<text x="12" y="{y + 4:.1f}" fill="#5f6b76" font-size="11">{_format_return_pct(cagr_value)}</text>')
 
-    return """
-<div class="chart-shell">
-  <svg viewBox="0 0 960 320" role="img" aria-label="Rebalance cadence tradeoff chart">
-    <rect x="0" y="0" width="960" height="320" rx="18" fill="rgba(255, 253, 248, 0.92)"></rect>
-    {grid}
-        <line x1="{left}" y1="{axis_bottom}" x2="{axis_right}" y2="{axis_bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
-        <line x1="{left}" y1="{top}" x2="{left}" y2="{axis_bottom}" stroke="#b8b1a7" stroke-width="1.2"></line>
-        <text x="{left}" y="{label_bottom}" fill="#5f6b76" font-size="12">Turnover per year</text>
-    <text x="12" y="14" fill="#5f6b76" font-size="12">CAGR</text>
-    <text x="{left}" y="304" fill="#5f6b76" font-size="11">Lower-left means low turnover and low CAGR. Upper-left is the efficient corner.</text>
-    {legend}
-    {points}
-  </svg>
-</div>
-""".format(
-        grid="".join(grid_lines),
-        left=f"{left:.1f}",
-        right=f"{right:.1f}",
-        top=f"{top:.1f}",
-        bottom=f"{bottom:.1f}",
-        width=f"{width:.1f}",
-        height=f"{height:.1f}",
-        axis_bottom=f"{height - bottom:.1f}",
-        axis_right=f"{width - right:.1f}",
-        label_bottom=f"{height - 10:.1f}",
-        legend="".join(legend_items),
-        points="".join(points_markup),
+    x_tick_values = [x_min, x_min + 0.25 * x_span, x_min + 0.5 * x_span, x_min + 0.75 * x_span, x_max]
+    x_tick_markup: list[str] = []
+    for tick_index, tick_value in enumerate(x_tick_values):
+        x = x_position(float(tick_value))
+        anchor = "start" if tick_index == 0 else ("end" if tick_index == len(x_tick_values) - 1 else "middle")
+        x_tick_markup.append(
+            f'<line x1="{x:.1f}" y1="{height - bottom:.1f}" x2="{x:.1f}" y2="{height - bottom + 4:.1f}" stroke="#b8b1a7" stroke-width="1"></line>'
+        )
+        x_tick_markup.append(
+            f'<text x="{x:.1f}" y="{height - bottom + 18:.1f}" fill="#5f6b76" font-size="11" text-anchor="{anchor}">{tick_value:.1f}/yr</text>'
+        )
+
+    return "\n".join(
+        [
+            '<div class="chart-shell">',
+            f'  <svg viewBox="0 0 {width:.0f} {height:.0f}" role="img" aria-label="Rebalance cadence tradeoff chart">',
+            f'    <rect x="0" y="0" width="{width:.0f}" height="{height:.0f}" rx="18" fill="rgba(255, 253, 248, 0.92)"></rect>',
+            f'    <text x="{left:.1f}" y="20" fill="#1b2430" font-size="16" font-family="Iowan Old Style, Georgia, serif">Cadence: turnover (x) vs CAGR (y); 5d / 10d / 21d labels mark each point</text>',
+            *grid_lines,
+            f'    <line x1="{left:.1f}" y1="{height - bottom:.1f}" x2="{width - right:.1f}" y2="{height - bottom:.1f}" stroke="#b8b1a7" stroke-width="1.2"></line>',
+            f'    <line x1="{left:.1f}" y1="{top:.1f}" x2="{left:.1f}" y2="{height - bottom:.1f}" stroke="#b8b1a7" stroke-width="1.2"></line>',
+            *legend_items,
+            *points_markup,
+            *x_tick_markup,
+            f'    <text x="12" y="{top - 4:.1f}" fill="#5f6b76" font-size="11">CAGR</text>',
+            f'    <text x="{(left + width - right) / 2:.1f}" y="{height - 12:.1f}" fill="#5f6b76" font-size="11" text-anchor="middle">Turnover per year — lower-right is high churn, upper-left is the efficient corner</text>',
+            '  </svg>',
+            '</div>',
+        ]
     )
 
 
@@ -2070,6 +2174,8 @@ def _render_regime_price_chart(
     background_bands: list[dict[str, Any]] | None = None,
     highlight_symbols: set[str] | None = None,
     max_points: int = 180,
+    log_scale: bool = False,
+    min_band_days: int = 0,
 ) -> str:
     if normalised_frame.empty:
         return ""
@@ -2087,9 +2193,21 @@ def _render_regime_price_chart(
         return ""
 
     numeric_values = sampled[plot_symbols].to_numpy(dtype=float)
-    min_value = float(min(np.nanmin(numeric_values), 1.0))
-    max_value = float(max(np.nanmax(numeric_values), 1.0))
-    value_span = max(max_value - min_value, 1e-9)
+    raw_min = float(np.nanmin(numeric_values))
+    raw_max = float(np.nanmax(numeric_values))
+    if log_scale:
+        floor_value = max(raw_min, 0.05)
+        ceil_value = max(raw_max, floor_value * 1.05)
+        log_min = math.log(floor_value)
+        log_max = math.log(ceil_value)
+        log_span = max(log_max - log_min, 1e-9)
+        min_value = floor_value
+        max_value = ceil_value
+        value_span = log_span
+    else:
+        min_value = float(min(raw_min, 1.0))
+        max_value = float(max(raw_max, 1.0))
+        value_span = max(max_value - min_value, 1e-9)
     width = 960.0
     height = 320.0
     left = 64.0
@@ -2103,18 +2221,37 @@ def _render_regime_price_chart(
         return left + ((pd.Timestamp(timestamp) - start_date).total_seconds() / span_seconds) * (width - left - right)
 
     def y_position(value: float) -> float:
-        return height - bottom - ((float(value) - min_value) / value_span) * (height - top - bottom)
+        if log_scale:
+            safe = max(float(value), min_value)
+            normalised = (math.log(safe) - math.log(min_value)) / value_span
+        else:
+            normalised = (float(value) - min_value) / value_span
+        return height - bottom - normalised * (height - top - bottom)
 
     grid_lines: list[str] = []
-    for fraction in (0.0, 0.5, 1.0):
-        y = top + fraction * (height - top - bottom)
-        grid_value = max_value - fraction * value_span
-        grid_lines.append(
-            f'<line x1="{left:.1f}" y1="{y:.1f}" x2="{width - right:.1f}" y2="{y:.1f}" stroke="rgba(125, 139, 153, 0.16)" stroke-width="1"></line>'
-        )
-        grid_lines.append(
-            f'<text x="12" y="{y + 4:.1f}" fill="#5f6b76" font-size="11">{html.escape(_format_return_pct(grid_value - 1.0))}</text>'
-        )
+    if log_scale:
+        grid_values = [1.0, 2.0, 4.0, 8.0, 16.0]
+        grid_values = [value for value in grid_values if min_value * 0.95 <= value <= max_value * 1.05]
+        if not grid_values:
+            grid_values = [min_value, math.exp((math.log(min_value) + math.log(max_value)) / 2.0), max_value]
+        for grid_value in grid_values:
+            y = y_position(grid_value)
+            grid_lines.append(
+                f'<line x1="{left:.1f}" y1="{y:.1f}" x2="{width - right:.1f}" y2="{y:.1f}" stroke="rgba(125, 139, 153, 0.16)" stroke-width="1"></line>'
+            )
+            grid_lines.append(
+                f'<text x="12" y="{y + 4:.1f}" fill="#5f6b76" font-size="11">{html.escape(_format_return_pct(grid_value - 1.0))}</text>'
+            )
+    else:
+        for fraction in (0.0, 0.5, 1.0):
+            y = top + fraction * (height - top - bottom)
+            grid_value = max_value - fraction * value_span
+            grid_lines.append(
+                f'<line x1="{left:.1f}" y1="{y:.1f}" x2="{width - right:.1f}" y2="{y:.1f}" stroke="rgba(125, 139, 153, 0.16)" stroke-width="1"></line>'
+            )
+            grid_lines.append(
+                f'<text x="12" y="{y + 4:.1f}" fill="#5f6b76" font-size="11">{html.escape(_format_return_pct(grid_value - 1.0))}</text>'
+            )
 
     band_markup: list[str] = []
     for band in background_bands or []:
@@ -2122,15 +2259,19 @@ def _render_regime_price_chart(
         band_end = min(pd.Timestamp(band["end_date"]), end_date)
         if band_end <= band_start:
             continue
+        if min_band_days > 0 and (band_end - band_start).days < min_band_days:
+            continue
+        label_text = str(band.get("label") or "")
+        if min_band_days > 0 and label_text.strip().lower() in {"unknown", ""}:
+            continue
         x_start = x_position(band_start)
         x_end = x_position(band_end)
         band_markup.append(
-            f'<rect x="{x_start:.1f}" y="{top:.1f}" width="{max(x_end - x_start, 1.0):.1f}" height="{height - top - bottom:.1f}" fill="{html.escape(str(band["color"]))}" fill-opacity="0.10"></rect>'
+            f'<rect x="{x_start:.1f}" y="{top:.1f}" width="{max(x_end - x_start, 1.0):.1f}" height="{height - top - bottom:.1f}" fill="{html.escape(str(band["color"]))}" fill-opacity="0.12"></rect>'
         )
-        label = str(band.get("label") or "")
-        if label and (x_end - x_start) >= 94.0:
+        if label_text and (x_end - x_start) >= 94.0:
             band_markup.append(
-                f'<text x="{x_start + 8.0:.1f}" y="{top + 14.0:.1f}" fill="#5f6b76" font-size="11">{html.escape(label)}</text>'
+                f'<text x="{x_start + 8.0:.1f}" y="{top + 14.0:.1f}" fill="#5f6b76" font-size="11">{html.escape(label_text)}</text>'
             )
 
     polyline_markup: list[str] = []
@@ -2475,11 +2616,13 @@ def _render_regime_episode_section(regime_episode_view: dict[str, Any]) -> str:
     overview_chart = _render_regime_price_chart(
         regime_episode_view["overview_frame"],
         title="SPY vs Sector ETFs With Regime Bands",
-        subtitle="Normalized to 1.0 at the start of the 2006+ historical benchmark. Background bands are contiguous regime episodes from the walk-forward signal log.",
+        subtitle="Log-scaled cumulative growth from the start of the 2006+ historical benchmark. Background bands mark contiguous regime episodes lasting at least one month.",
         aria_label="SPY versus sector ETFs with regime overlays",
         color_map=regime_episode_view["color_map"],
         background_bands=regime_episode_view["overview_bands"],
         max_points=360,
+        log_scale=True,
+        min_band_days=21,
     )
 
     summary_rows: list[tuple[str, ...]] = []
