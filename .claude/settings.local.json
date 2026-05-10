@@ -9,7 +9,8 @@
       "Bash(awk 'NR>=665 && NR<=685' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
       "Bash(awk 'NR>=748 && NR<=850' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/index.html)",
       "Bash(awk -F, 'NR>1 {print $4}' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/sector_ml_history_period_log.csv)",
-      "Bash(python build_sector_rotation_report.py)"
+      "Bash(python build_sector_rotation_report.py)",
+      "Bash(python -c \"import yfinance; print\\(yfinance.__version__\\)\")"
     ]
   }
 }
