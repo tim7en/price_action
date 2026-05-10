@@ -40,45 +40,197 @@ from .sector_ml import RESERVE_STRATEGY_LABEL, build_sector_ml_view
 RESERVE_LEVERAGE_LABEL_PREFIX = f"{RESERVE_STRATEGY_LABEL} x"
 
 
-def _load_sector_pe_overlay(project_root: Path) -> dict[str, Any]:
-    """Load the user-maintained sector PE overlay if present.
+SECTOR_PE_CACHE_TTL_DAYS = 7
 
-    The overlay is a context layer (current forward PE vs 10y average per sector
-    ETF). It is NOT used as an ML feature to avoid point-in-time leakage, since
-    the values in this file are restated/snapshot rather than vintage-correct.
+
+def _fetch_sector_pe_snapshot_yfinance(symbols: list[str]) -> dict[str, Any] | None:
+    """Pull current trailing PE and top-holding concentration per sector ETF.
+
+    Returns None if yfinance is unavailable or the fetch errors out wholesale.
+    Yahoo does not provide forward PE for ETFs; trailing PE is the available proxy.
+    """
+    try:
+        import yfinance as yf  # type: ignore
+    except ImportError:
+        return None
+
+    snapshot: dict[str, Any] = {
+        "fetched_at": datetime.now(UTC).isoformat(),
+        "source": "yfinance.Ticker.info + funds_data.top_holdings",
+        "sectors": {},
+    }
+    any_success = False
+    for symbol in symbols:
+        try:
+            ticker = yf.Ticker(symbol)
+            info = ticker.info or {}
+            trailing_pe = info.get("trailingPE")
+            yield_value = info.get("yield")
+            top_1_weight = None
+            top_3_weight = None
+            top_10_weight = None
+            top_holding_name = None
+            try:
+                holdings = ticker.funds_data.top_holdings
+                if hasattr(holdings, "head") and not holdings.empty:
+                    weights = holdings["Holding Percent"].astype(float).head(10).tolist()
+                    names = holdings["Name"].astype(str).head(10).tolist()
+                    top_1_weight = float(weights[0]) if weights else None
+                    top_3_weight = float(sum(weights[:3])) if weights else None
+                    top_10_weight = float(sum(weights[:10])) if weights else None
+                    top_holding_name = names[0] if names else None
+            except Exception:
+                pass
+            snapshot["sectors"][symbol] = {
+                "trailing_pe": float(trailing_pe) if trailing_pe is not None else None,
+                "dividend_yield": float(yield_value) if yield_value is not None else None,
+                "top_1_weight": top_1_weight,
+                "top_3_weight": top_3_weight,
+                "top_10_weight": top_10_weight,
+                "top_holding_name": top_holding_name,
+            }
+            any_success = True
+        except Exception:
+            snapshot["sectors"][symbol] = {}
+    if not any_success:
+        return None
+    return snapshot
+
+
+def _load_or_refresh_sector_pe_snapshot(project_root: Path, symbols: list[str]) -> dict[str, Any] | None:
+    """Read the cached snapshot, refresh from yfinance if stale or missing.
+
+    Cache lives at ``cache/sector_pe_snapshot.json``. Refresh happens automatically
+    when the cache is older than SECTOR_PE_CACHE_TTL_DAYS. Delete the cache file
+    to force a refresh.
+    """
+    cache_path = project_root / "cache" / "sector_pe_snapshot.json"
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cached: dict[str, Any] | None = None
+    is_stale = True
+    if cache_path.exists():
+        try:
+            cached = json.loads(cache_path.read_text(encoding="utf-8"))
+            fetched_at = cached.get("fetched_at")
+            if fetched_at:
+                age = datetime.now(UTC) - datetime.fromisoformat(str(fetched_at))
+                is_stale = age.days >= SECTOR_PE_CACHE_TTL_DAYS
+        except (json.JSONDecodeError, OSError, ValueError):
+            cached = None
+    if is_stale:
+        fresh = _fetch_sector_pe_snapshot_yfinance(symbols)
+        if fresh is not None:
+            try:
+                cache_path.write_text(json.dumps(fresh, indent=2), encoding="utf-8")
+            except OSError:
+                pass
+            return fresh
+    return cached
+
+
+def _load_sector_pe_overlay(project_root: Path, symbols: list[str] | None = None) -> dict[str, Any]:
+    """Build the sector PE overlay used by the playbook.
+
+    Combines auto-fetched yfinance trailing PE + top-holdings concentration with
+    user-maintained 10y averages from ``config/sector_pe_overlay.json``. The
+    overlay is a *context* layer — never an ML feature — to avoid point-in-time
+    leakage, since neither yfinance nor the manual file is vintage-correct.
     """
     overlay_path = project_root / "config" / "sector_pe_overlay.json"
-    if not overlay_path.exists():
-        return {"available": False, "reason": "config/sector_pe_overlay.json not found."}
-    try:
-        payload = json.loads(overlay_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
-        return {"available": False, "reason": f"Could not parse sector_pe_overlay.json: {exc}"}
-    sectors_raw = payload.get("sectors") or {}
-    sectors: dict[str, dict[str, Any]] = {}
-    for symbol, info in sectors_raw.items():
+    manual_payload: dict[str, Any] = {}
+    manual_reason: str | None = None
+    if overlay_path.exists():
+        try:
+            manual_payload = json.loads(overlay_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            manual_reason = f"Could not parse sector_pe_overlay.json: {exc}"
+    else:
+        manual_reason = "config/sector_pe_overlay.json not found."
+
+    manual_sectors_raw = manual_payload.get("sectors") or {}
+    manual_sectors: dict[str, dict[str, Any]] = {}
+    for sym, info in manual_sectors_raw.items():
         if not isinstance(info, dict):
             continue
         try:
-            forward_pe = float(info.get("forward_pe")) if info.get("forward_pe") is not None else None
             ten_year = float(info.get("ten_year_avg_pe")) if info.get("ten_year_avg_pe") is not None else None
+            forward_pe = float(info.get("forward_pe")) if info.get("forward_pe") is not None else None
         except (TypeError, ValueError):
             continue
-        sectors[str(symbol).upper()] = {
-            "name": str(info.get("name") or symbol),
-            "forward_pe": forward_pe,
+        manual_sectors[str(sym).upper()] = {
+            "name": str(info.get("name") or sym),
             "ten_year_avg_pe": ten_year,
+            "manual_forward_pe": forward_pe,
             "comment": str(info.get("comment") or ""),
-            "premium_pct": (
-                ((forward_pe / ten_year) - 1.0)
-                if forward_pe is not None and ten_year not in (None, 0.0)
-                else None
-            ),
         }
+
+    fetch_symbols = symbols or list(manual_sectors.keys()) or [
+        "XLK", "XLV", "XLF", "XLY", "XLP", "XLE", "XLI", "XLB", "XLU"
+    ]
+    snapshot = _load_or_refresh_sector_pe_snapshot(project_root, fetch_symbols)
+
+    sectors: dict[str, dict[str, Any]] = {}
+    fetched_at = None
+    snapshot_source = None
+    if snapshot is not None:
+        fetched_at = snapshot.get("fetched_at")
+        snapshot_source = snapshot.get("source")
+        for sym, fetched_info in (snapshot.get("sectors") or {}).items():
+            sym_upper = sym.upper()
+            manual_info = manual_sectors.get(sym_upper, {})
+            trailing_pe = fetched_info.get("trailing_pe") if isinstance(fetched_info, dict) else None
+            ten_year = manual_info.get("ten_year_avg_pe")
+            premium_pct = (
+                ((trailing_pe / ten_year) - 1.0)
+                if trailing_pe is not None and ten_year not in (None, 0.0)
+                else None
+            )
+            sectors[sym_upper] = {
+                "name": manual_info.get("name", sym_upper),
+                "trailing_pe": trailing_pe,
+                "ten_year_avg_pe": ten_year,
+                "premium_pct": premium_pct,
+                "dividend_yield": fetched_info.get("dividend_yield") if isinstance(fetched_info, dict) else None,
+                "top_1_weight": fetched_info.get("top_1_weight") if isinstance(fetched_info, dict) else None,
+                "top_3_weight": fetched_info.get("top_3_weight") if isinstance(fetched_info, dict) else None,
+                "top_10_weight": fetched_info.get("top_10_weight") if isinstance(fetched_info, dict) else None,
+                "top_holding_name": fetched_info.get("top_holding_name") if isinstance(fetched_info, dict) else None,
+                "comment": manual_info.get("comment", ""),
+            }
+    if not sectors and manual_sectors:
+        # Auto-fetch failed entirely — fall back to manual values
+        for sym, manual_info in manual_sectors.items():
+            forward_pe = manual_info.get("manual_forward_pe")
+            ten_year = manual_info.get("ten_year_avg_pe")
+            sectors[sym] = {
+                "name": manual_info.get("name", sym),
+                "trailing_pe": forward_pe,  # treat manual forward as trailing in fallback
+                "ten_year_avg_pe": ten_year,
+                "premium_pct": (
+                    ((forward_pe / ten_year) - 1.0)
+                    if forward_pe is not None and ten_year not in (None, 0.0)
+                    else None
+                ),
+                "dividend_yield": None,
+                "top_1_weight": None,
+                "top_3_weight": None,
+                "top_10_weight": None,
+                "top_holding_name": None,
+                "comment": manual_info.get("comment", "") + " [manual fallback — auto-fetch unavailable]",
+            }
+
+    if not sectors:
+        return {"available": False, "reason": manual_reason or "No PE data available."}
+
     return {
-        "available": bool(sectors),
-        "as_of_date": str(payload.get("as_of_date") or ""),
-        "source_note": str(payload.get("source_note") or ""),
+        "available": True,
+        "as_of_date": str(manual_payload.get("as_of_date") or ""),
+        "fetched_at": fetched_at,
+        "snapshot_source": snapshot_source,
+        "source_note": str(
+            manual_payload.get("source_note")
+            or "Trailing PE and holdings concentration auto-fetched from yfinance. 10y average PE comes from the manual config file. Forward PE is not exposed by Yahoo for sector ETFs."
+        ),
         "sectors": sectors,
     }
 
@@ -4371,47 +4523,66 @@ def _render_rotation_playbook_html(
             "Cash": "Stand-aside",
         }.get(current_regime, "Custom regime")
 
+        def _pe_summary_text(pe_info: dict[str, Any]) -> str:
+            trailing_pe = pe_info.get("trailing_pe")
+            ten_year = pe_info.get("ten_year_avg_pe")
+            premium = pe_info.get("premium_pct")
+            if trailing_pe is None and ten_year is None:
+                return "n/a"
+            trailing_text = f"{trailing_pe:.1f}" if trailing_pe is not None else "n/a"
+            if ten_year is not None and trailing_pe is not None:
+                premium_text = _format_return_pct(premium) if premium is not None else "n/a"
+                return f"{trailing_text} vs {ten_year:.1f} 10y avg ({premium_text})"
+            return trailing_text
+
+        def _concentration_text(pe_info: dict[str, Any]) -> str:
+            top_1 = pe_info.get("top_1_weight")
+            top_holding = pe_info.get("top_holding_name") or ""
+            top_10 = pe_info.get("top_10_weight")
+            if top_1 is None and top_10 is None:
+                return "n/a"
+            parts: list[str] = []
+            if top_1 is not None:
+                parts.append(f"{top_1*100:.1f}% top {top_holding}".rstrip())
+            if top_10 is not None:
+                parts.append(f"top-10 {top_10*100:.0f}%")
+            return " · ".join(parts)
+
         # Lean-in / avoid lists from the actual model ranking
-        lean_in_rows: list[tuple[str, str, str, str]] = []
-        avoid_rows: list[tuple[str, str, str, str]] = []
+        lean_in_rows: list[tuple[str, ...]] = []
+        avoid_rows: list[tuple[str, ...]] = []
         if isinstance(full_frame, pd.DataFrame) and not full_frame.empty:
             ranked = full_frame.copy()
             top_lean = ranked.head(3)
             bottom_avoid = ranked.tail(3).iloc[::-1]  # worst first
             for row in top_lean.itertuples(index=False):
                 pe_info = (pe_overlay or {}).get("sectors", {}).get(str(row.symbol), {}) if pe_overlay and pe_overlay.get("available") else {}
-                pe_text = "n/a"
-                if pe_info.get("forward_pe") is not None and pe_info.get("ten_year_avg_pe") is not None:
-                    premium = pe_info.get("premium_pct")
-                    pe_text = f"{pe_info['forward_pe']:.1f} vs {pe_info['ten_year_avg_pe']:.1f} 10y avg ({_format_return_pct(premium) if premium is not None else 'n/a'})"
                 lean_in_rows.append(
                     (
                         f"{row.sector_label} ({row.symbol})",
                         _format_probability_pct(row.ensemble_probability),
                         _format_decimal(row.combined_live_score, 3),
-                        pe_text,
+                        _pe_summary_text(pe_info),
+                        _concentration_text(pe_info),
                     )
                 )
             for row in bottom_avoid.itertuples(index=False):
                 pe_info = (pe_overlay or {}).get("sectors", {}).get(str(row.symbol), {}) if pe_overlay and pe_overlay.get("available") else {}
-                pe_text = "n/a"
-                if pe_info.get("forward_pe") is not None and pe_info.get("ten_year_avg_pe") is not None:
-                    premium = pe_info.get("premium_pct")
-                    pe_text = f"{pe_info['forward_pe']:.1f} vs {pe_info['ten_year_avg_pe']:.1f} 10y avg ({_format_return_pct(premium) if premium is not None else 'n/a'})"
                 avoid_rows.append(
                     (
                         f"{row.sector_label} ({row.symbol})",
                         _format_probability_pct(row.ensemble_probability),
                         _format_decimal(row.combined_live_score, 3),
-                        pe_text,
+                        _pe_summary_text(pe_info),
+                        _concentration_text(pe_info),
                     )
                 )
         lean_table = _render_data_table(
-            headers=("Lean into", "ML probability", "Combined score", "Forward PE vs 10y avg"),
+            headers=("Lean into", "ML probability", "Combined score", "Trailing PE vs 10y avg", "Concentration"),
             rows=lean_in_rows,
         ) if lean_in_rows else "<p>No live basket available — see model output.</p>"
         avoid_table = _render_data_table(
-            headers=("Avoid", "ML probability", "Combined score", "Forward PE vs 10y avg"),
+            headers=("Avoid", "ML probability", "Combined score", "Trailing PE vs 10y avg", "Concentration"),
             rows=avoid_rows,
         ) if avoid_rows else "<p>No avoid list available — see model output.</p>"
 
@@ -4428,7 +4599,7 @@ def _render_rotation_playbook_html(
             for q in quadrant_cards
         )
 
-        # PE overlay section
+        # PE + concentration overlay section
         if pe_overlay and pe_overlay.get("available"):
             pe_rows: list[tuple[str, ...]] = []
             sectors_overlay = pe_overlay.get("sectors", {})
@@ -4439,38 +4610,51 @@ def _render_rotation_playbook_html(
             )
             for symbol, info in sorted_overlay:
                 premium = info.get("premium_pct")
+                top_1 = info.get("top_1_weight")
+                top_10 = info.get("top_10_weight")
+                top_name = info.get("top_holding_name") or ""
+                top_1_text = f"{top_1*100:.1f}% {top_name}".strip() if top_1 is not None else "n/a"
+                top_10_text = f"{top_10*100:.0f}%" if top_10 is not None else "n/a"
                 pe_rows.append(
                     (
                         f"{info.get('name', symbol)} ({symbol})",
-                        _format_decimal(info.get("forward_pe"), 1),
+                        _format_decimal(info.get("trailing_pe"), 1),
                         _format_decimal(info.get("ten_year_avg_pe"), 1),
                         _format_return_pct(premium) if premium is not None else "n/a",
-                        str(info.get("comment") or ""),
+                        top_1_text,
+                        top_10_text,
                     )
                 )
             pe_table = _render_data_table(
-                headers=("Sector", "Forward PE", "10y avg PE", "Premium / discount", "Note"),
+                headers=("Sector", "Trailing PE (now)", "10y avg PE", "Premium / discount", "Top holding", "Top-10 weight"),
                 rows=pe_rows,
             )
+            fetched_text = ""
+            if pe_overlay.get("fetched_at"):
+                try:
+                    fetched_text = f"Auto-fetched {pd.Timestamp(pe_overlay['fetched_at']).strftime('%Y-%m-%d %H:%M UTC')} from yfinance. "
+                except Exception:
+                    fetched_text = ""
             pe_meta = (
-                f"As-of {html.escape(pe_overlay.get('as_of_date') or 'unspecified')}. "
+                f"{fetched_text}"
+                f"10y averages are user-maintained in <code>config/sector_pe_overlay.json</code>. "
                 f"{html.escape(pe_overlay.get('source_note') or '')}"
             )
             pe_section = f"""
-        <section class="section">
-          <p class="eyebrow">Valuation Context</p>
-          <h2>Forward PE vs 10-Year Average</h2>
-          <p>This is a context overlay, not an ML feature. The values are user-maintained in <code>config/sector_pe_overlay.json</code> and represent a current snapshot rather than point-in-time history. Use this to sanity-check whether the model's lean-in sectors are also reasonably priced.</p>
+        <section class=\"section\">
+          <p class=\"eyebrow\">Valuation &amp; Composition Snapshot</p>
+          <h2>Trailing PE vs 10-Year Average · Concentration Risk</h2>
+          <p>This is a context overlay, not an ML feature. Trailing PE and top-holding weights are auto-fetched from yfinance each build (cached for {SECTOR_PE_CACHE_TTL_DAYS} days). 10-year average PE comes from the manual config file because Yahoo does not expose history. <strong>Yahoo does not publish forward PE for sector ETFs</strong>, so we use trailing PE as the available proxy. Use this to sanity-check whether the model's lean-in sectors are reasonably priced and to flag concentration drift.</p>
           {pe_table}
-          <p style="font-size:0.85rem;margin-top:10px">{pe_meta}</p>
+          <p style=\"font-size:0.85rem;margin-top:10px\">{pe_meta}</p>
         </section>"""
         else:
-            reason = (pe_overlay or {}).get("reason", "PE overlay file missing.")
+            reason = (pe_overlay or {}).get("reason", "PE overlay unavailable.")
             pe_section = f"""
-        <section class="section">
-          <p class="eyebrow">Valuation Context</p>
-          <h2>Forward PE vs 10-Year Average</h2>
-          <p>The valuation overlay is currently disabled — {html.escape(reason)} Populate <code>config/sector_pe_overlay.json</code> to enable a current forward-PE / 10y-average comparison per sector ETF. The overlay is informational only and never enters ML training.</p>
+        <section class=\"section\">
+          <p class=\"eyebrow\">Valuation &amp; Composition Snapshot</p>
+          <h2>Trailing PE vs 10-Year Average · Concentration Risk</h2>
+          <p>The overlay is currently disabled — {html.escape(reason)} Trailing PE and holdings concentration are normally auto-fetched from yfinance; 10y averages come from <code>config/sector_pe_overlay.json</code>. The overlay is informational only and never enters ML training.</p>
         </section>"""
 
         return f"""<!DOCTYPE html>
@@ -4722,8 +4906,9 @@ def _render_rotation_playbook_html(
             <p class=\"eyebrow\">Caveats</p>
             <h2>What The Model Cannot See</h2>
             <ul class=\"simple\">
-                <li><strong>ETF composition drifts.</strong> Sector ETFs rebalance with market cap and corporate cash flow. XLK today is dominated by mega-caps that did not exist at this weight in 2006. The model trains on the price series of the ETF as it was, but the underlying business mix has changed — the historical "Information Technology" return is partly a story about which companies grew into the index.</li>
-                <li><strong>No point-in-time fundamentals.</strong> Forward EPS, balance-sheet quality, and PE history are not in the training pipeline. The valuation overlay above is informational only — it never feeds the ML signal, because using restated PE history would create look-ahead bias.</li>
+                <li><strong>ETF composition drifts with cash flow.</strong> Sector ETFs rebalance to market cap, so winners get bigger weights as their cash flow and price compound. The "Top holding" and "Top-10 weight" columns above show how concentrated each ETF is right now — when one name is more than ~12% of the basket, the ETF is functionally a single-name proxy at the margin. The model trains on the price series of the ETF as it was, so historical "Information Technology" returns are partly a story about which names grew into the index, not a stable definition of the sector.</li>
+                <li><strong>No point-in-time fundamentals.</strong> Forward EPS, balance-sheet quality, and PE history are not in the training pipeline. The trailing PE in the overlay is a current snapshot from yfinance (refreshed weekly) and is informational only — it never feeds the ML signal, because using restated PE history would create look-ahead bias.</li>
+                <li><strong>Forward PE is not available for ETFs from Yahoo.</strong> The free Yahoo endpoint computes forward PE for individual stocks, not for sector ETFs. To get a true forward PE we would need to compute the weighted average across each ETF's holdings (Bloomberg/FactSet) or pay for a sector-level estimate.</li>
                 <li><strong>Macro labels are revised.</strong> The macro regime label uses the local store, which is built from currently-available data series. It is not a vintage database. Treat regime labels in the deep past as approximate, not as live signals you could have acted on.</li>
                 <li><strong>The reserve sleeve assumes funded cash.</strong> The 5%/10%/20% drawdown deployments require having the cash actually available. In a tax-deferred account this is straightforward; in a taxable account, capital-gains friction can change the optimal trigger.</li>
                 <li><strong>The model is short-horizon.</strong> Each signal targets a {hold_bars}-bar holding window. Do not interpret a single rebalance as a multi-quarter view. The right time horizon for "the model" is the rolling next 5 trading days.</li>
