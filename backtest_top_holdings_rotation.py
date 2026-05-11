@@ -36,6 +36,9 @@ HOLDINGS_REQUIRED_COLUMNS = {
     "holding_symbol",
     "weight",
 }
+BENCHMARK_STRATEGY_LABEL = "SPY Buy And Hold"
+TOP5_STRATEGY_LABEL = "Top 5 Holdings ML Rotation Stop 10%"
+SECTOR_ETF_STRATEGY_LABEL = "Sector ETF ML Quality Rotation"
 
 
 def _load_close_panel(symbols: list[str], required_symbols: set[str] | None = None) -> pd.DataFrame:
@@ -102,6 +105,184 @@ def _load_point_in_time_holdings(path: Path) -> pd.DataFrame:
     return frame.sort_values(["sector_symbol", "known_from_date", "as_of_date", "weight"])
 
 
+def _list_csv_part_paths(path: Path) -> list[Path]:
+    return sorted(path.parent.glob(f"{path.stem}.part*{path.suffix}"))
+
+
+def _read_csv_output(path: Path, **kwargs: Any) -> pd.DataFrame:
+    if path.exists():
+        return pd.read_csv(path, **kwargs)
+
+    part_paths = _list_csv_part_paths(path)
+    if not part_paths:
+        raise FileNotFoundError(f"Missing CSV export: {path}")
+
+    frames = [pd.read_csv(part_path, **kwargs) for part_path in part_paths]
+    if not frames:
+        return pd.DataFrame()
+    return pd.concat(frames, ignore_index=True)
+
+
+def _rank_strategy_frame(frame: pd.DataFrame, prefix: str) -> pd.DataFrame:
+    if frame.empty:
+        ranked = frame.copy()
+        ranked[f"{prefix}_rank"] = pd.Series(dtype="Int64")
+        return ranked
+
+    sharpe_column = f"{prefix}_sharpe"
+    cagr_column = f"{prefix}_cagr"
+    drawdown_column = f"{prefix}_max_drawdown"
+    ranked = frame.copy()
+    ranked["_rank_sharpe"] = pd.to_numeric(ranked[sharpe_column], errors="coerce").fillna(float("-inf"))
+    ranked["_rank_cagr"] = pd.to_numeric(ranked[cagr_column], errors="coerce").fillna(float("-inf"))
+    ranked["_rank_drawdown"] = pd.to_numeric(ranked[drawdown_column], errors="coerce").fillna(float("-inf"))
+    ranked = ranked.sort_values(
+        ["_rank_sharpe", "_rank_cagr", "_rank_drawdown"],
+        ascending=[False, False, False],
+    ).reset_index(drop=True)
+    ranked[f"{prefix}_rank"] = pd.Series(np.arange(1, len(ranked.index) + 1), dtype="int64")
+    return ranked.drop(columns=["_rank_sharpe", "_rank_cagr", "_rank_drawdown"])
+
+
+def _json_scalar(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, (np.bool_, bool)):
+        return bool(value)
+    if isinstance(value, (np.integer, int)):
+        return int(value)
+    if isinstance(value, (np.floating, float)):
+        if pd.isna(value):
+            return None
+        return float(value)
+    return value
+
+
+def _build_holdout_leaderboard(summary_frame: pd.DataFrame) -> pd.DataFrame:
+    if summary_frame.empty:
+        return pd.DataFrame()
+
+    metric_columns = [
+        "total_return",
+        "cagr",
+        "sharpe",
+        "sortino",
+        "max_drawdown",
+        "calmar",
+        "profit_factor",
+        "hit_rate",
+        "average_trade_return",
+        "average_win",
+        "average_loss",
+        "trade_count",
+        "period_count",
+        "entry_count",
+        "turnover_per_year",
+    ]
+    selection_keys = ["mode", "strategy_label"]
+    candidate_frame = summary_frame.loc[summary_frame["strategy_label"].ne(BENCHMARK_STRATEGY_LABEL)].copy()
+    if candidate_frame.empty:
+        return pd.DataFrame()
+
+    history_frame = candidate_frame.loc[
+        candidate_frame["scope"].eq("history"),
+        selection_keys + metric_columns,
+    ].rename(columns={column: f"history_{column}" for column in metric_columns})
+    if history_frame.empty:
+        return pd.DataFrame()
+
+    holdout_frame = candidate_frame.loc[
+        candidate_frame["scope"].eq("holdout"),
+        selection_keys + metric_columns,
+    ].rename(columns={column: f"holdout_{column}" for column in metric_columns})
+
+    leaderboard = _rank_strategy_frame(history_frame, prefix="history")
+    if not holdout_frame.empty:
+        leaderboard = leaderboard.merge(holdout_frame, on=selection_keys, how="left")
+        holdout_rank_frame = _rank_strategy_frame(
+            holdout_frame[[*selection_keys, "holdout_sharpe", "holdout_cagr", "holdout_max_drawdown"]],
+            prefix="holdout",
+        )[[*selection_keys, "holdout_rank"]]
+        leaderboard = leaderboard.merge(holdout_rank_frame, on=selection_keys, how="left")
+
+    benchmark_holdout = summary_frame.loc[
+        summary_frame["scope"].eq("holdout") & summary_frame["strategy_label"].eq(BENCHMARK_STRATEGY_LABEL),
+        ["mode", "total_return", "cagr", "sharpe", "max_drawdown"],
+    ].rename(
+        columns={
+            "total_return": "benchmark_holdout_total_return",
+            "cagr": "benchmark_holdout_cagr",
+            "sharpe": "benchmark_holdout_sharpe",
+            "max_drawdown": "benchmark_holdout_max_drawdown",
+        }
+    )
+    if not benchmark_holdout.empty:
+        leaderboard = leaderboard.merge(benchmark_holdout, on="mode", how="left")
+
+    leaderboard["selection_scope"] = "history"
+    leaderboard["evaluation_scope"] = "holdout"
+    leaderboard["selected_on_history"] = leaderboard["history_rank"].eq(1)
+    leaderboard["holdout_total_return_vs_spy"] = (
+        pd.to_numeric(leaderboard.get("holdout_total_return"), errors="coerce")
+        - pd.to_numeric(leaderboard.get("benchmark_holdout_total_return"), errors="coerce")
+    )
+    leaderboard["holdout_cagr_vs_spy"] = (
+        pd.to_numeric(leaderboard.get("holdout_cagr"), errors="coerce")
+        - pd.to_numeric(leaderboard.get("benchmark_holdout_cagr"), errors="coerce")
+    )
+    leaderboard["holdout_sharpe_vs_spy"] = (
+        pd.to_numeric(leaderboard.get("holdout_sharpe"), errors="coerce")
+        - pd.to_numeric(leaderboard.get("benchmark_holdout_sharpe"), errors="coerce")
+    )
+    return leaderboard.sort_values("history_rank").reset_index(drop=True)
+
+
+def _build_best_strategy_assessment(leaderboard: pd.DataFrame) -> dict[str, Any]:
+    if leaderboard.empty:
+        return {}
+
+    selected = leaderboard.sort_values("history_rank").iloc[0]
+    assessment: dict[str, Any] = {
+        "selection_rule": "Rank candidate PIT strategies by history Sharpe, then CAGR, then max_drawdown, and evaluate the unchanged winner on holdout.",
+        "candidate_count": int(len(leaderboard.index)),
+        "selected_mode": str(selected["mode"]),
+        "selected_strategy_label": str(selected["strategy_label"]),
+        "selected_history_rank": _json_scalar(selected.get("history_rank")),
+        "selected_holdout_rank": _json_scalar(selected.get("holdout_rank")),
+        "history_total_return": _json_scalar(selected.get("history_total_return")),
+        "history_cagr": _json_scalar(selected.get("history_cagr")),
+        "history_sharpe": _json_scalar(selected.get("history_sharpe")),
+        "history_max_drawdown": _json_scalar(selected.get("history_max_drawdown")),
+        "holdout_total_return": _json_scalar(selected.get("holdout_total_return")),
+        "holdout_cagr": _json_scalar(selected.get("holdout_cagr")),
+        "holdout_sharpe": _json_scalar(selected.get("holdout_sharpe")),
+        "holdout_max_drawdown": _json_scalar(selected.get("holdout_max_drawdown")),
+        "holdout_total_return_vs_spy": _json_scalar(selected.get("holdout_total_return_vs_spy")),
+        "holdout_cagr_vs_spy": _json_scalar(selected.get("holdout_cagr_vs_spy")),
+        "holdout_sharpe_vs_spy": _json_scalar(selected.get("holdout_sharpe_vs_spy")),
+        "benchmark_holdout_total_return": _json_scalar(selected.get("benchmark_holdout_total_return")),
+        "benchmark_holdout_cagr": _json_scalar(selected.get("benchmark_holdout_cagr")),
+        "benchmark_holdout_sharpe": _json_scalar(selected.get("benchmark_holdout_sharpe")),
+        "benchmark_holdout_max_drawdown": _json_scalar(selected.get("benchmark_holdout_max_drawdown")),
+    }
+
+    holdout_ranked = leaderboard.dropna(subset=["holdout_rank"]).sort_values("holdout_rank")
+    if not holdout_ranked.empty:
+        holdout_winner = holdout_ranked.iloc[0]
+        assessment.update(
+            {
+                "holdout_oracle_mode": str(holdout_winner["mode"]),
+                "holdout_oracle_strategy_label": str(holdout_winner["strategy_label"]),
+                "holdout_oracle_rank": _json_scalar(holdout_winner.get("holdout_rank")),
+                "holdout_oracle_total_return": _json_scalar(holdout_winner.get("holdout_total_return")),
+                "holdout_oracle_cagr": _json_scalar(holdout_winner.get("holdout_cagr")),
+                "holdout_oracle_sharpe": _json_scalar(holdout_winner.get("holdout_sharpe")),
+                "holdout_oracle_max_drawdown": _json_scalar(holdout_winner.get("holdout_max_drawdown")),
+            }
+        )
+    return assessment
+
+
 def _latest_known_sector_holdings(
     holdings: pd.DataFrame,
     sector_symbol: str,
@@ -123,7 +304,7 @@ def _latest_known_sector_holdings(
 
 
 def _prepare_signal_frame(scope: str, config: dict[str, Any]) -> pd.DataFrame:
-    oos = pd.read_csv(REPORT_DIR / "sector_ml_oos_signal_frame.csv", parse_dates=["date"])
+    oos = _read_csv_output(REPORT_DIR / "sector_ml_oos_signal_frame.csv", parse_dates=["date"])
     validation_predictions_by_symbol = {
         symbol: group.set_index("date").sort_index()
         for symbol, group in oos.loc[oos["fold_label"].astype(str) != "holdout"].groupby("symbol")
@@ -135,7 +316,7 @@ def _prepare_signal_frame(scope: str, config: dict[str, Any]) -> pd.DataFrame:
     )
 
     if scope == "holdout":
-        signal_frame = pd.read_csv(REPORT_DIR / "sector_ml_holdout_signal_frame.csv", parse_dates=["date"])
+        signal_frame = _read_csv_output(REPORT_DIR / "sector_ml_holdout_signal_frame.csv", parse_dates=["date"])
     elif scope == "history":
         historical_start = pd.Timestamp(str(config["historical_benchmark_start"]))
         signal_frame = oos.loc[oos["date"] >= historical_start].copy()
@@ -483,9 +664,9 @@ def _run_scope(
 
     summary_rows = []
     for label, return_column, turnover_column in (
-        ("Top 5 Holdings ML Rotation Stop 10%", "stock_top5_return", "turnover"),
-        ("Sector ETF ML Quality Rotation", "sector_quality_return", "sector_turnover"),
-        ("SPY Buy And Hold", "spy_return", None),
+        (TOP5_STRATEGY_LABEL, "stock_top5_return", "turnover"),
+        (SECTOR_ETF_STRATEGY_LABEL, "sector_quality_return", "sector_turnover"),
+        (BENCHMARK_STRATEGY_LABEL, "spy_return", None),
     ):
         summary = _summarize_return_stream(result, return_column, turnover_column=turnover_column)
         summary_rows.append({"scope": scope, "mode": mode, "strategy_label": label, **summary})
@@ -530,13 +711,29 @@ def main() -> None:
     ]
     period_log_frame = pd.DataFrame(period_log_rows)
     summary_frame = pd.DataFrame(summary_rows)
+    leaderboard_frame = _build_holdout_leaderboard(summary_frame)
+    best_strategy_assessment = _build_best_strategy_assessment(leaderboard_frame)
 
     period_output = REPORT_DIR / "sector_ml_pit_top5_holdings_period_log.csv"
     summary_output = REPORT_DIR / "sector_ml_pit_top5_holdings_strategy_summary.csv"
+    leaderboard_output = REPORT_DIR / "sector_ml_pit_top5_holdings_leaderboard.csv"
+    assessment_output = REPORT_DIR / "sector_ml_pit_top5_holdings_best_strategy_assessment.json"
     period_log_frame.to_csv(period_output, index=False)
     summary_frame.to_csv(summary_output, index=False)
+    leaderboard_frame.to_csv(leaderboard_output, index=False)
+    assessment_output.write_text(json.dumps(best_strategy_assessment, indent=2), encoding="utf-8")
 
-    print(json.dumps({"period_log": str(period_output), "summary": str(summary_output)}, indent=2))
+    print(
+        json.dumps(
+            {
+                "period_log": str(period_output),
+                "summary": str(summary_output),
+                "leaderboard": str(leaderboard_output),
+                "best_strategy_assessment": str(assessment_output),
+            },
+            indent=2,
+        )
+    )
     if not summary_frame.empty:
         printable = summary_frame[
             [
@@ -552,6 +749,24 @@ def main() -> None:
             ]
         ].copy()
         print(printable.to_string(index=False))
+    if not leaderboard_frame.empty:
+        selected_printable = leaderboard_frame.loc[
+            leaderboard_frame["selected_on_history"],
+            [
+                "mode",
+                "strategy_label",
+                "history_rank",
+                "history_sharpe",
+                "history_cagr",
+                "history_max_drawdown",
+                "holdout_rank",
+                "holdout_sharpe",
+                "holdout_cagr",
+                "holdout_max_drawdown",
+                "holdout_total_return_vs_spy",
+            ],
+        ].copy()
+        print(selected_printable.to_string(index=False))
 
 
 if __name__ == "__main__":
