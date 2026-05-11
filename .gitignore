@@ -132,3 +132,6 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Oversized generated research logs
+outputs/sector_rotation_report/sector_momentum_rotation_period_log.csv

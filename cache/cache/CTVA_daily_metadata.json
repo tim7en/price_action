@@ -1,0 +1,15 @@
+{
+  "downloaded_at_utc": "2026-05-11T16:34:07.634772+00:00",
+  "ticker": "CTVA",
+  "source": "Yahoo Finance chart API",
+  "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/CTVA",
+  "start": "1999-01-01",
+  "end": "2026-05-11",
+  "rows": 1730,
+  "first_date": "2019-06-21",
+  "last_date": "2026-05-08",
+  "feature_windows": {
+    "sma": 20,
+    "atr": 14
+  }
+}

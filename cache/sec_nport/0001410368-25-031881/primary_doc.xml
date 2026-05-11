@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?><edgarSubmission xmlns="http://www.sec.gov/edgar/nport" xmlns:com="http://www.sec.gov/edgar/common" xmlns:ncom="http://www.sec.gov/edgar/nportcommon" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sec.gov/edgar/nport eis_NPORT_Filer.xsd">
+  <headerData>
+    <submissionType>NPORT-P</submissionType>
+    <isConfidential>false</isConfidential>
+    <filerInfo>
+
+      <filer>
+        <issuerCredentials>
+          <cik>0001064641</cik>
+          <ccc>XXXXXXXX</ccc>
+        </issuerCredentials>
+      </filer>
+
+
+      <seriesClassInfo>
+        <seriesId>S000093841</seriesId>
+        <classId>C000262289</classId>
+      </seriesClassInfo>
+
+
+    </filerInfo>
+  </headerData>
+  <formData>
+    <genInfo>
+      <regName>SELECT SECTOR SPDR TRUST</regName>
+      <regFileNumber>811-08837</regFileNumber>
+      <regCik>0001064641</regCik>
+      <regLei>5493008JJKIPMEX3CO91</regLei>
+      <regStreet1>One Iron Street</regStreet1>
+      <regCity>Boston</regCity>
+      <regStateConditional regCountry="US" regState="US-MA"/>
+      <regZipOrPostalCode>02210</regZipOrPostalCode>
+      <regPhone>866-732-8673</regPhone>
+      <seriesName>The Real Estate Select Sector SPDR Premium Income Fund</seriesName>
+      <seriesId>S000093841</seriesId>
+      <seriesLei>9845008BEA5D06F8FC47</seriesLei>
+      <repPdEnd>2025-12-31</repPdEnd>
+      <repPdDate>2025-09-30</repPdDate>
+      <isFinalFiling>N</isFinalFiling>
+    </genInfo>
+    <fundInfo>
+      <totAssets>1525481.76</totAssets>
+      <totLiabs>16858.11</totLiabs>
+      <netAssets>1508623.65</netAssets>
+      <assetsAttrMiscSec>0.00000000</assetsAttrMiscSec>
+      <assetsInvested>0.00000000</assetsInvested>
+      <amtPayOneYrBanksBorr>0.00000000</amtPayOneYrBanksBorr>
+      <amtPayOneYrCtrldComp>0.00000000</amtPayOneYrCtrldComp>
+      <amtPayOneYrOthAffil>0.00000000</amtPayOneYrOthAffil>
+      <amtPayOneYrOther>0.00000000</amtPayOneYrOther>
+      <amtPayAftOneYrBanksBorr>0.00000000</amtPayAftOneYrBanksBorr>
+      <amtPayAftOneYrCtrldComp>0.00000000</amtPayAftOneYrCtrldComp>
+      <amtPayAftOneYrOthAffil>0.00000000</amtPayAftOneYrOthAffil>
+      <amtPayAftOneYrOther>0.00000000</amtPayAftOneYrOther>
+      <delayDeliv>0.00000000</delayDeliv>
+      <standByCommit>0.00000000</standByCommit>
+      <liquidPref>0.00000000</liquidPref>
+      <cshNotRptdInCorD>0.00000000</cshNotRptdInCorD>
+      <isNonCashCollateral>N</isNonCashCollateral>
+      <returnInfo>
+        <monthlyTotReturns>
+          <monthlyTotReturn classId="C000262289" rtn1="-2.41000000" rtn2="1.62000000" rtn3="1.66000000"/>
+        </monthlyTotReturns>
+        <monthlyReturnCats>
+          <equityContracts>
+            <mon1 netRealizedGain="0.00000000" netUnrealizedAppr="7391.50000000"/>
+            <mon2 netRealizedGain="10276.00000000" netUnrealizedAppr="-17890.00000000"/>
+            <mon3 netRealizedGain="7791.00000000" netUnrealizedAppr="12616.50000000"/>
+            <optionCategory>
+              <instrMon1 netRealizedGain="0.00000000" netUnrealizedAppr="7391.50000000"/>
+              <instrMon2 netRealizedGain="10276.00000000" netUnrealizedAppr="-17890.00000000"/>
+              <instrMon3 netRealizedGain="7791.00000000" netUnrealizedAppr="12616.50000000"/>
+            </optionCategory>
+          </equityContracts>
+        </monthlyReturnCats>
+        <othMon1 netRealizedGain="0.00000000" netUnrealizedAppr="-31865.20000000"/>
+        <othMon2 netRealizedGain="0.00000000" netUnrealizedAppr="27535.10000000"/>
+        <othMon3 netRealizedGain="-427.20000000" netUnrealizedAppr="-6250.74000000"/>
+      </returnInfo>
+      <mon1Flow redemption="0.00000000" reinvestment="0.00000000" sales="1016595.00000000"/>
+      <mon2Flow redemption="0.00000000" reinvestment="0.00000000" sales="500426.91000000"/>
+      <mon3Flow redemption="0.00000000" reinvestment="0.00000000" sales="0.00000000"/>
+
+
+      <varInfo>
+
+        <fundsDesignatedInfo>
+          <nameDesignatedIndex>S&amp;P Real Estate Select Sector Index</nameDesignatedIndex>
+          <indexIdentifier>IXRETR</indexIdentifier>
+
+        </fundsDesignatedInfo>
+
+      </varInfo>
+    </fundInfo>
+    <invstOrSecs>
+      <invstOrSec>
+        <name>Morgan Stanley &amp; Co. LLC</name>
+        <lei>9R7GPTSO7KV3UQJZQ078</lei>
+        <title>REAL ESTATE SELECT SECTOR SPDR</title>
+        <cusip>000000000</cusip>
+        <identifiers>
+          <other otherDesc="Bloomberg Identifier" value="BBG01WQY6X33"/>
+        </identifiers>
+        <balance>-353.00000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-7060.00000000</valUSD>
+        <pctVal>-0.46797622455</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="derivative" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>Morgan Stanley &amp; Co. LLC</counterpartyName>
+              <counterpartyLei>9R7GPTSO7KV3UQJZQ078</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Real Estate Select Sector SPDR Fund</issuerName>
+                <issueTitle>Real Estate Select Sector SPDR Fund</issueTitle>
+                <identifiers>
+                  <cusip value="81369Y860"/>
+                  <isin value="US81369Y8600"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.00000000</shareNo>
+            <exercisePrice>43.00000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2025-10-17</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>2118.00000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Real Estate Select Sector SPDR Fund</name>
+        <lei>549300SPMSTD3BRHL041</lei>
+        <title>Real Estate Select Sector SPDR Fund</title>
+        <cusip>81369Y860</cusip>
+        <identifiers>
+          <isin value="US81369Y8600"/>
+        </identifiers>
+        <balance>35687.00000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1503493.31000000</valUSD>
+        <pctVal>99.65993241588</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>RF</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>State Street Global Advisors</name>
+        <lei>549300BZ5TGIFZUZDZ37</lei>
+        <title>State Street Institutional US Government Money Market Fund</title>
+        <cusip>857492706</cusip>
+        <identifiers>
+          <isin value="US8574927062"/>
+        </identifiers>
+        <balance>8276.23000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>8276.23000000</valUSD>
+        <pctVal>0.548594740643</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>STIV</assetCat>
+        <issuerCat>RF</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+    </invstOrSecs>
+    <signature>
+      <ncom:dateSigned>2025-10-30</ncom:dateSigned>
+      <ncom:nameOfApplicant>SELECT SECTOR SPDR TRUST</ncom:nameOfApplicant>
+      <ncom:signature>Arthur Jensen</ncom:signature>
+      <ncom:signerName>Arthur Jensen</ncom:signerName>
+      <ncom:title>Deputy Treasurer</ncom:title>
+    </signature>
+  </formData>
+  <documents>XXXX</documents>
+</edgarSubmission>

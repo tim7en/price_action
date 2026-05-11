@@ -1,0 +1,15 @@
+{
+  "downloaded_at_utc": "2026-05-11T16:35:12.790890+00:00",
+  "ticker": "EQIX",
+  "source": "Yahoo Finance chart API",
+  "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/EQIX",
+  "start": "1999-01-01",
+  "end": "2026-05-11",
+  "rows": 6454,
+  "first_date": "2000-09-08",
+  "last_date": "2026-05-08",
+  "feature_windows": {
+    "sma": 20,
+    "atr": 14
+  }
+}

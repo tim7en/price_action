@@ -1,0 +1,15 @@
+{
+  "downloaded_at_utc": "2026-05-11T16:38:07.244273+00:00",
+  "ticker": "MDLZ",
+  "source": "Yahoo Finance chart API",
+  "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/MDLZ",
+  "start": "1999-01-01",
+  "end": "2026-05-11",
+  "rows": 6244,
+  "first_date": "2001-07-11",
+  "last_date": "2026-05-08",
+  "feature_windows": {
+    "sma": 20,
+    "atr": 14
+  }
+}

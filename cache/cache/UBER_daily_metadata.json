@@ -1,0 +1,15 @@
+{
+  "downloaded_at_utc": "2026-05-11T16:41:49.451319+00:00",
+  "ticker": "UBER",
+  "source": "Yahoo Finance chart API",
+  "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/UBER",
+  "start": "1999-01-01",
+  "end": "2026-05-11",
+  "rows": 1740,
+  "first_date": "2019-06-07",
+  "last_date": "2026-05-08",
+  "feature_windows": {
+    "sma": 20,
+    "atr": 14
+  }
+}

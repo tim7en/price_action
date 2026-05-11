@@ -32,6 +32,20 @@ known_from_date <= signal_date
 
 For each selected sector and rebalance date, it takes the latest known snapshot and normalizes the top five available holdings inside that sector sleeve.
 
+## Build From SEC N-PORT
+
+For the Select Sector SPDR funds, public SEC N-PORT filings can build this file from late 2019 onward:
+
+```bash
+.venv/bin/python build_sector_top_holdings_from_sec.py --refresh-prices
+```
+
+The builder caches SEC XML filings under `cache/sec_nport/`, maps SEC CUSIP/ISIN identifiers to Yahoo symbols through `cache/sec_identifier_symbol_map.json`, writes coverage to `outputs/sector_rotation_report/sector_top_holdings_coverage.csv`, and writes unresolved symbol mappings to `outputs/sector_rotation_report/sector_top_holdings_symbol_gaps.csv`.
+
+Mapped symbols that no longer have Yahoo chart history, such as acquired or delisted former constituents, are written to `outputs/sector_rotation_report/sector_top_holdings_price_gaps.csv`. The backtest excludes those unavailable symbols at execution time and records them in `missing_top_holding_symbols`.
+
+This does not solve the full 2006-2019 history. For that older period we still need historical issuer archives, Form N-Q parsing, or a point-in-time vendor feed.
+
 ## Date Discipline
 
 Use issuer-published daily holdings if you have an archive. If the archive does not preserve publication time, set `known_from_date` conservatively to the next trading day.

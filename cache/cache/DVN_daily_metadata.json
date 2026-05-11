@@ -1,0 +1,15 @@
+{
+  "downloaded_at_utc": "2026-05-11T16:34:45.866121+00:00",
+  "ticker": "DVN",
+  "source": "Yahoo Finance chart API",
+  "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/DVN",
+  "start": "1999-01-01",
+  "end": "2026-05-11",
+  "rows": 6860,
+  "first_date": "1999-02-01",
+  "last_date": "2026-05-08",
+  "feature_windows": {
+    "sma": 20,
+    "atr": 14
+  }
+}

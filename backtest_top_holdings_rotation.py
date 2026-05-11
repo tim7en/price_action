@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +13,9 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
+MPLCONFIGDIR = Path(tempfile.gettempdir()) / "price_action_matplotlib"
+MPLCONFIGDIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(MPLCONFIGDIR))
 
 from price_action.data import load_asset_daily  # noqa: E402
 from price_action.sector_ml import (  # noqa: E402
@@ -33,11 +38,27 @@ HOLDINGS_REQUIRED_COLUMNS = {
 }
 
 
-def _load_close_panel(symbols: list[str]) -> pd.DataFrame:
+def _load_close_panel(symbols: list[str], required_symbols: set[str] | None = None) -> pd.DataFrame:
+    required = required_symbols or set()
     frames: list[pd.Series] = []
+    missing_symbols: list[str] = []
     for symbol in symbols:
-        close = pd.to_numeric(load_asset_daily(symbol, project_root=PROJECT_ROOT)["close"], errors="coerce")
+        try:
+            close = pd.to_numeric(load_asset_daily(symbol, project_root=PROJECT_ROOT)["close"], errors="coerce")
+        except FileNotFoundError:
+            if symbol in required:
+                raise
+            missing_symbols.append(symbol)
+            continue
         frames.append(close.rename(symbol))
+    if missing_symbols:
+        print(
+            "Skipping holdings with no cached price history: "
+            + ", ".join(sorted(missing_symbols)),
+            file=sys.stderr,
+        )
+    if not frames:
+        raise ValueError("No price histories were loaded.")
     panel = pd.concat(frames, axis=1).sort_index().ffill()
     panel.index.name = "date"
     return panel
@@ -163,9 +184,10 @@ def _constituent_weights(
     entry_date: pd.Timestamp,
     price_panel: pd.DataFrame,
     top_n_holdings: int = 5,
-) -> tuple[dict[str, float], dict[str, str]]:
+) -> tuple[dict[str, float], dict[str, str], dict[str, str]]:
     weights: dict[str, float] = {}
     sectors_used: dict[str, str] = {}
+    missing_top_holdings: dict[str, str] = {}
     for sector_symbol, sector_weight in sector_weights.items():
         sector_holdings = _latest_known_sector_holdings(
             holdings=holdings,
@@ -177,11 +199,16 @@ def _constituent_weights(
             sectors_used[sector_symbol] = "Missing point-in-time holdings"
             continue
         available: list[tuple[str, float]] = []
+        missing_symbols: list[str] = []
         for row in sector_holdings.itertuples(index=False):
             symbol = str(row.holding_symbol)
             holding_weight = float(row.weight)
             if symbol in price_panel.columns and pd.notna(price_panel.at[entry_date, symbol]):
                 available.append((symbol, holding_weight))
+            else:
+                missing_symbols.append(symbol)
+        if missing_symbols:
+            missing_top_holdings[sector_symbol] = ", ".join(missing_symbols)
         total_holding_weight = sum(holding_weight for _, holding_weight in available)
         if total_holding_weight <= 0.0:
             sectors_used[sector_symbol] = "Cash"
@@ -189,7 +216,7 @@ def _constituent_weights(
         sectors_used[sector_symbol] = ", ".join(symbol for symbol, _ in available)
         for symbol, holding_weight in available:
             weights[symbol] = weights.get(symbol, 0.0) + float(sector_weight) * float(holding_weight / total_holding_weight)
-    return weights, sectors_used
+    return weights, sectors_used, missing_top_holdings
 
 
 def _period_return_with_stops(
@@ -358,6 +385,7 @@ def _run_scope(
     holdings: pd.DataFrame,
     price_panel: pd.DataFrame,
     config: dict[str, Any],
+    coverage_start: pd.Timestamp,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     period_path = REPORT_DIR / (
         "sector_ml_holdout_period_log.csv" if scope == "holdout" else "sector_ml_history_period_log.csv"
@@ -378,11 +406,13 @@ def _run_scope(
         signal_date = pd.Timestamp(source_row.signal_date)
         entry_date = pd.Timestamp(source_row.entry_date)
         exit_date = pd.Timestamp(source_row.exit_date)
+        if signal_date < coverage_start:
+            continue
         if entry_date not in price_panel.index or exit_date not in price_panel.index or exit_date <= entry_date:
             continue
 
         sector_weights = _sector_weights_for_signal(signal_frame, signal_date, config=config)
-        target_weights, sectors_used = _constituent_weights(
+        target_weights, sectors_used, missing_top_holdings = _constituent_weights(
             sector_weights=sector_weights,
             holdings=holdings,
             signal_date=signal_date,
@@ -423,6 +453,7 @@ def _run_scope(
                 "sector_weights": json.dumps(sector_weights, sort_keys=True),
                 "constituent_weights": json.dumps(target_weights, sort_keys=True),
                 "sectors_used": json.dumps(sectors_used, sort_keys=True),
+                "missing_top_holding_symbols": json.dumps(missing_top_holdings, sort_keys=True),
                 "holding_source": "point_in_time_holdings",
                 "stock_top5_return": stock_return,
                 "spy_return": spy_return,
@@ -465,8 +496,10 @@ def _run_scope(
 def main() -> None:
     config = dict(DEFAULT_SECTOR_ML_CONFIG)
     holdings = _load_point_in_time_holdings(DEFAULT_HOLDINGS_PATH)
+    coverage_start = pd.Timestamp(holdings["known_from_date"].min())
     symbols = sorted(set(holdings["holding_symbol"]) | set(holdings["sector_symbol"]) | {"SPY"})
-    price_panel = _load_close_panel(symbols)
+    required_symbols = set(holdings["sector_symbol"]) | {"SPY"}
+    price_panel = _load_close_panel(symbols, required_symbols=required_symbols)
 
     period_logs: list[pd.DataFrame] = []
     summaries: list[pd.DataFrame] = []
@@ -478,12 +511,25 @@ def main() -> None:
                 holdings=holdings,
                 price_panel=price_panel,
                 config=config,
+                coverage_start=coverage_start,
             )
             period_logs.append(periods)
             summaries.append(summary)
 
-    period_log_frame = pd.concat(period_logs, ignore_index=True) if period_logs else pd.DataFrame()
-    summary_frame = pd.concat(summaries, ignore_index=True) if summaries else pd.DataFrame()
+    non_empty_period_logs = [frame for frame in period_logs if not frame.empty]
+    non_empty_summaries = [frame for frame in summaries if not frame.empty]
+    period_log_rows = [
+        row
+        for frame in non_empty_period_logs
+        for row in frame.to_dict(orient="records")
+    ]
+    summary_rows = [
+        row
+        for frame in non_empty_summaries
+        for row in frame.to_dict(orient="records")
+    ]
+    period_log_frame = pd.DataFrame(period_log_rows)
+    summary_frame = pd.DataFrame(summary_rows)
 
     period_output = REPORT_DIR / "sector_ml_pit_top5_holdings_period_log.csv"
     summary_output = REPORT_DIR / "sector_ml_pit_top5_holdings_strategy_summary.csv"
