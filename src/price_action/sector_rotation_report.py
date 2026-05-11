@@ -5139,6 +5139,8 @@ def generate_sector_rotation_report(
     ml_regime_path = report_dir / "sector_ml_regime_performance.csv"
     ml_cost_path = report_dir / "sector_ml_cost_sensitivity.csv"
     ml_validation_quality_path = report_dir / "sector_ml_validation_quality.csv"
+    ml_oos_signal_path = report_dir / "sector_ml_oos_signal_frame.csv"
+    ml_holdout_signal_path = report_dir / "sector_ml_holdout_signal_frame.csv"
     ml_holdout_summary_path = report_dir / "sector_ml_holdout_strategy_summary.csv"
     ml_holdout_period_log_path = report_dir / "sector_ml_holdout_period_log.csv"
     ml_holdout_yearly_path = report_dir / "sector_ml_holdout_yearly_summary.csv"
@@ -5197,6 +5199,12 @@ def generate_sector_rotation_report(
         sector_ml_view["regime_performance_frame"].to_csv(ml_regime_path, index=False)
         sector_ml_view["cost_sensitivity_frame"].to_csv(ml_cost_path, index=False)
         sector_ml_view["validation_quality_frame"].to_csv(ml_validation_quality_path, index=False)
+        oos_signal_frame = sector_ml_view.get("oos_signal_frame")
+        if isinstance(oos_signal_frame, pd.DataFrame) and not oos_signal_frame.empty:
+            oos_signal_frame.to_csv(ml_oos_signal_path, index=True)
+        holdout_signal_frame = sector_ml_view.get("holdout_signal_frame")
+        if isinstance(holdout_signal_frame, pd.DataFrame) and not holdout_signal_frame.empty:
+            holdout_signal_frame.to_csv(ml_holdout_signal_path, index=True)
         summary_payload["ml"].update(
             {
                 "config": sector_ml_view.get("config"),
