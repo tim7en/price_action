@@ -11,7 +11,17 @@
       "Bash(awk -F, 'NR>1 {print $4}' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/sector_ml_history_period_log.csv)",
       "Bash(python build_sector_rotation_report.py)",
       "Bash(python -c \"import yfinance; print\\(yfinance.__version__\\)\")",
-      "Bash(awk -F, 'NR>1 {print $1, \"|\", $2}' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/sector_ml_sector_summary.csv)"
+      "Bash(awk -F, 'NR>1 {print $1, \"|\", $2}' /Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/sector_ml_sector_summary.csv)",
+      "Bash(./.venv/bin/python -c ' *)",
+      "Bash(./.venv/bin/python -c \"import nbformat; print\\(nbformat.__version__\\)\")",
+      "Bash(./.venv/bin/python -c \"import nbclient, jupyter_client; print\\(nbclient.__version__, jupyter_client.__version__\\)\")",
+      "Bash(./.venv/bin/python notebooks/_build_pit_top_holdings_notebook.py)",
+      "Bash(./.venv/bin/python -m jupyter nbconvert --to notebook --execute notebooks/pit_top_holdings_review.ipynb --output pit_top_holdings_review.ipynb --ExecutePreprocessor.timeout=180)",
+      "Bash(./.venv/bin/python build_macro_store.py)",
+      "Bash(./.venv/bin/python build_sector_rotation_report.py > /tmp/sector_report.log 2>&1)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
     ]
   }
 }

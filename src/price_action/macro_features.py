@@ -71,7 +71,7 @@ EXTRA_SERIES_METADATA: dict[str, dict[str, Any]] = {
         "combined_col": "vix3m_level",
         "notes": [
             "Official ^VIX3M history where available.",
-            "Pre-launch history is backfilled from the observed spot_vix overlap regression so the aligned daily frame has no leading NaNs.",
+            "Pre-launch history is filled via an expanding (causal) spot-vs-3m regression that uses only overlap rows up to each date; dates before the first overlap observation remain NaN.",
         ],
     },
     "CPILFESL": {
@@ -313,7 +313,7 @@ def patch_spot_vix_history(combined: pd.DataFrame) -> pd.DataFrame:
         vxo = pd.to_numeric(combined["VXOCLS"], errors="coerce")
         spot_vix = spot_vix.combine_first(vxo)
 
-    combined["spot_vix"] = spot_vix.bfill()
+    combined["spot_vix"] = spot_vix
     return combined
 
 
@@ -326,24 +326,32 @@ def patch_vix3m_history(combined: pd.DataFrame) -> pd.DataFrame:
     vix3m = pd.to_numeric(combined["vix3m_level"], errors="coerce")
     overlap = pd.DataFrame({"spot_vix": spot_vix, "vix3m": vix3m}).dropna()
     if overlap.empty:
-        combined["vix3m_level"] = vix3m.bfill()
+        combined["vix3m_level"] = vix3m
         return combined
 
-    spot_mean = float(overlap["spot_vix"].mean())
-    vix3m_mean = float(overlap["vix3m"].mean())
-    spot_variance = float(((overlap["spot_vix"] - spot_mean) ** 2).mean())
-    if spot_variance == 0.0:
-        slope = 1.0
-        intercept = float((overlap["vix3m"] - overlap["spot_vix"]).median())
-    else:
-        covariance = float(
-            ((overlap["spot_vix"] - spot_mean) * (overlap["vix3m"] - vix3m_mean)).mean()
-        )
-        slope = covariance / spot_variance
-        intercept = vix3m_mean - slope * spot_mean
+    # Causal backfill: estimate slope/intercept with an expanding regression on the
+    # spot/3m overlap so a synthetic VIX3M for date t only uses overlap rows <= t.
+    overlap_sorted = overlap.sort_index()
+    spot_overlap = overlap_sorted["spot_vix"].astype(float)
+    vix3m_overlap = overlap_sorted["vix3m"].astype(float)
 
-    synthetic_vix3m = (spot_vix * slope + intercept).clip(lower=0.01)
-    combined["vix3m_level"] = vix3m.combine_first(synthetic_vix3m).bfill()
+    count = pd.Series(1.0, index=overlap_sorted.index).expanding(min_periods=2).sum()
+    sum_x = spot_overlap.expanding(min_periods=2).sum()
+    sum_y = vix3m_overlap.expanding(min_periods=2).sum()
+    sum_xx = (spot_overlap * spot_overlap).expanding(min_periods=2).sum()
+    sum_xy = (spot_overlap * vix3m_overlap).expanding(min_periods=2).sum()
+
+    denom = count * sum_xx - sum_x * sum_x
+    slope_series = (count * sum_xy - sum_x * sum_y) / denom.where(denom.abs() > 1e-12)
+    intercept_series = (sum_y - slope_series * sum_x) / count
+    slope_series = slope_series.where(slope_series.notna(), 1.0)
+    intercept_series = intercept_series.where(intercept_series.notna(), 0.0)
+
+    aligned_slope = slope_series.reindex(combined.index).ffill()
+    aligned_intercept = intercept_series.reindex(combined.index).ffill()
+
+    synthetic_vix3m = (spot_vix * aligned_slope + aligned_intercept).clip(lower=0.01)
+    combined["vix3m_level"] = vix3m.combine_first(synthetic_vix3m)
     return combined
 
 

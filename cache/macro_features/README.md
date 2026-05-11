@@ -1,6 +1,6 @@
 # Macro Feature Store
 
-Generated at: 2026-05-11T17:16:29.984236+00:00
+Generated at: 2026-05-11T17:48:38.307546+00:00
 
 Each feature is stored as its own CSV under `series/`, with a matching JSON summary under `summaries/`.
 Freshness checks are written to `series_health.csv`.
@@ -26,7 +26,7 @@ Freshness checks are written to `series_health.csv`.
 | eem_close | unknown | 2003-04-14 | 2026-04-09 | daily | 0.579 | stale |
 | efa_close | unknown | 2001-08-27 | 2026-04-09 | daily | 0.620 | stale |
 | copper_usd_per_lb | unknown | 2000-08-30 | 2026-04-09 | daily | 0.644 | stale |
-| vix3m_level | Yahoo Finance chart API / derived pre-launch backfill | 1999-01-01 | 2026-04-09 | daily | 0.997 | stale |
+| vix3m_level | Yahoo Finance chart API / derived pre-launch backfill | 2006-07-17 | 2026-04-09 | daily | 0.500 | stale |
 | high_yield_spread | FRED | 1999-03-10 | 2026-04-06 | daily | 0.708 | stale |
 | CPIENGSL | FRED | 1999-01-01 | 2026-03-01 | monthly | 0.033 | stale |
 | CPILFESL | FRED | 1999-01-01 | 2026-03-01 | monthly | 0.033 | stale |
@@ -38,7 +38,7 @@ Freshness checks are written to `series_health.csv`.
 | UMCSENT | unknown | 1999-01-01 | 2026-03-01 | monthly | 0.033 | stale |
 | consumer_sentiment_release_level | ALFRED | 1999-01-29 | 2026-03-27 | monthly | 0.010 | fresh |
 | USEPUINDXD | unknown | 1999-01-01 | 2026-05-07 | daily | 1.000 | fresh |
-| spot_vix | FRED | 1999-01-01 | 2026-04-06 | daily | 0.997 | stale |
+| spot_vix | FRED | 1999-01-04 | 2026-04-06 | daily | 0.689 | stale |
 | VXOCLS | FRED | 1999-01-04 | 2021-09-23 | daily | 0.573 | stale |
 | yield_curve_10y_2y | derived | 1999-01-04 | 2026-04-07 | daily | 0.683 | stale |
 | core_cpi_yoy_pct | FRED | 1999-01-01 | 2026-03-01 | monthly | 0.033 | stale |

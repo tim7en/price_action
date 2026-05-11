@@ -4,12 +4,12 @@
   "source": "Yahoo Finance chart API / derived pre-launch backfill",
   "source_url": "https://finance.yahoo.com/quote/%5EVIX3M",
   "units": "index level",
-  "history_start": "1999-01-01",
+  "history_start": "2006-07-17",
   "history_end": "2026-04-09",
-  "rows_with_values": 9961,
+  "rows_with_values": 4993,
   "total_rows": 9989,
-  "missing_rows": 28,
-  "coverage_ratio": 0.9971969166082691,
+  "missing_rows": 4996,
+  "coverage_ratio": 0.49984983481830014,
   "frequency": "daily",
   "latest_value": 21.90999984741211,
   "days_since_update": 32,
@@ -18,6 +18,6 @@
   "stale_status": "stale",
   "notes": [
     "Official ^VIX3M history where available.",
-    "Pre-launch history is backfilled from the observed spot_vix overlap regression so the aligned daily frame has no leading NaNs."
+    "Pre-launch history is filled via an expanding (causal) spot-vs-3m regression that uses only overlap rows up to each date; dates before the first overlap observation remain NaN."
   ]
 }
