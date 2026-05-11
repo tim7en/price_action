@@ -1,0 +1,15 @@
+{
+  "downloaded_at_utc": "2026-05-11T15:20:21.617701+00:00",
+  "ticker": "GEV",
+  "source": "Yahoo Finance chart API",
+  "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/GEV",
+  "start": "2000-01-01",
+  "end": "2026-05-11",
+  "rows": 512,
+  "first_date": "2024-04-24",
+  "last_date": "2026-05-08",
+  "feature_windows": {
+    "sma": 20,
+    "atr": 14
+  }
+}

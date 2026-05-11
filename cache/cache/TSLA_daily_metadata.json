@@ -1,13 +1,13 @@
 {
-  "downloaded_at_utc": "2026-05-08T10:51:17.112400+00:00",
+  "downloaded_at_utc": "2026-05-11T15:20:53.887444+00:00",
   "ticker": "TSLA",
   "source": "Yahoo Finance chart API",
   "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/TSLA",
   "start": "2000-01-01",
-  "end": "2026-05-08",
-  "rows": 3970,
+  "end": "2026-05-11",
+  "rows": 3971,
   "first_date": "2010-07-27",
-  "last_date": "2026-05-07",
+  "last_date": "2026-05-08",
   "feature_windows": {
     "sma": 20,
     "atr": 14

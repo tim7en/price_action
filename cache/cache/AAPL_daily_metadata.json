@@ -1,13 +1,13 @@
 {
-  "downloaded_at_utc": "2026-05-08T10:51:01.852650+00:00",
+  "downloaded_at_utc": "2026-05-11T15:21:05.892730+00:00",
   "ticker": "AAPL",
   "source": "Yahoo Finance chart API",
   "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/AAPL",
   "start": "2000-01-01",
-  "end": "2026-05-08",
-  "rows": 6607,
+  "end": "2026-05-11",
+  "rows": 6608,
   "first_date": "2000-01-31",
-  "last_date": "2026-05-07",
+  "last_date": "2026-05-08",
   "feature_windows": {
     "sma": 20,
     "atr": 14
