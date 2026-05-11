@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-11T17:15:09.742208+00:00",
+  "generated_at": "2026-05-11T17:21:38.927079+00:00",
   "current_regime": "Fragile Late-Cycle Watch",
   "current_quadrant": "Growth Down / Inflation Down",
   "cash_weight": 0.4,
@@ -104,6 +104,14 @@
       }
     ],
     "robust_cost_sector_count": 7,
+    "oos_signal_exports": [
+      "/Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/sector_ml_oos_signal_frame.part01-of-03.csv",
+      "/Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/sector_ml_oos_signal_frame.part02-of-03.csv",
+      "/Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/sector_ml_oos_signal_frame.part03-of-03.csv"
+    ],
+    "holdout_signal_exports": [
+      "/Users/timursabitov/Dev/price_action/outputs/sector_rotation_report/sector_ml_holdout_signal_frame.csv"
+    ],
     "holdout_rotation": {
       "available": true,
       "current_signal_date": "2026-03-03 00:00:00",

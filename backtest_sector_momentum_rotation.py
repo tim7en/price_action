@@ -20,6 +20,7 @@ START_DATE = pd.Timestamp("2006-01-01")
 HOLDOUT_START = pd.Timestamp("2025-01-01")
 COST_RATE = 15.0 / 10_000.0
 STOP_LOSS = 0.10
+PERIOD_LOG_MAX_ROWS_PER_PART = 50_000
 
 LEGACY_SECTORS = ["XLE", "XLB", "XLI", "XLF", "XLY", "XLK", "XLP", "XLV", "XLU"]
 MODERN_SECTORS = [*LEGACY_SECTORS, "XLRE", "XLC"]
@@ -31,6 +32,45 @@ REBALANCE_BARS = (5, 21, 63)
 TOP_N_VALUES = (1, 2, 3, 5)
 WEIGHTING_MODES = ("equal", "momentum")
 STOP_MODES = (False, True)
+
+
+def _list_csv_part_paths(path: Path) -> list[Path]:
+    return sorted(path.parent.glob(f"{path.stem}.part*{path.suffix}"))
+
+
+def _write_csv_output(
+    frame: pd.DataFrame,
+    path: Path,
+    *,
+    index: bool,
+    max_rows_per_part: int | None = None,
+) -> list[Path]:
+    if max_rows_per_part is not None and max_rows_per_part <= 0:
+        raise ValueError("max_rows_per_part must be positive when provided")
+
+    for existing_part in _list_csv_part_paths(path):
+        try:
+            existing_part.unlink()
+        except OSError:
+            pass
+
+    if max_rows_per_part is None or len(frame.index) <= max_rows_per_part:
+        frame.to_csv(path, index=index)
+        return [path]
+
+    if path.exists():
+        try:
+            path.unlink()
+        except OSError:
+            pass
+
+    part_paths: list[Path] = []
+    total_parts = max(1, (len(frame.index) + max_rows_per_part - 1) // max_rows_per_part)
+    for part_number, start_index in enumerate(range(0, len(frame.index), max_rows_per_part), start=1):
+        part_path = path.with_name(f"{path.stem}.part{part_number:02d}-of-{total_parts:02d}{path.suffix}")
+        frame.iloc[start_index : start_index + max_rows_per_part].to_csv(part_path, index=index)
+        part_paths.append(part_path)
+    return part_paths
 
 
 def _load_close_panel(symbols: list[str]) -> pd.DataFrame:
@@ -367,7 +407,12 @@ def main() -> None:
     period_output = REPORT_DIR / "sector_momentum_rotation_period_log.csv"
     summary_output = REPORT_DIR / "sector_momentum_rotation_strategy_summary.csv"
     leaderboard_output = REPORT_DIR / "sector_momentum_rotation_leaderboard.csv"
-    period_frame.to_csv(period_output, index=False)
+    period_outputs = _write_csv_output(
+        period_frame,
+        period_output,
+        index=False,
+        max_rows_per_part=PERIOD_LOG_MAX_ROWS_PER_PART,
+    )
     summary_frame.to_csv(summary_output, index=False)
 
     leaderboard = summary_frame.loc[
@@ -395,7 +440,10 @@ def main() -> None:
     print(
         json.dumps(
             {
-                "period_log": str(period_output),
+                "period_log": str(period_output) if period_output.exists() else None,
+                "period_log_parts": [
+                    str(path) for path in period_outputs if path.exists() and path != period_output
+                ],
                 "summary": str(summary_output),
                 "leaderboard": str(leaderboard_output),
             },
