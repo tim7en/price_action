@@ -5585,6 +5585,8 @@ def generate_sector_rotation_report(
                 )[0],
                 "winner_counts": json.loads(sector_ml_view["winner_counts_frame"].to_json(orient="records")),
                 "robust_cost_sector_count": int(sector_ml_view.get("robust_cost_sector_count", 0)),
+                "oos_signal_exports": [str(path) for path in ml_oos_signal_exports if path.exists()],
+                "holdout_signal_exports": [str(path) for path in ml_holdout_signal_exports if path.exists()],
             }
         )
         rotation_view = sector_ml_view.get("holdout_rotation_view")
@@ -5723,6 +5725,14 @@ def generate_sector_rotation_report(
         "ml_regime": str(ml_regime_path) if ml_regime_path.exists() else None,
         "ml_cost": str(ml_cost_path) if ml_cost_path.exists() else None,
         "ml_validation_quality": str(ml_validation_quality_path) if ml_validation_quality_path.exists() else None,
+        "ml_oos_signal": str(ml_oos_signal_path) if ml_oos_signal_path.exists() else None,
+        "ml_oos_signal_parts": [
+            str(path) for path in ml_oos_signal_exports if path.exists() and path != ml_oos_signal_path
+        ],
+        "ml_holdout_signal": str(ml_holdout_signal_path) if ml_holdout_signal_path.exists() else None,
+        "ml_holdout_signal_parts": [
+            str(path) for path in ml_holdout_signal_exports if path.exists() and path != ml_holdout_signal_path
+        ],
         "ml_holdout_summary": str(ml_holdout_summary_path) if ml_holdout_summary_path.exists() else None,
         "ml_holdout_period_log": str(ml_holdout_period_log_path) if ml_holdout_period_log_path.exists() else None,
         "ml_holdout_yearly": str(ml_holdout_yearly_path) if ml_holdout_yearly_path.exists() else None,
