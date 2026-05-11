@@ -38,6 +38,7 @@ HOLDINGS_REQUIRED_COLUMNS = {
 }
 BENCHMARK_STRATEGY_LABEL = "SPY Buy And Hold"
 TOP5_STRATEGY_LABEL = "Top 5 Holdings ML Rotation Stop 10%"
+TOP5_NO_STOP_STRATEGY_LABEL = "Top 5 Holdings ML Rotation No Stop"
 SECTOR_ETF_STRATEGY_LABEL = "Sector ETF ML Quality Rotation"
 
 
@@ -581,6 +582,7 @@ def _run_scope(
     cost_rate = float(config["cost_bps"]) / 10_000.0
 
     previous_weights: dict[str, float] = {}
+    previous_weights_no_stop: dict[str, float] = {}
     previous_sector_weights: dict[str, float] = {}
     rows: list[dict[str, Any]] = []
     for source_row in period_log.itertuples(index=False):
@@ -621,6 +623,18 @@ def _run_scope(
             cost_rate=cost_rate,
         )
         stock_return = stock_return_before_entry_cost - turnover_cost
+
+        no_stop_turnover, no_stop_turnover_cost = _turnover_cost(
+            previous_weights_no_stop, target_weights, cost_rate
+        )
+        no_stop_gross_return, active_weights_no_stop = _weighted_return(
+            price_panel=price_panel,
+            weights=target_weights,
+            entry_date=entry_date,
+            exit_date=exit_date,
+        )
+        stock_no_stop_return = no_stop_gross_return - no_stop_turnover_cost
+
         spy_return = float(price_panel.at[exit_date, "SPY"] / price_panel.at[entry_date, "SPY"] - 1.0)
 
         rows.append(
@@ -637,11 +651,14 @@ def _run_scope(
                 "missing_top_holding_symbols": json.dumps(missing_top_holdings, sort_keys=True),
                 "holding_source": "point_in_time_holdings",
                 "stock_top5_return": stock_return,
+                "stock_top5_no_stop_return": stock_no_stop_return,
                 "spy_return": spy_return,
                 "sector_quality_return": sector_quality_return,
                 "source_sector_quality_return": float(getattr(source_row, "quality_return", np.nan)),
                 "turnover": turnover,
                 "turnover_cost": turnover_cost,
+                "turnover_no_stop": no_stop_turnover,
+                "turnover_no_stop_cost": no_stop_turnover_cost,
                 "sector_turnover": sector_turnover,
                 "sector_turnover_cost": sector_turnover_cost,
                 "stop_count": stop_count,
@@ -651,6 +668,7 @@ def _run_scope(
             }
         )
         previous_weights = active_weights
+        previous_weights_no_stop = active_weights_no_stop
         previous_sector_weights = active_sector_weights
 
     result = pd.DataFrame(rows)
@@ -659,12 +677,14 @@ def _run_scope(
         return result, summary
 
     result["equity_top5"] = (1.0 + result["stock_top5_return"]).cumprod()
+    result["equity_top5_no_stop"] = (1.0 + result["stock_top5_no_stop_return"]).cumprod()
     result["equity_spy"] = (1.0 + result["spy_return"]).cumprod()
     result["equity_sector_quality"] = (1.0 + result["sector_quality_return"].fillna(0.0)).cumprod()
 
     summary_rows = []
     for label, return_column, turnover_column in (
         (TOP5_STRATEGY_LABEL, "stock_top5_return", "turnover"),
+        (TOP5_NO_STOP_STRATEGY_LABEL, "stock_top5_no_stop_return", "turnover_no_stop"),
         (SECTOR_ETF_STRATEGY_LABEL, "sector_quality_return", "sector_turnover"),
         (BENCHMARK_STRATEGY_LABEL, "spy_return", None),
     ):
