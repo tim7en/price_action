@@ -1,6 +1,6 @@
 # Macro Feature Store
 
-Generated at: 2026-05-11T15:48:21.487725+00:00
+Generated at: 2026-05-11T17:09:54.617938+00:00
 
 Each feature is stored as its own CSV under `series/`, with a matching JSON summary under `summaries/`.
 Freshness checks are written to `series_health.csv`.

@@ -41,6 +41,44 @@ RESERVE_LEVERAGE_LABEL_PREFIX = f"{RESERVE_STRATEGY_LABEL} x"
 
 
 SECTOR_PE_CACHE_TTL_DAYS = 7
+SIGNAL_FRAME_MAX_ROWS_PER_PART = 10_000
+
+def _list_csv_part_paths(path: Path) -> list[Path]:
+    return sorted(path.parent.glob(f"{path.stem}.part*{path.suffix}"))
+
+def _write_csv_output(
+    frame: pd.DataFrame,
+    path: Path,
+    *,
+    index: bool,
+    max_rows_per_part: int | None = None,
+) -> list[Path]:
+    if max_rows_per_part is not None and max_rows_per_part <= 0:
+        raise ValueError("max_rows_per_part must be positive when provided")
+
+    for existing_part in _list_csv_part_paths(path):
+        try:
+            existing_part.unlink()
+        except OSError:
+            pass
+
+    if max_rows_per_part is None or len(frame.index) <= max_rows_per_part:
+        frame.to_csv(path, index=index)
+        return [path]
+
+    if path.exists():
+        try:
+            path.unlink()
+        except OSError:
+            pass
+
+    part_paths: list[Path] = []
+    total_parts = math.ceil(len(frame.index) / max_rows_per_part)
+    for part_number, start_index in enumerate(range(0, len(frame.index), max_rows_per_part), start=1):
+        part_path = path.with_name(f"{path.stem}.part{part_number:02d}-of-{total_parts:02d}{path.suffix}")
+        frame.iloc[start_index : start_index + max_rows_per_part].to_csv(part_path, index=index)
+        part_paths.append(part_path)
+    return part_paths
 
 
 def _fetch_sector_pe_snapshot_yfinance(symbols: list[str]) -> dict[str, Any] | None:
@@ -5483,6 +5521,8 @@ def generate_sector_rotation_report(
     executive_summary_path = report_dir / "executive_summary.html"
     executive_summary_pdf_path = report_dir / "executive_summary.pdf"
     rotation_playbook_path = report_dir / "rotation_playbook.html"
+    ml_oos_signal_exports: list[Path] = []
+    ml_holdout_signal_exports: list[Path] = []
 
     summary_payload: dict[str, Any] = {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -5523,10 +5563,20 @@ def generate_sector_rotation_report(
         sector_ml_view["validation_quality_frame"].to_csv(ml_validation_quality_path, index=False)
         oos_signal_frame = sector_ml_view.get("oos_signal_frame")
         if isinstance(oos_signal_frame, pd.DataFrame) and not oos_signal_frame.empty:
-            oos_signal_frame.to_csv(ml_oos_signal_path, index=True)
+            ml_oos_signal_exports = _write_csv_output(
+                oos_signal_frame,
+                ml_oos_signal_path,
+                index=True,
+                max_rows_per_part=SIGNAL_FRAME_MAX_ROWS_PER_PART,
+            )
         holdout_signal_frame = sector_ml_view.get("holdout_signal_frame")
         if isinstance(holdout_signal_frame, pd.DataFrame) and not holdout_signal_frame.empty:
-            holdout_signal_frame.to_csv(ml_holdout_signal_path, index=True)
+            ml_holdout_signal_exports = _write_csv_output(
+                holdout_signal_frame,
+                ml_holdout_signal_path,
+                index=True,
+                max_rows_per_part=SIGNAL_FRAME_MAX_ROWS_PER_PART,
+            )
         summary_payload["ml"].update(
             {
                 "config": sector_ml_view.get("config"),

@@ -135,3 +135,6 @@ Thumbs.db
 
 # Oversized generated research logs
 outputs/sector_rotation_report/sector_momentum_rotation_period_log.csv
+outputs/sector_rotation_report/sector_momentum_rotation_period_log.part*.csv
+outputs/sector_rotation_report/sector_ml_oos_signal_frame.csv
+outputs/sector_rotation_report/sector_ml_oos_signal_frame.part*.csv
