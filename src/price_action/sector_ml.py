@@ -300,6 +300,92 @@ def _validation_quality_frame(sector_summary_frame: pd.DataFrame) -> pd.DataFram
     return frame.sort_values("validation_quality_score", ascending=False).reset_index(drop=True)
 
 
+def _build_point_in_time_quality(
+    validation_predictions_by_symbol: dict[str, pd.DataFrame],
+    signal_frame: pd.DataFrame,
+    config: dict[str, Any],
+    min_validation_folds: int = 1,
+) -> pd.DataFrame:
+    """Build a (signal_year, symbol) -> validation_quality_score lookup.
+
+    For each signal year Y, the per-sector quality score is computed from
+    validation folds whose calendar fold-year is strictly less than Y. Ranks
+    are then taken cross-sectionally at each Y so a 2010 trade sees only
+    validation evidence available before 2010. This replaces the legacy
+    full-validation-window aggregate used by the historical rotation view.
+    """
+    empty = pd.DataFrame(columns=["signal_year", "symbol", "validation_quality_score"])
+    if not validation_predictions_by_symbol or signal_frame.empty:
+        return empty
+
+    signal_years = sorted(int(year) for year in pd.to_datetime(signal_frame["date"]).dt.year.unique())
+    signal_threshold = float(config["signal_threshold"])
+    label_horizon = int(config["label_horizon"])
+    cost_bps = float(config["cost_bps"])
+
+    fold_year_lookup: dict[str, pd.Series] = {}
+    for symbol, validation in validation_predictions_by_symbol.items():
+        if validation.empty:
+            continue
+        fold_year_lookup[symbol] = pd.to_numeric(
+            validation["fold_label"].astype(str), errors="coerce"
+        )
+
+    rows: list[dict[str, Any]] = []
+    for signal_year in signal_years:
+        per_sector: list[dict[str, Any]] = []
+        for symbol, validation in validation_predictions_by_symbol.items():
+            fold_years = fold_year_lookup.get(symbol)
+            if fold_years is None:
+                continue
+            prior_mask = fold_years.notna() & (fold_years < signal_year)
+            if int(fold_years[prior_mask].nunique()) < min_validation_folds:
+                continue
+            prior = validation.loc[prior_mask]
+            if prior.empty:
+                continue
+            try:
+                _, summary = _evaluate_probability_column(
+                    predictions=prior,
+                    probability_column="ensemble_probability",
+                    signal_threshold=signal_threshold,
+                    label_horizon=label_horizon,
+                    cost_bps=cost_bps,
+                )
+            except Exception:
+                continue
+            per_sector.append(
+                {
+                    "symbol": symbol,
+                    "roc_auc": summary.get("roc_auc"),
+                    "brier_score": summary.get("brier_score"),
+                    "sharpe": summary.get("sharpe"),
+                    "cagr": summary.get("cagr"),
+                }
+            )
+        if not per_sector:
+            continue
+        snapshot = pd.DataFrame(per_sector)
+        snapshot["rank_auc"] = _normalised_rank(snapshot["roc_auc"])
+        snapshot["rank_brier"] = _normalised_rank(-snapshot["brier_score"])
+        snapshot["rank_sharpe"] = _normalised_rank(snapshot["sharpe"])
+        snapshot["rank_cagr"] = _normalised_rank(snapshot["cagr"])
+        snapshot["validation_quality_score"] = (
+            0.35 * snapshot["rank_auc"]
+            + 0.25 * snapshot["rank_brier"]
+            + 0.25 * snapshot["rank_sharpe"]
+            + 0.15 * snapshot["rank_cagr"]
+        )
+        snapshot["signal_year"] = int(signal_year)
+        rows.extend(
+            snapshot[["signal_year", "symbol", "validation_quality_score"]].to_dict(orient="records")
+        )
+
+    if not rows:
+        return empty
+    return pd.DataFrame(rows)
+
+
 def _load_price_panel(symbols: list[str], project_root: Path) -> pd.DataFrame:
     close_frames: list[pd.Series] = []
     for symbol in symbols:
@@ -410,15 +496,34 @@ def _build_rotation_backtest_view(
     scope_note: str,
     holding_period_bars: int | None = None,
     rebalance_interval_bars: int | None = None,
+    quality_lookup_frame: pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     if signal_frame.empty:
         return {"available": False, "message": f"No predictions were available for {scope_label.lower()}."}
 
     signal_frame = signal_frame.copy()
     signal_frame["date"] = pd.to_datetime(signal_frame["date"])
-    quality_map = validation_quality_frame.set_index("symbol")["validation_quality_score"]
-    signal_frame["validation_quality_score"] = signal_frame["symbol"].map(quality_map).fillna(0.5)
     quality_weight = float(config["quality_weight"])
+    if quality_lookup_frame is not None and not quality_lookup_frame.empty:
+        signal_frame["signal_year"] = signal_frame["date"].dt.year.astype(int)
+        lookup = quality_lookup_frame[
+            ["signal_year", "symbol", "validation_quality_score"]
+        ].copy()
+        lookup["signal_year"] = lookup["signal_year"].astype(int)
+        signal_frame = signal_frame.merge(
+            lookup,
+            on=["signal_year", "symbol"],
+            how="left",
+        )
+        signal_frame["validation_quality_score"] = signal_frame[
+            "validation_quality_score"
+        ].fillna(0.5)
+        signal_frame = signal_frame.drop(columns=["signal_year"])
+    else:
+        quality_map = validation_quality_frame.set_index("symbol")["validation_quality_score"]
+        signal_frame["validation_quality_score"] = (
+            signal_frame["symbol"].map(quality_map).fillna(0.5)
+        )
     signal_frame["quality_weighted_score"] = (
         (1.0 - quality_weight) * signal_frame["ensemble_probability"].astype(float)
         + quality_weight * signal_frame["validation_quality_score"].astype(float)
@@ -880,6 +985,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
     failures: list[dict[str, str]] = []
     oos_signal_frames: list[pd.DataFrame] = []
     holdout_signal_frames: list[pd.DataFrame] = []
+    validation_predictions_by_symbol: dict[str, pd.DataFrame] = {}
 
     for sector in SECTOR_BUCKETS:
         try:
@@ -913,6 +1019,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         predictions = _join_daily_regimes(predictions=predictions, regime_daily_map=regime_daily_map)
         validation_predictions = predictions.loc[predictions["fold_label"].astype(str) != "holdout"].copy()
         holdout_predictions = predictions.loc[predictions["fold_label"].astype(str) == "holdout"].copy()
+        validation_predictions_by_symbol[sector["symbol"]] = validation_predictions
         oos_frame = predictions[
             [
                 "prob_elastic_net",
@@ -1143,6 +1250,11 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         if holdout_signal_frames
         else pd.DataFrame()
     )
+    quality_lookup_frame = _build_point_in_time_quality(
+        validation_predictions_by_symbol=validation_predictions_by_symbol,
+        signal_frame=oos_signal_frame,
+        config=config,
+    )
     holdout_rotation_view = _build_rotation_backtest_view(
         signal_frame=holdout_signal_frame,
         validation_quality_frame=validation_quality_frame,
@@ -1151,6 +1263,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         scope_label="Untouched 2025+ holdout",
         scope_kind="holdout",
         scope_note="This benchmark uses only the final untouched holdout dates after the validation years.",
+        quality_lookup_frame=quality_lookup_frame,
     )
     historical_start = pd.Timestamp(str(config["historical_benchmark_start"]))
     historical_signal_frame = oos_signal_frame.copy()
@@ -1167,6 +1280,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         scope_label="2006-2026 walk-forward history",
         scope_kind="walkforward_history",
         scope_note="This benchmark uses every walk-forward out-of-sample window from 2006 onward, including the 2008 financial crisis, the 2020 shock, and the 2022 rate-reset drawdown.",
+        quality_lookup_frame=quality_lookup_frame,
     )
     rebalance_rows: list[dict[str, Any]] = []
     for cadence_bars in tuple(int(value) for value in config["rebalance_interval_scenarios"]):
@@ -1185,6 +1299,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
                 ),
                 holding_period_bars=cadence_bars,
                 rebalance_interval_bars=cadence_bars,
+                quality_lookup_frame=quality_lookup_frame,
             )
         if not isinstance(cadence_view, dict) or not cadence_view.get("available"):
             continue
@@ -1201,6 +1316,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         "data_note": (
             "Features are lagged by one bar and each validation window uses a five-bar purge plus a five-bar embargo. "
             "The sector ML study now trains from 2000 onward so the walk-forward history can include 2008, 2020, and 2022 while preserving a separate untouched 2025+ holdout. "
+            "Per-sector validation quality scores used in the rotation backtest are recomputed point-in-time so a signal in year Y is only weighted by validation evidence from folds strictly before Y. "
             "Macro regime attribution comes from the local macro store and is useful for regime slicing, but it is not a point-in-time macro vintage database."
         ),
         "sector_summary_frame": sector_summary_frame,
@@ -1209,6 +1325,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         "regime_performance_frame": regime_performance_frame,
         "cost_sensitivity_frame": cost_sensitivity_frame,
         "validation_quality_frame": validation_quality_frame,
+        "quality_lookup_frame": quality_lookup_frame,
         "winner_counts_frame": winner_counts,
         "failures_frame": failures_frame,
         "holdout_leader": holdout_leader,
