@@ -281,12 +281,21 @@ def _render_source_link(source: str | None, source_url: str | None) -> str:
     return label
 
 
-def _zscore(series: pd.Series) -> pd.Series:
+def _zscore(series: pd.Series, min_periods: int = 24) -> pd.Series:
+    """Causal expanding z-score.
+
+    Each observation is normalized against the mean and population standard
+    deviation computed strictly from prior and current values, so the
+    resulting series carries no information from the future. Rows before
+    ``min_periods`` observations exist, and rows where the trailing window
+    is constant, fall back to 0.0 to match the previous fall-through
+    behavior used by ``_classify_regime``.
+    """
     numeric = pd.to_numeric(series, errors="coerce")
-    std = numeric.std(ddof=0)
-    if pd.isna(std) or std == 0:
-        return pd.Series(0.0, index=numeric.index)
-    return (numeric - numeric.mean()) / std
+    mean = numeric.expanding(min_periods=min_periods).mean()
+    std = numeric.expanding(min_periods=min_periods).std(ddof=0)
+    z = (numeric - mean) / std.replace(0.0, np.nan)
+    return z.fillna(0.0)
 
 
 def _format_sigma(value: float) -> str:
@@ -379,14 +388,34 @@ def _classify_regime(row: pd.Series) -> str:
     return "Fragile Late-Cycle Watch"
 
 
-def _smooth_label_series(labels: pd.Series, passes: int = 2) -> pd.Series:
-    smoothed = labels.astype("object").tolist()
-    if len(smoothed) < 3:
+def _smooth_label_series(labels: pd.Series, min_persistence: int = 2) -> pd.Series:
+    """Causal de-noising of regime labels via a persistence rule.
+
+    A new label is only adopted after it has been observed for
+    ``min_persistence`` consecutive periods; until then the previously
+    committed label is held. Only past and current values are read, so
+    the smoothed series carries no future leakage.
+    """
+    if min_persistence <= 1 or len(labels) == 0:
         return labels
-    for _ in range(passes):
-        for index in range(1, len(smoothed) - 1):
-            if smoothed[index - 1] == smoothed[index + 1] and smoothed[index] != smoothed[index - 1]:
-                smoothed[index] = smoothed[index - 1]
+    values = labels.astype("object").tolist()
+    smoothed: list[Any] = [values[0]]
+    current = values[0]
+    candidate = values[0]
+    streak = 1
+    for index in range(1, len(values)):
+        observation = values[index]
+        if observation == current:
+            candidate = observation
+            streak = 1
+        elif observation == candidate:
+            streak += 1
+        else:
+            candidate = observation
+            streak = 1
+        if streak >= min_persistence:
+            current = candidate
+        smoothed.append(current)
     return pd.Series(smoothed, index=labels.index)
 
 
