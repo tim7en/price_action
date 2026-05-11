@@ -132,14 +132,16 @@
         <section class="hero">
             <div class="hero-grid">
                 <div>
-                    <p class="eyebrow">Rotation Playbook · Dalio-style guidebook</p>
+                    <p class="eyebrow">Rotation Playbook ┬╖ Dalio-style guidebook</p>
                     <h1>Today's Box: Late-cycle / fragile</h1>
-                    <p>Growth is soft but not broken. Inflation is balanced. Valuation is rich and credit is mixed rather than clean. The &#x27;walk carefully&#x27; regime — risk asymmetry favors the downside if a catalyst hits.</p>
+                    <p>Growth is soft but not broken. Inflation is balanced. Valuation is rich and credit is mixed rather than clean. The &#x27;walk carefully&#x27; regime тАФ risk asymmetry favors the downside if a catalyst hits.</p>
                     <div class="hero-meta">
-                        <span>Generated 2026-05-11 03:44 UTC</span>
+                        <span>Generated 2026-05-11 06:07 UTC</span>
                         <span>Regime: Fragile Late-Cycle Watch</span>
                         <span>Quadrant: Growth Down / Inflation Down</span>
                         <span>Latest complete signal: 2026-03-03</span>
+                        <span>Model stack: 4 models · 9 sectors</span>
+                        <span>Walk-forward: 5Y / 1Y · holdout 2025-01-01</span>
                     </div>
                 </div>
                 <aside class="focus-box">
@@ -157,30 +159,30 @@
 
         <section class="section">
             <p class="eyebrow">The Four Boxes</p>
-            <h2>Growth × Inflation Quadrant Map</h2>
-            <p>Dalio's framing: every macro environment lives in one of four boxes defined by growth direction × inflation direction. Each box rewards a different exposure profile. Today's box is highlighted; the others are how the playbook should change if the regime flips.</p>
+            <h2>Growth ├Ч Inflation Quadrant Map</h2>
+            <p>Dalio's framing: every macro environment lives in one of four boxes defined by growth direction ├Ч inflation direction. Each box rewards a different exposure profile. Today's box is highlighted; the others are how the playbook should change if the regime flips.</p>
             <div class="quadrant-grid">
                 <article class="stat-card">
   <p class="card-tag">Growth Up / Inflation Down</p>
-  <h3>Disinflationary growth — equities + duration both work.</h3>
+  <h3>Disinflationary growth тАФ equities + duration both work.</h3>
   <p>Lean: Tech, Discretionary, Industrials, Quality compounders.</p>
   <p style="color:#9a4a35">Avoid: Energy on the way down, deep value bets.</p>
 </article>
 <article class="stat-card">
   <p class="card-tag">Growth Up / Inflation Up</p>
-  <h3>Inflationary boom — real assets and short-duration earnings beat long-duration earnings.</h3>
+  <h3>Inflationary boom тАФ real assets and short-duration earnings beat long-duration earnings.</h3>
   <p>Lean: Energy, Materials, Industrials, Financials.</p>
   <p style="color:#9a4a35">Avoid: Long-duration unprofitable growth, fixed-coupon duration.</p>
 </article>
 <article class="stat-card">
   <p class="card-tag">Growth Down / Inflation Up</p>
-  <h3>Stagflation squeeze — both stocks and bonds can sell off together.</h3>
+  <h3>Stagflation squeeze тАФ both stocks and bonds can sell off together.</h3>
   <p>Lean: Cash, Energy, gold-linked, very-short duration. Selectively Staples with pricing power.</p>
   <p style="color:#9a4a35">Avoid: Discretionary cyclicals, leveraged growth, long duration.</p>
 </article>
 <article class="stat-card current">
-  <p class="card-tag">Growth Down / Inflation Down · CURRENT</p>
-  <h3>Disinflationary slowdown — duration and quality defensives work; cyclicals stall.</h3>
+  <p class="card-tag">Growth Down / Inflation Down ┬╖ CURRENT</p>
+  <h3>Disinflationary slowdown тАФ duration and quality defensives work; cyclicals stall.</h3>
   <p>Lean: Staples, Utilities, Health Care, Treasuries if policy turns easier.</p>
   <p style="color:#9a4a35">Avoid: Levered cyclicals, deep cyclicals dependent on a re-acceleration.</p>
 </article>
@@ -190,19 +192,113 @@
         <section class="section">
             <p class="eyebrow">Today's Read</p>
             <h2>What This Regime Has Looked Like</h2>
-            <p>Growth is soft but not broken. Inflation is balanced. Valuation is rich and credit is mixed rather than clean. The &#x27;walk carefully&#x27; regime — risk asymmetry favors the downside if a catalyst hits. The historical episodes for this regime are listed in the main report under "SPY Versus ETFs After A Regime Shift" — use them as the empirical reference for what to expect.</p>
+            <p>Growth is soft but not broken. Inflation is balanced. Valuation is rich and credit is mixed rather than clean. The &#x27;walk carefully&#x27; regime тАФ risk asymmetry favors the downside if a catalyst hits. The historical episodes for this regime are listed in the main report under "SPY Versus ETFs After A Regime Shift" тАФ use them as the empirical reference for what to expect.</p>
             <div class="split">
                 <div class="lean-block">
                     <p class="eyebrow" style="color:#3f7f78">Lean into</p>
                     <h3>Quality defensives (Staples, Health Care), Utilities for rate relief, selective Industrials with real cash flow.</h3>
-                    <p>The model agrees with this template when the live basket below leans into these areas. If the basket disagrees, treat the disagreement as information — usually a near-term factor the macro template alone misses.</p>
+                    <p>The model agrees with this template when the live basket below leans into these areas. If the basket disagrees, treat the disagreement as information тАФ usually a near-term factor the macro template alone misses.</p>
                 </div>
                 <div class="avoid-block">
                     <p class="eyebrow" style="color:#9a4a35">Avoid</p>
                     <h3>Highest-multiple growth, lowest-quality cyclicals, anything that needs the credit window to stay wide open.</h3>
-                    <p>Watch for: Credit spreads widening, breadth narrowing, real yields rising — any of these can flip this into Credit Deleveraging or Rate-Shock.</p>
+                    <p>Watch for: Credit spreads widening, breadth narrowing, real yields rising тАФ any of these can flip this into Credit Deleveraging or Rate-Shock.</p>
                 </div>
             </div>
+        </section>
+
+        
+        <section class="section">
+            <p class="eyebrow">Model Blueprint</p>
+            <h2>What This Page Is Explaining</h2>
+            <p>This playbook is the explainability layer for the exact ML rotation engine used in the report. It is not a separate narrative overlay. The sections below summarize the trained universe, the walk-forward design, the live ranking recipe, and the out-of-sample evidence behind the recommendation.</p>
+            <div class="card-grid">
+                <article class="stat-card">
+  <p class="card-tag">Universe</p>
+  <h3>9 sectors · 98 features</h3>
+  <p>One model stack is fit per sector ETF, then all sectors are compared cross-sectionally for the live basket.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Validation design</p>
+  <h3>5Y train / 1Y validation</h3>
+  <p>Walk-forward training starts at 2000-01-01, uses a 5-bar purge and 5-bar embargo, and preserves a strict holdout from 2025-01-01.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Model stack</p>
+  <h3>Elastic Net, ExtraTrees, LightGBM, Average Ensemble</h3>
+  <p>The live probability comes from the average ensemble, while stability and sector-level winner counts show which base models generalized best.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Bias control</p>
+  <h3>Point-in-time quality prior</h3>
+  <p>The quality sleeve mixes live probability with a validation-quality prior using a 25% quality weight, and the historical benchmark recomputes that prior year by year without look-ahead.</p>
+</article>
+<article class="stat-card">
+  <p class="card-tag">Portfolio rule</p>
+  <h3>60.0% risk sleeve + 40.0% reserve</h3>
+  <p>The rotating basket never controls the full portfolio. The reserve sleeve stays separate and deploys into SPY only after visible drawdowns.</p>
+</article>
+            </div>
+            <div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Model</th><th>Best-overfit sector wins</th><th>Share of sectors</th></tr></thead>
+    <tbody><tr><td>LightGBM</td><td>4</td><td>44%</td></tr><tr><td>Average Ensemble</td><td>3</td><td>33%</td></tr><tr><td>Elastic Net</td><td>1</td><td>11%</td></tr><tr><td>ExtraTrees</td><td>1</td><td>11%</td></tr></tbody>
+  </table>
+</div>
+            <p style="margin-top:14px">Features are lagged by one bar and each validation window uses a five-bar purge plus a five-bar embargo. The sector ML study now trains from 2000 onward so the walk-forward history can include 2008, 2020, and 2022 while preserving a separate untouched 2025+ holdout. Per-sector validation quality scores used in the rotation backtest are recomputed point-in-time so a signal in year Y is only weighted by validation evidence from folds strictly before Y. Macro regime attribution comes from the local macro store and is useful for regime slicing, but it is not a point-in-time macro vintage database.</p>
+        </section>
+
+        
+        <section class="section">
+            <p class="eyebrow">Scoring Recipe</p>
+            <h2>How The Live Combined Score Is Built</h2>
+            <p>The live basket is not chosen on a single number. It blends the regime prior, the latest complete holdout signal, validation-derived sector quality, stability, and a run-up guardrail. If no sector clears the normal live-probability gate, the engine falls back to the highest combined scores instead of forcing a weak threshold pass.</p>
+            <div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Input</th><th>Weight</th><th>How it is used</th></tr></thead>
+    <tbody><tr><td>Regime fit</td><td>35%</td><td>Cross-sectional rank of the current regime entry score from the sector regime model.</td></tr><tr><td>Live probability</td><td>18%</td><td>Average-ensemble probability on the latest complete signal. Normal eligibility starts at 55%.</td></tr><tr><td>Quality-weighted ML</td><td>13%</td><td>The backtest score that blends probability with sector validation quality using a 25% quality weight.</td></tr><tr><td>Validation quality</td><td>10%</td><td>Cross-sectional rank of the sector&#x27;s validation-derived quality score.</td></tr><tr><td>Model stability</td><td>9%</td><td>Penalty for sectors whose holdout statistics deteriorate versus validation.</td></tr><tr><td>Holdout Sharpe</td><td>5%</td><td>Small preference for sectors whose untouched 2025+ behavior stayed investable.</td></tr><tr><td>Run-up headroom</td><td>10%</td><td>Reduces the score of sectors that already advanced sharply into the signal date.</td></tr></tbody>
+  </table>
+</div>
+        </section>
+
+        
+        <section class="section">
+            <p class="eyebrow">Backtest Evidence</p>
+            <h2>Historical And Holdout Performance</h2>
+            <p>The same strategy family is shown in two slices: the 2006+ walk-forward history and the untouched 2025+ holdout. These rows let you see where the live recommendation sits relative to the broader model family, not just today's basket.</p>
+            <div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Strategy</th><th>History total</th><th>History CAGR</th><th>History Sharpe</th><th>History Max DD</th><th>2025+ holdout total</th><th>2025+ holdout CAGR</th><th>2025+ holdout Sharpe</th><th>2025+ holdout Max DD</th></tr></thead>
+    <tbody><tr><td>ML Probability Rotation</td><td>+165.6%</td><td>+5.0%</td><td>0.46</td><td>-54.7%</td><td>+9.5%</td><td>+8.3%</td><td>1.19</td><td>-1.3%</td></tr><tr><td>ML Quality-Weighted Rotation</td><td>+206.2%</td><td>+5.7%</td><td>0.50</td><td>-53.0%</td><td>+12.6%</td><td>+11.0%</td><td>1.41</td><td>-1.4%</td></tr><tr><td>Quality Rotation + SPY Reserve Sleeve</td><td>+224.3%</td><td>+6.0%</td><td>0.60</td><td>-47.7%</td><td>+8.6%</td><td>+7.5%</td><td>1.59</td><td>-0.9%</td></tr><tr><td>Quality Rotation + SPY Reserve Sleeve x3 Drawdown Sleeve @ 6%</td><td>+266.9%</td><td>+6.7%</td><td>0.46</td><td>-69.1%</td><td>+9.3%</td><td>+8.1%</td><td>1.65</td><td>-1.0%</td></tr><tr><td>SPY Buy And Hold</td><td>+328.8%</td><td>+7.5%</td><td>0.62</td><td>-49.3%</td><td>+12.7%</td><td>+11.0%</td><td>1.62</td><td>-2.3%</td></tr><tr><td>ML Probability Rotation x3 @ 6%</td><td>+47.2%</td><td>+1.9%</td><td>0.24</td><td>-94.7%</td><td>+23.5%</td><td>+20.3%</td><td>1.00</td><td>-4.1%</td></tr><tr><td>ML Quality-Weighted Rotation x3 @ 6%</td><td>+111.5%</td><td>+3.8%</td><td>0.29</td><td>-93.9%</td><td>+33.9%</td><td>+29.2%</td><td>1.24</td><td>-4.4%</td></tr><tr><td>SPY Buy And Hold x3 @ 6%</td><td>+434.0%</td><td>+8.7%</td><td>0.42</td><td>-92.4%</td><td>+34.7%</td><td>+29.9%</td><td>1.42</td><td>-7.2%</td></tr></tbody>
+  </table>
+</div>
+            <p style="margin-top:14px">This benchmark uses every walk-forward out-of-sample window from 2006 onward, including the 2008 financial crisis, the 2020 shock, and the 2022 rate-reset drawdown. Signals are generated from walk-forward out-of-sample sector predictions, executed one bar after the signal date, and held for 5 bars before the next rebalance. The quality-weighted variant mixes live ensemble probability with a sector quality prior estimated only from the pre-holdout validation window. The reserve sleeve keeps 40% of the portfolio in cash earning 5% annually, deploys 10% of that reserve into SPY after a 5% SPY drawdown, another 10% after a 10% drawdown, and the rest after a 20% drawdown, then rotates that deployed sleeve back to cash only after SPY gets back to its prior high. The leveraged scenario applies 3x gross exposure and charges 6% annual interest on the borrowed 2x capital over each realized holding period. Quality Rotation + SPY Reserve Sleeve x3 Drawdown Sleeve @ 6% only levers the deployed SPY reserve sleeve during drawdowns and rotates that sleeve back to cash once SPY returns to a fresh high.</p>
+        </section>
+
+        
+        <section class="section">
+            <p class="eyebrow">Per-Sector Model Sheet</p>
+            <h2>What Each Sector Model Looked Like</h2>
+            <p>Each sector gets its own model fit. The table below shows the average-ensemble validation and holdout stats, the selected best-overfit base model, and the quality/stability priors that later feed the live ranking.</p>
+            <div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Sector</th><th>Best model</th><th>Stability</th><th>Validation AUC</th><th>Holdout AUC</th><th>Holdout Sharpe</th><th>Holdout CAGR</th><th>Static quality</th><th>Features</th><th>Folds</th></tr></thead>
+    <tbody><tr><td>Commodity / Materials (XLB)</td><td>Average Ensemble</td><td>98.4</td><td>0.579</td><td>0.755</td><td>2.97</td><td>+9.4%</td><td>0.900</td><td>98</td><td>20</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>LightGBM</td><td>94.5</td><td>0.573</td><td>0.542</td><td>2.32</td><td>+9.1%</td><td>0.961</td><td>98</td><td>20</td></tr><tr><td>Information Technology (XLK)</td><td>LightGBM</td><td>95.4</td><td>0.563</td><td>0.558</td><td>1.68</td><td>+4.7%</td><td>0.806</td><td>98</td><td>20</td></tr><tr><td>Energy (XLE)</td><td>Elastic Net</td><td>97.6</td><td>0.520</td><td>0.576</td><td>1.68</td><td>+4.2%</td><td>0.372</td><td>98</td><td>20</td></tr><tr><td>Financials (XLF)</td><td>Average Ensemble</td><td>93.0</td><td>0.560</td><td>0.498</td><td>1.36</td><td>+4.8%</td><td>0.478</td><td>98</td><td>20</td></tr><tr><td>Utilities (XLU)</td><td>LightGBM</td><td>94.9</td><td>0.516</td><td>0.616</td><td>1.34</td><td>+7.0%</td><td>0.272</td><td>98</td><td>20</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>Average Ensemble</td><td>98.8</td><td>0.559</td><td>0.561</td><td>1.08</td><td>+4.7%</td><td>0.583</td><td>98</td><td>20</td></tr><tr><td>Consumer Staples (XLP)</td><td>ExtraTrees</td><td>91.2</td><td>0.538</td><td>0.453</td><td>-0.01</td><td>-0.1%</td><td>0.272</td><td>98</td><td>20</td></tr><tr><td>Health Care (XLV)</td><td>LightGBM</td><td>82.9</td><td>0.540</td><td>0.510</td><td>-2.75</td><td>-4.6%</td><td>0.356</td><td>98</td><td>20</td></tr></tbody>
+  </table>
+</div>
+        </section>
+
+        
+        <section class="section">
+            <p class="eyebrow">Robustness</p>
+            <h2>Execution And Cost Sensitivity</h2>
+            <p>Rebalance cadence was rechecked at the configured intervals, and worst-slippage robustness is tracked separately. Under the harshest modeled slippage scenario, 7 of 9 sectors still kept positive CAGR on the sector-level holdout study.</p>
+            <div class="table-shell">
+  <table class="data-table">
+    <thead><tr><th>Cadence</th><th>Strategy</th><th>Total return</th><th>CAGR</th><th>Sharpe</th><th>Max DD</th></tr></thead>
+    <tbody><tr><td>5-bar</td><td>ML Quality-Weighted Rotation</td><td>+206.2%</td><td>+5.7%</td><td>0.50</td><td>-53.0%</td></tr><tr><td>5-bar</td><td>Quality Rotation + SPY Reserve Sleeve</td><td>+224.3%</td><td>+6.0%</td><td>0.60</td><td>-47.7%</td></tr><tr><td>10-bar</td><td>ML Quality-Weighted Rotation</td><td>+174.2%</td><td>+5.1%</td><td>0.49</td><td>-50.4%</td></tr><tr><td>10-bar</td><td>Quality Rotation + SPY Reserve Sleeve</td><td>+214.0%</td><td>+5.8%</td><td>0.63</td><td>-45.7%</td></tr><tr><td>21-bar</td><td>ML Quality-Weighted Rotation</td><td>+104.2%</td><td>+3.7%</td><td>0.39</td><td>-53.1%</td></tr><tr><td>21-bar</td><td>Quality Rotation + SPY Reserve Sleeve</td><td>+138.5%</td><td>+4.5%</td><td>0.59</td><td>-42.2%</td></tr></tbody>
+  </table>
+</div>
         </section>
 
         <section class="section">
@@ -212,7 +308,7 @@
             <div class="table-shell">
   <table class="data-table">
     <thead><tr><th>Lean into</th><th>ML probability</th><th>Combined score</th><th>Trailing PE vs 10y avg</th><th>Concentration</th></tr></thead>
-    <tbody><tr><td>Consumer Staples (XLP)</td><td>49%</td><td>0.673</td><td>25.5 vs 19.5 10y avg (+30.9%)</td><td>12.1% top Walmart Inc · top-10 63%</td></tr><tr><td>Utilities (XLU)</td><td>64%</td><td>0.647</td><td>21.7 vs 17.5 10y avg (+24.1%)</td><td>14.0% top NextEra Energy Inc · top-10 59%</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>49%</td><td>0.644</td><td>30.9 vs 21.5 10y avg (+43.8%)</td><td>27.6% top Amazon.com Inc · top-10 72%</td></tr></tbody>
+    <tbody><tr><td>Retail / Consumer Discretionary (XLY)</td><td>46%</td><td>0.767</td><td>30.9 vs 21.5 10y avg (+43.8%)</td><td>27.6% top Amazon.com Inc ┬╖ top-10 72%</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>46%</td><td>0.642</td><td>29.9 vs 17.0 10y avg (+76.0%)</td><td>7.6% top Caterpillar Inc ┬╖ top-10 40%</td></tr><tr><td>Consumer Staples (XLP)</td><td>49%</td><td>0.634</td><td>25.5 vs 19.5 10y avg (+30.9%)</td><td>12.1% top Walmart Inc ┬╖ top-10 63%</td></tr></tbody>
   </table>
 </div>
         </section>
@@ -220,11 +316,11 @@
         <section class="section">
             <p class="eyebrow">Where The Model Says To Avoid Now</p>
             <h2>Bottom 3 Sectors</h2>
-            <p>These are the lowest-ranked sectors right now. Avoid means do not size up here — it does not mean short. The combined score blends regime fit, model probability, valuation guardrail, and stability.</p>
+            <p>These are the lowest-ranked sectors right now. Avoid means do not size up here тАФ it does not mean short. The combined score blends regime fit, model probability, valuation guardrail, and stability.</p>
             <div class="table-shell">
   <table class="data-table">
     <thead><tr><th>Avoid</th><th>ML probability</th><th>Combined score</th><th>Trailing PE vs 10y avg</th><th>Concentration</th></tr></thead>
-    <tbody><tr><td>Energy (XLE)</td><td>38%</td><td>0.352</td><td>20.3 vs 16.0 10y avg (+26.6%)</td><td>22.2% top Exxon Mobil Corp · top-10 75%</td></tr><tr><td>Commodity / Materials (XLB)</td><td>28%</td><td>0.487</td><td>26.1 vs 16.5 10y avg (+57.9%)</td><td>14.1% top Linde PLC · top-10 60%</td></tr><tr><td>Financials (XLF)</td><td>50%</td><td>0.504</td><td>16.4 vs 13.5 10y avg (+21.4%)</td><td>11.7% top Berkshire Hathaway Inc Class B · top-10 56%</td></tr></tbody>
+    <tbody><tr><td>Energy (XLE)</td><td>38%</td><td>0.348</td><td>20.3 vs 16.0 10y avg (+26.6%)</td><td>22.2% top Exxon Mobil Corp ┬╖ top-10 75%</td></tr><tr><td>Commodity / Materials (XLB)</td><td>29%</td><td>0.447</td><td>26.1 vs 16.5 10y avg (+57.9%)</td><td>14.1% top Linde PLC ┬╖ top-10 60%</td></tr><tr><td>Health Care (XLV)</td><td>39%</td><td>0.488</td><td>26.4 vs 17.5 10y avg (+51.1%)</td><td>14.1% top Eli Lilly and Co ┬╖ top-10 59%</td></tr></tbody>
   </table>
 </div>
         </section>
@@ -232,7 +328,7 @@
         <section class="section">
             <p class="eyebrow">Operating Rules</p>
             <h2>How The Rotation Decision Is Made</h2>
-            <p>The rotation is rule-based. The page below is not discretionary commentary — it is a direct translation of the live sector ranking and the reserve cash trigger logic already used in the report.</p>
+            <p>The rotation is rule-based. The page below is not discretionary commentary тАФ it is a direct translation of the live sector ranking and the reserve cash trigger logic already used in the report.</p>
             <div class="card-grid">
                 <article class="stat-card">
   <p class="card-tag">Now</p>
@@ -280,7 +376,7 @@
             <div class="table-shell">
   <table class="data-table">
     <thead><tr><th>Current sector</th><th>Role</th><th>Portfolio weight</th><th>Within 60% sleeve</th><th>ML probability</th><th>Advance 20D</th><th>Advance 60D</th><th>Guardrail</th><th>Combined score</th><th>Regime score</th><th>Validation quality</th></tr></thead>
-    <tbody><tr><td>Utilities (XLU)</td><td>Rate-sensitive defense</td><td>60.0%</td><td>100.0%</td><td>64%</td><td>-4.8%</td><td>+1.0%</td><td>1.00x</td><td>0.647</td><td>0.517</td><td>0.139</td></tr></tbody>
+    <tbody><tr><td>Utilities (XLU)</td><td>Rate-sensitive defense</td><td>60.0%</td><td>100.0%</td><td>64%</td><td>-4.8%</td><td>+1.0%</td><td>1.00x</td><td>0.612</td><td>0.500</td><td>0.272</td></tr></tbody>
   </table>
 </div>
         </section>
@@ -292,7 +388,7 @@
             <div class="table-shell">
   <table class="data-table">
     <thead><tr><th>Sector</th><th>In live basket</th><th>ML probability</th><th>Advance 20D</th><th>Guardrail</th><th>Combined score</th><th>Regime score</th><th>Stability</th><th>Holdout Sharpe</th></tr></thead>
-    <tbody><tr><td>Consumer Staples (XLP)</td><td>No</td><td>49%</td><td>+2.2%</td><td>1.00x</td><td>0.673</td><td>0.778</td><td>91.2</td><td>-1.05</td></tr><tr><td>Utilities (XLU)</td><td>Yes</td><td>64%</td><td>-4.8%</td><td>1.00x</td><td>0.647</td><td>0.517</td><td>96.0</td><td>1.36</td></tr><tr><td>Retail / Consumer Discretionary (XLY)</td><td>No</td><td>49%</td><td>+6.5%</td><td>0.82x</td><td>0.644</td><td>0.637</td><td>97.6</td><td>1.08</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>No</td><td>47%</td><td>+1.0%</td><td>0.91x</td><td>0.608</td><td>0.508</td><td>95.7</td><td>2.75</td></tr><tr><td>Information Technology (XLK)</td><td>No</td><td>36%</td><td>+23.1%</td><td>0.70x</td><td>0.552</td><td>0.638</td><td>94.8</td><td>1.68</td></tr><tr><td>Health Care (XLV)</td><td>No</td><td>37%</td><td>-2.6%</td><td>1.00x</td><td>0.532</td><td>0.717</td><td>89.4</td><td>-2.29</td></tr></tbody>
+    <tbody><tr><td>Retail / Consumer Discretionary (XLY)</td><td>No</td><td>46%</td><td>+6.5%</td><td>0.82x</td><td>0.767</td><td>0.750</td><td>98.8</td><td>1.08</td></tr><tr><td>Manufacturing / Industrials (XLI)</td><td>No</td><td>46%</td><td>+1.0%</td><td>0.91x</td><td>0.642</td><td>0.554</td><td>94.5</td><td>2.32</td></tr><tr><td>Consumer Staples (XLP)</td><td>No</td><td>49%</td><td>+2.2%</td><td>1.00x</td><td>0.634</td><td>0.689</td><td>91.2</td><td>-0.01</td></tr><tr><td>Utilities (XLU)</td><td>Yes</td><td>64%</td><td>-4.8%</td><td>1.00x</td><td>0.612</td><td>0.500</td><td>94.9</td><td>1.34</td></tr><tr><td>Information Technology (XLK)</td><td>No</td><td>35%</td><td>+23.1%</td><td>0.70x</td><td>0.533</td><td>0.579</td><td>95.4</td><td>1.68</td></tr><tr><td>Financials (XLF)</td><td>No</td><td>48%</td><td>+0.9%</td><td>1.00x</td><td>0.529</td><td>0.378</td><td>93.0</td><td>1.36</td></tr></tbody>
   </table>
 </div>
         </section>
@@ -314,10 +410,10 @@
                     <p class="eyebrow">Risk Discipline</p>
                     <h2>When To Flip Defensive</h2>
                     <ul class="simple">
-                        <li>If the regime flips into Credit Deleveraging, Rate-Shock, or Panic — abandon the lean-in basket and rotate to cash + Staples + Utilities. The model will signal this through the regime score collapsing.</li>
-                        <li>If the live basket cannot find any sector clearing the probability threshold — accept that as a signal in itself. The historical record shows that "Cash" episodes are a real edge, not a failure mode.</li>
-                        <li>Use position sizing, not exits, to manage uncertainty. The 60% equity sleeve is the maximum risk budget — never lever it up because the regime template is bullish.</li>
-                        <li>The reserve sleeve deploys mechanically. Never override the SPY-drawdown triggers based on a regime narrative — the rule was designed to act when narratives feel worst.</li>
+                        <li>If the regime flips into Credit Deleveraging, Rate-Shock, or Panic тАФ abandon the lean-in basket and rotate to cash + Staples + Utilities. The model will signal this through the regime score collapsing.</li>
+                        <li>If the live basket cannot find any sector clearing the probability threshold тАФ accept that as a signal in itself. The historical record shows that "Cash" episodes are a real edge, not a failure mode.</li>
+                        <li>Use position sizing, not exits, to manage uncertainty. The 60% equity sleeve is the maximum risk budget тАФ never lever it up because the regime template is bullish.</li>
+                        <li>The reserve sleeve deploys mechanically. Never override the SPY-drawdown triggers based on a regime narrative тАФ the rule was designed to act when narratives feel worst.</li>
                     </ul>
                 </div>
             </div>
@@ -326,7 +422,7 @@
         
         <section class="section">
           <p class="eyebrow">Valuation &amp; Composition Snapshot</p>
-          <h2>Trailing PE vs 10-Year Average · Concentration Risk</h2>
+          <h2>Trailing PE vs 10-Year Average ┬╖ Concentration Risk</h2>
           <p>This is a context overlay, not an ML feature. Trailing PE and top-holding weights are auto-fetched from yfinance each build (cached for 7 days). 10-year average PE comes from the manual config file because Yahoo does not expose history. <strong>Yahoo does not publish forward PE for sector ETFs</strong>, so we use trailing PE as the available proxy. Use this to sanity-check whether the model's lean-in sectors are reasonably priced and to flag concentration drift.</p>
           <div class="table-shell">
   <table class="data-table">
@@ -341,8 +437,8 @@
             <p class="eyebrow">Caveats</p>
             <h2>What The Model Cannot See</h2>
             <ul class="simple">
-                <li><strong>ETF composition drifts with cash flow.</strong> Sector ETFs rebalance to market cap, so winners get bigger weights as their cash flow and price compound. The "Top holding" and "Top-10 weight" columns above show how concentrated each ETF is right now — when one name is more than ~12% of the basket, the ETF is functionally a single-name proxy at the margin. The model trains on the price series of the ETF as it was, so historical "Information Technology" returns are partly a story about which names grew into the index, not a stable definition of the sector.</li>
-                <li><strong>No point-in-time fundamentals.</strong> Forward EPS, balance-sheet quality, and PE history are not in the training pipeline. The trailing PE in the overlay is a current snapshot from yfinance (refreshed weekly) and is informational only — it never feeds the ML signal, because using restated PE history would create look-ahead bias.</li>
+                <li><strong>ETF composition drifts with cash flow.</strong> Sector ETFs rebalance to market cap, so winners get bigger weights as their cash flow and price compound. The "Top holding" and "Top-10 weight" columns above show how concentrated each ETF is right now тАФ when one name is more than ~12% of the basket, the ETF is functionally a single-name proxy at the margin. The model trains on the price series of the ETF as it was, so historical "Information Technology" returns are partly a story about which names grew into the index, not a stable definition of the sector.</li>
+                <li><strong>No point-in-time fundamentals.</strong> Forward EPS, balance-sheet quality, and PE history are not in the training pipeline. The trailing PE in the overlay is a current snapshot from yfinance (refreshed weekly) and is informational only тАФ it never feeds the ML signal, because using restated PE history would create look-ahead bias.</li>
                 <li><strong>Forward PE is not available for ETFs from Yahoo.</strong> The free Yahoo endpoint computes forward PE for individual stocks, not for sector ETFs. To get a true forward PE we would need to compute the weighted average across each ETF's holdings (Bloomberg/FactSet) or pay for a sector-level estimate.</li>
                 <li><strong>Macro labels are revised.</strong> The macro regime label uses the local store, which is built from currently-available data series. It is not a vintage database. Treat regime labels in the deep past as approximate, not as live signals you could have acted on.</li>
                 <li><strong>The reserve sleeve assumes funded cash.</strong> The 5%/10%/20% drawdown deployments require having the cash actually available. In a tax-deferred account this is straightforward; in a taxable account, capital-gains friction can change the optimal trigger.</li>
