@@ -1,0 +1,198 @@
+{
+  "generated_at_utc": "2026-05-12T08:38:40.689544+00:00",
+  "output_dir": "D:\\dev\\price_action\\outputs\\spy_drawdown_regime_research",
+  "rows": 6607,
+  "episode_count": 24,
+  "drawdown_threshold": -0.05,
+  "lookback_window": 252,
+  "min_periods": 63,
+  "hypotheses": [
+    "Strong markets should have shallower and slower drawdowns than weak markets.",
+    "Faster VIX and credit deterioration at onset should coincide with deeper drawdowns and slower recovery.",
+    "Sectors stretched rich versus SPY should suffer larger relative drawdowns during SPY stress windows."
+  ],
+  "worst_sector_regime_ratios": [
+    {
+      "sector": "TECHNOLOGY",
+      "pre_drawdown_market_strength_regime": "Strong",
+      "observations": 12,
+      "avg_same_date_drawdown_ratio": 1.312426639005041,
+      "avg_window_drawdown_ratio": 1.315355715777926,
+      "avg_recovery_ratio_vs_spy": 1.2782080763309889,
+      "avg_relative_return_63d": -0.007357909885597369
+    },
+    {
+      "sector": "MATERIALS",
+      "pre_drawdown_market_strength_regime": "Neutral",
+      "observations": 4,
+      "avg_same_date_drawdown_ratio": 1.1699927583497587,
+      "avg_window_drawdown_ratio": 1.2841210217328523,
+      "avg_recovery_ratio_vs_spy": 1.1350599486236208,
+      "avg_relative_return_63d": -0.01961850463476153
+    },
+    {
+      "sector": "UTILITIES",
+      "pre_drawdown_market_strength_regime": "Unclassified",
+      "observations": 2,
+      "avg_same_date_drawdown_ratio": 1.262845128144268,
+      "avg_window_drawdown_ratio": 1.262845128144268,
+      "avg_recovery_ratio_vs_spy": 1.6404119685553051,
+      "avg_relative_return_63d": NaN
+    },
+    {
+      "sector": "CONSUMER DISCRETIONARY",
+      "pre_drawdown_market_strength_regime": "Weak",
+      "observations": 6,
+      "avg_same_date_drawdown_ratio": 1.2423490776650223,
+      "avg_window_drawdown_ratio": 1.2608378491527437,
+      "avg_recovery_ratio_vs_spy": 1.013501076608879,
+      "avg_relative_return_63d": -0.035869784673388506
+    },
+    {
+      "sector": "ENERGY",
+      "pre_drawdown_market_strength_regime": "Neutral",
+      "observations": 4,
+      "avg_same_date_drawdown_ratio": 0.42373798726114953,
+      "avg_window_drawdown_ratio": 1.2480254429330304,
+      "avg_recovery_ratio_vs_spy": 1.1182260362197909,
+      "avg_relative_return_63d": -0.09715459862352549
+    },
+    {
+      "sector": "FINANCIALS",
+      "pre_drawdown_market_strength_regime": "Neutral",
+      "observations": 4,
+      "avg_same_date_drawdown_ratio": 1.078447640870498,
+      "avg_window_drawdown_ratio": 1.2476117525426187,
+      "avg_recovery_ratio_vs_spy": 1.2390775242728198,
+      "avg_relative_return_63d": -0.017808250336394493
+    },
+    {
+      "sector": "COMMUNICATION SERVICES",
+      "pre_drawdown_market_strength_regime": "Neutral",
+      "observations": 2,
+      "avg_same_date_drawdown_ratio": 1.2443178651130211,
+      "avg_window_drawdown_ratio": 1.2443178651130211,
+      "avg_recovery_ratio_vs_spy": 0.731034193923884,
+      "avg_relative_return_63d": 0.004375392785187893
+    },
+    {
+      "sector": "TECHNOLOGY",
+      "pre_drawdown_market_strength_regime": "Weak",
+      "observations": 6,
+      "avg_same_date_drawdown_ratio": 1.1964989140738815,
+      "avg_window_drawdown_ratio": 1.1976114249523733,
+      "avg_recovery_ratio_vs_spy": 1.4122361973633788,
+      "avg_relative_return_63d": 0.01749598415374611
+    },
+    {
+      "sector": "TECHNOLOGY",
+      "pre_drawdown_market_strength_regime": "Neutral",
+      "observations": 4,
+      "avg_same_date_drawdown_ratio": 1.1292476527409483,
+      "avg_window_drawdown_ratio": 1.1907927356881942,
+      "avg_recovery_ratio_vs_spy": 1.0485454159118142,
+      "avg_relative_return_63d": 0.003566211511098566
+    },
+    {
+      "sector": "CONSUMER DISCRETIONARY",
+      "pre_drawdown_market_strength_regime": "Strong",
+      "observations": 12,
+      "avg_same_date_drawdown_ratio": 1.176548829237986,
+      "avg_window_drawdown_ratio": 1.1774918577093247,
+      "avg_recovery_ratio_vs_spy": 1.1543848350413326,
+      "avg_relative_return_63d": -0.004718272504415764
+    }
+  ],
+  "best_sector_regime_ratios": [
+    {
+      "sector": "CONSUMER STAPLES",
+      "pre_drawdown_market_strength_regime": "Weak",
+      "observations": 6,
+      "avg_same_date_drawdown_ratio": 0.3651227752325841,
+      "avg_window_drawdown_ratio": 0.41052727804864036,
+      "avg_recovery_ratio_vs_spy": 0.43607486540778934,
+      "avg_relative_return_63d": 0.038348764489783194
+    },
+    {
+      "sector": "UTILITIES",
+      "pre_drawdown_market_strength_regime": "Weak",
+      "observations": 6,
+      "avg_same_date_drawdown_ratio": 0.2651029880463121,
+      "avg_window_drawdown_ratio": 0.5000582255947857,
+      "avg_recovery_ratio_vs_spy": 0.5294618672179147,
+      "avg_relative_return_63d": 0.026411937189627182
+    },
+    {
+      "sector": "UTILITIES",
+      "pre_drawdown_market_strength_regime": "Strong",
+      "observations": 12,
+      "avg_same_date_drawdown_ratio": 0.34221315811105923,
+      "avg_window_drawdown_ratio": 0.5582069213959983,
+      "avg_recovery_ratio_vs_spy": 0.8140634806714161,
+      "avg_relative_return_63d": 0.013868944311289766
+    },
+    {
+      "sector": "REAL ESTATE",
+      "pre_drawdown_market_strength_regime": "Strong",
+      "observations": 8,
+      "avg_same_date_drawdown_ratio": 0.5050647960449901,
+      "avg_window_drawdown_ratio": 0.5902605241867297,
+      "avg_recovery_ratio_vs_spy": 0.8920235188145398,
+      "avg_relative_return_63d": -0.0030874747187533275
+    },
+    {
+      "sector": "HEALTHCARE",
+      "pre_drawdown_market_strength_regime": "Strong",
+      "observations": 12,
+      "avg_same_date_drawdown_ratio": 0.509309247365827,
+      "avg_window_drawdown_ratio": 0.6050870994346716,
+      "avg_recovery_ratio_vs_spy": 0.7691326247744413,
+      "avg_relative_return_63d": 0.017272141026049365
+    },
+    {
+      "sector": "CONSUMER STAPLES",
+      "pre_drawdown_market_strength_regime": "Neutral",
+      "observations": 4,
+      "avg_same_date_drawdown_ratio": 0.4666290653599383,
+      "avg_window_drawdown_ratio": 0.6332826205796723,
+      "avg_recovery_ratio_vs_spy": 0.6438379035254063,
+      "avg_relative_return_63d": 0.021565731315107667
+    },
+    {
+      "sector": "UTILITIES",
+      "pre_drawdown_market_strength_regime": "Neutral",
+      "observations": 4,
+      "avg_same_date_drawdown_ratio": 0.1968343268220213,
+      "avg_window_drawdown_ratio": 0.6385868058703982,
+      "avg_recovery_ratio_vs_spy": 0.7885595031457812,
+      "avg_relative_return_63d": 0.019809256294742866
+    },
+    {
+      "sector": "CONSUMER STAPLES",
+      "pre_drawdown_market_strength_regime": "Strong",
+      "observations": 12,
+      "avg_same_date_drawdown_ratio": 0.5756710772874346,
+      "avg_window_drawdown_ratio": 0.6629843420289727,
+      "avg_recovery_ratio_vs_spy": 0.6528758911350593,
+      "avg_relative_return_63d": -0.0011955840233244623
+    },
+    {
+      "sector": "ENERGY",
+      "pre_drawdown_market_strength_regime": "Unclassified",
+      "observations": 2,
+      "avg_same_date_drawdown_ratio": 0.6389261772599305,
+      "avg_window_drawdown_ratio": 0.6686423990132175,
+      "avg_recovery_ratio_vs_spy": 1.8872865741009421,
+      "avg_relative_return_63d": NaN
+    },
+    {
+      "sector": "HEALTHCARE",
+      "pre_drawdown_market_strength_regime": "Weak",
+      "observations": 6,
+      "avg_same_date_drawdown_ratio": 0.6680883948432763,
+      "avg_window_drawdown_ratio": 0.6927271153839145,
+      "avg_recovery_ratio_vs_spy": 0.6140694459892914,
+      "avg_relative_return_63d": 0.00998995496678153
+    }
+  ]
+}

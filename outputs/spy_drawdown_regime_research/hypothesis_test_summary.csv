@@ -1,0 +1,4 @@
+hypothesis,left_group,right_group,metric,left_value,right_value,supports_hypothesis
+Weak-market drawdowns are deeper than strong-market drawdowns,Weak,Strong,abs(max_drawdown),0.20607845807077432,0.09931915835293355,True
+Weak-market drawdowns unfold faster than strong-market drawdowns,Weak,Strong,drawdown_speed_from_peak_per_day,0.0031319989642237434,0.005674251173807462,False
+Weak-market drawdowns recover more slowly than strong-market drawdowns,Weak,Strong,recovered_within_60d_rate,0.6666666666666666,0.75,True
