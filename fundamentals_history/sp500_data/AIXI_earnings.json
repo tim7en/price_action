@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-09-11T23:32:17.258917",
+  "symbol": "AIXI",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "AIXI",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2025-03-31",
+        "reportedEPS": "-1.82"
+      },
+      {
+        "fiscalDateEnding": "2023-12-31",
+        "reportedEPS": "-0.37"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2025-03-31",
+        "reportedDate": "2025-05-15",
+        "reportedEPS": "0.11",
+        "estimatedEPS": "0",
+        "surprise": "0.11",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-09-30",
+        "reportedDate": "2024-10-28",
+        "reportedEPS": "-1.93",
+        "estimatedEPS": "0",
+        "surprise": "-1.93",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2023-12-31",
+        "reportedDate": "2023-12-31",
+        "reportedEPS": "None",
+        "estimatedEPS": "-2.43",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2023-03-31",
+        "reportedDate": "2023-04-28",
+        "reportedEPS": "-0.25",
+        "estimatedEPS": "0",
+        "surprise": "-0.25",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2022-09-30",
+        "reportedDate": "2022-11-23",
+        "reportedEPS": "-0.12",
+        "estimatedEPS": "0",
+        "surprise": "-0.12",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      }
+    ]
+  }
+}

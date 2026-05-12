@@ -1,0 +1,96 @@
+{
+  "timestamp": "2025-09-11T23:19:33.729333",
+  "symbol": "AEHA",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "AEHA",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2023-03-31",
+        "reportedEPS": "0"
+      },
+      {
+        "fiscalDateEnding": "2022-12-31",
+        "reportedEPS": "-0.26"
+      },
+      {
+        "fiscalDateEnding": "2021-12-31",
+        "reportedEPS": "-0.0432"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2023-03-31",
+        "reportedDate": "2023-05-31",
+        "reportedEPS": "0",
+        "estimatedEPS": "0",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2022-12-31",
+        "reportedDate": "2023-03-01",
+        "reportedEPS": "-0.16",
+        "estimatedEPS": "0",
+        "surprise": "-0.16",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2022-09-30",
+        "reportedDate": "2022-10-17",
+        "reportedEPS": "-0.08",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2022-06-30",
+        "reportedDate": "2022-07-11",
+        "reportedEPS": "-0.01",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2022-03-31",
+        "reportedDate": "2022-04-25",
+        "reportedEPS": "-0.01",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2021-12-31",
+        "reportedDate": "2022-01-31",
+        "reportedEPS": "-0.04",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2021-09-30",
+        "reportedDate": "2021-10-18",
+        "reportedEPS": "0",
+        "estimatedEPS": "0",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2021-06-30",
+        "reportedDate": "2021-09-30",
+        "reportedEPS": "-0.0032",
+        "estimatedEPS": "0",
+        "surprise": "-0.0032",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      }
+    ]
+  }
+}

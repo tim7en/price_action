@@ -1,0 +1,52 @@
+{
+  "timestamp": "2025-09-11T23:21:07.382908",
+  "symbol": "AER",
+  "data_type": "dividends",
+  "data": {
+    "symbol": "AER",
+    "data": [
+      {
+        "ex_dividend_date": "2025-08-13",
+        "declaration_date": "2025-07-30",
+        "record_date": "2025-08-13",
+        "payment_date": "2025-09-04",
+        "amount": "0.27"
+      },
+      {
+        "ex_dividend_date": "2025-05-14",
+        "declaration_date": "2025-04-30",
+        "record_date": "2025-05-14",
+        "payment_date": "2025-06-05",
+        "amount": "0.27"
+      },
+      {
+        "ex_dividend_date": "2025-03-12",
+        "declaration_date": "2025-02-26",
+        "record_date": "2025-03-12",
+        "payment_date": "2025-04-03",
+        "amount": "0.27"
+      },
+      {
+        "ex_dividend_date": "2024-11-13",
+        "declaration_date": "2024-10-30",
+        "record_date": "2024-11-13",
+        "payment_date": "2024-12-05",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2024-08-14",
+        "declaration_date": "2024-08-01",
+        "record_date": "2024-08-14",
+        "payment_date": "2024-09-05",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2024-05-21",
+        "declaration_date": "2024-05-08",
+        "record_date": "2024-05-22",
+        "payment_date": "2024-06-13",
+        "amount": "0.25"
+      }
+    ]
+  }
+}

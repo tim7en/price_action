@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-09-11T23:19:08.005296",
+  "symbol": "AEBI",
+  "data_type": "time_series_monthly",
+  "data": {
+    "Meta Data": {
+      "1. Information": "Monthly Adjusted Prices and Volumes",
+      "2. Symbol": "AEBI",
+      "3. Last Refreshed": "2025-09-10",
+      "4. Time Zone": "US/Eastern"
+    },
+    "Monthly Adjusted Time Series": {
+      "2025-09-10": {
+        "1. open": "12.2000",
+        "2. high": "12.7900",
+        "3. low": "10.8900",
+        "4. close": "11.8200",
+        "5. adjusted close": "11.8200",
+        "6. volume": "2293310",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-08-29": {
+        "1. open": "10.2000",
+        "2. high": "12.4500",
+        "3. low": "9.7200",
+        "4. close": "12.2900",
+        "5. adjusted close": "12.2900",
+        "6. volume": "8643221",
+        "7. dividend amount": "0.0250"
+      }
+    }
+  }
+}

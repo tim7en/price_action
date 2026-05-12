@@ -1,0 +1,78 @@
+{
+  "timestamp": "2025-09-11T22:10:14.501999",
+  "symbol": "ZJYL",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "ZJYL",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedEPS": "0.34"
+      },
+      {
+        "fiscalDateEnding": "2022-09-30",
+        "reportedEPS": "0.15"
+      },
+      {
+        "fiscalDateEnding": "2021-09-30",
+        "reportedEPS": "0.51"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedDate": "2025-08-22",
+        "reportedEPS": "None",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "post-market"
+      },
+      {
+        "fiscalDateEnding": "2024-12-31",
+        "reportedDate": "2025-01-24",
+        "reportedEPS": "0.01",
+        "estimatedEPS": "0",
+        "surprise": "0.01",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2022-12-31",
+        "reportedDate": "2023-03-21",
+        "reportedEPS": "0.33",
+        "estimatedEPS": "0",
+        "surprise": "0.33",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2022-09-30",
+        "reportedDate": "2022-12-20",
+        "reportedEPS": "0.15",
+        "estimatedEPS": "0",
+        "surprise": "0.15",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2021-09-30",
+        "reportedDate": "2021-12-10",
+        "reportedEPS": "0.23",
+        "estimatedEPS": "0",
+        "surprise": "0.23",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2021-06-30",
+        "reportedDate": "2021-09-24",
+        "reportedEPS": "0.28",
+        "estimatedEPS": "0",
+        "surprise": "0.28",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      }
+    ]
+  }
+}

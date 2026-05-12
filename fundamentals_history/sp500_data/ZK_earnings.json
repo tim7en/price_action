@@ -1,0 +1,74 @@
+{
+  "timestamp": "2025-09-11T22:10:29.298412",
+  "symbol": "ZK",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "ZK",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedEPS": "-10.72"
+      },
+      {
+        "fiscalDateEnding": "2024-12-31",
+        "reportedEPS": "-10.33"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedDate": "2025-08-14",
+        "reportedEPS": "-8.39",
+        "estimatedEPS": "-4.4954",
+        "surprise": "-3.8946",
+        "surprisePercentage": "-86.6352",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2025-03-31",
+        "reportedDate": "2025-05-15",
+        "reportedEPS": "-2.33",
+        "estimatedEPS": "-5.0758",
+        "surprise": "2.7458",
+        "surprisePercentage": "54.0959",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-12-31",
+        "reportedDate": "2025-03-20",
+        "reportedEPS": "-3.56",
+        "estimatedEPS": "-2.3",
+        "surprise": "-1.26",
+        "surprisePercentage": "-54.7826",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-09-30",
+        "reportedDate": "2024-11-13",
+        "reportedEPS": "-4.62",
+        "estimatedEPS": "-4.6022",
+        "surprise": "-0.0178",
+        "surprisePercentage": "-0.3868",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-06-30",
+        "reportedDate": "2024-08-21",
+        "reportedEPS": "-0.75",
+        "estimatedEPS": "-1.42",
+        "surprise": "0.67",
+        "surprisePercentage": "47.1831",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-03-31",
+        "reportedDate": "2024-06-11",
+        "reportedEPS": "-1.4",
+        "estimatedEPS": "-1.62",
+        "surprise": "0.22",
+        "surprisePercentage": "13.5802",
+        "reportTime": "pre-market"
+      }
+    ]
+  }
+}

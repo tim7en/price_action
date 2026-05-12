@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-09-11T23:32:31.794438",
+  "symbol": "AIZN",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "AIZN",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedEPS": "7.39"
+      },
+      {
+        "fiscalDateEnding": "2024-12-31",
+        "reportedEPS": "3.87"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedDate": "2025-08-05",
+        "reportedEPS": "4.56",
+        "estimatedEPS": "0",
+        "surprise": "4.56",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2025-03-31",
+        "reportedDate": "2025-05-06",
+        "reportedEPS": "2.83",
+        "estimatedEPS": "0",
+        "surprise": "2.83",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-12-31",
+        "reportedDate": "2025-02-20",
+        "reportedEPS": "3.87",
+        "estimatedEPS": "0",
+        "surprise": "3.87",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      }
+    ]
+  }
+}
