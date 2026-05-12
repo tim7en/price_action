@@ -23,6 +23,7 @@ price-action-panel = "price_action.panel:main"
 price-action-macro-report = "price_action.macro_report:main"
 price-action-report = "price_action.report:main"
 price-action-recommend = "price_action.recommend:main"
+price-action-fundamentals = "price_action.fundamentals_analysis:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]
