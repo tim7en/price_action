@@ -134,6 +134,8 @@ dmypy.json
 Thumbs.db
 
 # Oversized generated research logs
+fundamentals/
+fundamentals_history/
 outputs/sector_rotation_report/sector_momentum_rotation_period_log.csv
 outputs/sector_rotation_report/sector_momentum_rotation_period_log.part*.csv
 outputs/sector_rotation_report/sector_ml_oos_signal_frame.csv
