@@ -405,7 +405,7 @@ def fetch_alpha_vantage_news_cache(
             )
             continue
 
-        params = {
+        params: dict[str, Any] = {
             "function": "NEWS_SENTIMENT",
             "apikey": api_key,
         }
@@ -465,14 +465,14 @@ def fetch_alpha_vantage_news_cache(
     return pd.DataFrame(fetch_rows)
 
 
-def _parse_alpha_vantage_timestamp(value: Any) -> pd.Timestamp | pd.NaT:
+def _parse_alpha_vantage_timestamp(value: Any) -> pd.Timestamp | None:
     text = str(value or "").strip()
     if not text:
-        return pd.NaT
+        return None
     try:
         return pd.Timestamp(datetime.strptime(text, "%Y%m%dT%H%M"), tz="UTC")
     except ValueError:
-        return pd.NaT
+        return None
 
 
 def _topic_feature_values(raw_topics: Any) -> dict[str, float]:
@@ -513,10 +513,10 @@ def parse_alpha_vantage_cache(
                 continue
 
             published_at = _parse_alpha_vantage_timestamp(article.get("time_published"))
-            published_date = published_at.tz_convert(None).normalize() if not pd.isna(published_at) else pd.NaT
+            published_date = published_at.tz_convert(None).normalize() if published_at is not None else pd.NaT
             url = str(article.get("url") or "").strip()
             title = str(article.get("title") or "").strip()
-            article_key = f"{published_at.isoformat() if not pd.isna(published_at) else ''}|{url}|{title}"
+            article_key = f"{published_at.isoformat() if published_at is not None else ''}|{url}|{title}"
             article_id = hashlib.sha1(article_key.encode("utf-8")).hexdigest()[:16]
             topic_values = _topic_feature_values(article.get("topics"))
             overall_sentiment_score = _safe_float(article.get("overall_sentiment_score")) or 0.0
@@ -525,7 +525,7 @@ def parse_alpha_vantage_cache(
                 article_rows.append(
                     {
                         "article_id": article_id,
-                        "published_at_utc": published_at.tz_convert(None) if not pd.isna(published_at) else pd.NaT,
+                        "published_at_utc": published_at.tz_convert(None) if published_at is not None else pd.NaT,
                         "article_date": published_date,
                         "title": title,
                         "url": url,
@@ -558,7 +558,7 @@ def parse_alpha_vantage_cache(
 
                 row = {
                     "article_id": article_id,
-                    "published_at_utc": published_at.tz_convert(None) if not pd.isna(published_at) else pd.NaT,
+                    "published_at_utc": published_at.tz_convert(None) if published_at is not None else pd.NaT,
                     "article_date": published_date,
                     "ticker": ticker,
                     "relevance_score": relevance_score,
@@ -692,9 +692,10 @@ def build_sector_return_panel(*, root: Path, horizons: list[int]) -> pd.DataFram
     for sector, symbol in SECTOR_ETF_MAP.items():
         asset = load_asset_daily(symbol, project_root=root).sort_index().copy()
         close = pd.to_numeric(asset["close"], errors="coerce")
+        trade_dates = pd.DatetimeIndex(asset.index).normalize()
         sector_frame = pd.DataFrame(
             {
-                "trade_date": asset.index.normalize(),
+                "trade_date": trade_dates,
                 "sector": sector,
                 "sector_symbol": symbol,
                 "sector_close": close,
@@ -708,7 +709,7 @@ def build_sector_return_panel(*, root: Path, horizons: list[int]) -> pd.DataFram
 
     spy_asset = load_asset_daily("SPY", project_root=root).sort_index().copy()
     spy_close = pd.to_numeric(spy_asset["close"], errors="coerce")
-    spy = pd.DataFrame({"trade_date": spy_asset.index.normalize(), "spy_close": spy_close})
+    spy = pd.DataFrame({"trade_date": pd.DatetimeIndex(spy_asset.index).normalize(), "spy_close": spy_close})
     for horizon in horizons:
         spy[f"spy_forward_return_{horizon}d"] = spy_close.shift(-horizon) / spy_close - 1.0
 
@@ -748,7 +749,7 @@ def build_event_study(panel: pd.DataFrame, *, horizons: list[int], sentiment_thr
 
     rows: list[dict[str, Any]] = []
     buckets: list[tuple[str, pd.DataFrame]] = [("ALL", panel)]
-    buckets.extend((sector, group) for sector, group in panel.groupby("sector"))
+    buckets.extend((str(sector), group) for sector, group in panel.groupby("sector"))
 
     for sector_name, frame in buckets:
         row: dict[str, Any] = {
@@ -801,10 +802,10 @@ def build_rotation_strategy(
     if trade_dates.empty:
         return pd.DataFrame()
 
-    panel_by_date: dict[pd.Timestamp, pd.DataFrame] = {
-        pd.Timestamp(signal_date): group.sort_values(["signal_strength", "sector_sentiment", "article_count"], ascending=False)
-        for signal_date, group in panel.groupby("signal_date")
-    }
+    panel_by_date: dict[pd.Timestamp, pd.DataFrame] = {}
+    for signal_date, group in panel.groupby("signal_date"):
+        signal_key = pd.Timestamp(str(signal_date)).normalize()
+        panel_by_date[signal_key] = group.sort_values(["signal_strength", "sector_sentiment", "article_count"], ascending=False)
     spy_by_date = (
         returns_panel[["trade_date", f"spy_forward_return_{hold_days}d"]]
         .drop_duplicates(subset=["trade_date"])
@@ -820,7 +821,7 @@ def build_rotation_strategy(
         benchmark_return = None
         if trade_date in spy_by_date.index:
             benchmark_value = spy_by_date.loc[trade_date, "benchmark_return"]
-            benchmark_return = float(benchmark_value) if pd.notna(benchmark_value) else None
+            benchmark_return = _safe_float(benchmark_value)
 
         selected_sectors = ""
         selected_symbols = ""
