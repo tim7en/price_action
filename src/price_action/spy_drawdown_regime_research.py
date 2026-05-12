@@ -8,6 +8,11 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from hmmlearn.hmm import GaussianHMM
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import Ridge
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 from .data import load_asset_daily, resolve_project_root
 from .sector_fundamentals_research import SECTOR_ETF_MAP
@@ -20,6 +25,16 @@ DEFAULT_DRAWNDOWN_THRESHOLD = -0.05
 DEFAULT_LOOKBACK_WINDOW = 252
 DEFAULT_MIN_PERIODS = 63
 SIZE_BUCKET_LABELS = ("SMALL_CAP", "MID_CAP", "LARGE_CAP")
+HMM_FEATURE_COLUMNS = (
+    "market_strength_score",
+    "macro_fragility_score",
+    "panic_score",
+    "vix_pace_score",
+    "credit_pace_score",
+    "spot_vix_percentile_252d",
+    "spy_drawdown_63d",
+    "spy_ret_252d",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -725,6 +740,704 @@ def build_size_bucket_effect_summary(episodes: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values(["factor", "outcome"]).reset_index(drop=True)
 
 
+def _label_hmm_state(stats: pd.Series) -> str:
+    mean_market_strength = _safe_float(stats.get("market_strength_score"))
+    mean_fragility = _safe_float(stats.get("macro_fragility_score"))
+    mean_panic = _safe_float(stats.get("panic_score"))
+    mean_vix_pace = _safe_float(stats.get("vix_pace_score"))
+    mean_credit_pace = _safe_float(stats.get("credit_pace_score"))
+
+    if (
+        (mean_panic is not None and mean_panic >= 0.80)
+        or (mean_fragility is not None and mean_fragility >= 0.45)
+        or (mean_vix_pace is not None and mean_vix_pace >= 1.10)
+    ):
+        return "Stress Breakdown"
+    if (
+        (mean_market_strength is not None and mean_market_strength >= 0.45)
+        and (mean_vix_pace is not None and mean_vix_pace >= 0.40)
+        and (mean_fragility is None or mean_fragility < 0.35)
+    ):
+        return "Shock Repricing"
+    if (
+        (mean_market_strength is not None and mean_market_strength >= 0.40)
+        and (mean_fragility is None or mean_fragility <= 0.10)
+        and (mean_panic is None or mean_panic <= 0.20)
+    ):
+        return "Calm Trend"
+    if (
+        (mean_market_strength is not None and mean_market_strength <= 0.25)
+        or (mean_fragility is not None and mean_fragility >= 0.15)
+        or (mean_credit_pace is not None and mean_credit_pace >= 0.35)
+    ):
+        return "Fragile Grind"
+    return "Transition"
+
+
+def build_online_hmm_episode_states(
+    panel: pd.DataFrame,
+    episodes: pd.DataFrame,
+    *,
+    feature_columns: tuple[str, ...] = HMM_FEATURE_COLUMNS,
+    n_components: int = 4,
+    min_train_rows: int = 756,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    if panel.empty or episodes.empty:
+        return pd.DataFrame()
+
+    feature_columns = tuple(column for column in feature_columns if column in panel.columns)
+    if not feature_columns:
+        return pd.DataFrame()
+
+    rows: list[dict[str, Any]] = []
+    for episode in episodes.itertuples(index=False):
+        peak_date = pd.Timestamp(episode.peak_date)
+        history = panel.loc[panel.index <= peak_date, list(feature_columns)].copy()
+        history = history.dropna()
+        if len(history) < min_train_rows:
+            continue
+
+        mean = history.mean(numeric_only=True)
+        std = history.std(ddof=0, numeric_only=True).replace(0.0, np.nan)
+        normalized = ((history - mean) / std).replace([np.inf, -np.inf], np.nan).dropna()
+        if len(normalized) < min_train_rows:
+            continue
+
+        aligned_raw = history.loc[normalized.index].copy()
+        model = GaussianHMM(
+            n_components=n_components,
+            covariance_type="full",
+            n_iter=250,
+            random_state=random_state,
+        )
+        try:
+            model.fit(normalized.to_numpy())
+            hidden_states = model.predict(normalized.to_numpy())
+            state_probabilities = model.predict_proba(normalized.to_numpy())[-1]
+        except Exception:
+            continue
+
+        aligned_raw["hidden_state"] = hidden_states
+        current_state = int(hidden_states[-1])
+        current_stats = aligned_raw.groupby("hidden_state")[list(feature_columns)].mean().loc[current_state]
+        label = _label_hmm_state(current_stats)
+        row: dict[str, Any] = {
+            "episode_id": int(episode.episode_id),
+            "peak_date": peak_date,
+            "hidden_state": current_state,
+            "hidden_state_label": label,
+            "hidden_state_confidence": float(np.max(state_probabilities)),
+            "training_rows": int(len(normalized)),
+        }
+        for feature_name in feature_columns:
+            row[f"state_mean_{feature_name}"] = _safe_float(current_stats.get(feature_name))
+        for state_index, probability in enumerate(state_probabilities):
+            row[f"hidden_state_prob_{state_index}"] = float(probability)
+        rows.append(row)
+
+    return pd.DataFrame(rows).sort_values("peak_date").reset_index(drop=True)
+
+
+def build_hmm_comparison_outputs(episodes: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    if episodes.empty or "hidden_state_label" not in episodes.columns:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+    state_summary = (
+        episodes.groupby("hidden_state_label", as_index=False)
+        .agg(
+            episode_count=("episode_id", "count"),
+            avg_max_drawdown=("max_drawdown", "mean"),
+            avg_peak_to_trough_days=("peak_to_trough_days", "mean"),
+            avg_drawdown_speed=("drawdown_speed_from_peak_per_day", "mean"),
+            avg_trough_to_20d_return=("trough_to_20d_return", "mean"),
+            avg_trough_to_60d_return=("trough_to_60d_return", "mean"),
+            recovered_within_60d_rate=("recovered_within_60d", "mean"),
+            avg_hidden_state_confidence=("hidden_state_confidence", "mean"),
+        )
+        .sort_values(["episode_count", "avg_max_drawdown"], ascending=[False, True])
+        .reset_index(drop=True)
+    )
+
+    rules_crosstab = (
+        episodes.groupby(["hidden_state_label", "pre_drawdown_market_strength_regime"], as_index=False)
+        .agg(episode_count=("episode_id", "count"))
+        .sort_values(["hidden_state_label", "episode_count"], ascending=[True, False])
+        .reset_index(drop=True)
+    )
+
+    combined_crosstab = (
+        episodes.groupby(["hidden_state_label", "pre_drawdown_combined_regime"], as_index=False)
+        .agg(episode_count=("episode_id", "count"))
+        .sort_values(["hidden_state_label", "episode_count"], ascending=[True, False])
+        .reset_index(drop=True)
+    )
+    return state_summary, rules_crosstab, combined_crosstab
+
+
+def _overlay_regime_label(row: pd.Series) -> str:
+    strength_regime = str(row.get("pre_drawdown_market_strength_regime") or "")
+    instability_regime = str(row.get("pre_drawdown_instability_regime") or "")
+    hidden_state_label = str(row.get("hidden_state_label") or "")
+    if (
+        strength_regime == "Weak"
+        or instability_regime in {"Fragile", "Stress"}
+        or hidden_state_label in {"Fragile Grind", "Stress Breakdown"}
+    ):
+        return "WEAK_FRAGILE"
+    if strength_regime == "Strong" or hidden_state_label in {"Calm Trend", "Shock Repricing"}:
+        return "STRONG_SHOCK"
+    return "TRANSITION"
+
+
+def build_overlay_episode_features(episodes: pd.DataFrame) -> pd.DataFrame:
+    if episodes.empty:
+        return pd.DataFrame()
+
+    frame = episodes.copy()
+    if {
+        "pre_drawdown_large_cap_cap_weighted_surprise_pct",
+        "pre_drawdown_small_cap_cap_weighted_surprise_pct",
+    }.issubset(frame.columns):
+        frame["pre_drawdown_large_minus_small_surprise_pct"] = (
+            pd.to_numeric(frame["pre_drawdown_large_cap_cap_weighted_surprise_pct"], errors="coerce")
+            - pd.to_numeric(frame["pre_drawdown_small_cap_cap_weighted_surprise_pct"], errors="coerce")
+        )
+    if {
+        "pre_drawdown_large_cap_cap_weighted_quarterly_eps_yoy_pct",
+        "pre_drawdown_small_cap_cap_weighted_quarterly_eps_yoy_pct",
+    }.issubset(frame.columns):
+        frame["pre_drawdown_large_minus_small_eps_yoy_pct"] = (
+            pd.to_numeric(
+                frame["pre_drawdown_large_cap_cap_weighted_quarterly_eps_yoy_pct"],
+                errors="coerce",
+            )
+            - pd.to_numeric(
+                frame["pre_drawdown_small_cap_cap_weighted_quarterly_eps_yoy_pct"],
+                errors="coerce",
+            )
+        )
+    frame["overlay_regime"] = frame.apply(_overlay_regime_label, axis=1)
+    frame["size_earnings_signal"] = pd.DataFrame(
+        {
+            "surprise_spread": pd.to_numeric(frame.get("pre_drawdown_large_minus_small_surprise_pct"), errors="coerce"),
+            "eps_growth_spread": pd.to_numeric(frame.get("pre_drawdown_large_minus_small_eps_yoy_pct"), errors="coerce"),
+        },
+        index=frame.index,
+    ).mean(axis=1)
+    return frame
+
+
+def build_sector_overlay_training_frame(
+    sector_episode_ratios: pd.DataFrame,
+    episodes: pd.DataFrame,
+    *,
+    sector_panel: pd.DataFrame | None = None,
+    spy_close: pd.Series | None = None,
+) -> pd.DataFrame:
+    if sector_episode_ratios.empty or episodes.empty:
+        return pd.DataFrame()
+
+    episode_features = build_overlay_episode_features(episodes)
+    merge_columns = [
+        "episode_id",
+        "overlay_regime",
+        "hidden_state_label",
+        "hidden_state_confidence",
+        "vix_pace_score",
+        "credit_pace_score",
+        "pre_drawdown_market_strength_regime",
+        "pre_drawdown_instability_regime",
+        "pre_drawdown_large_minus_small_surprise_pct",
+        "pre_drawdown_large_minus_small_eps_yoy_pct",
+        "size_earnings_signal",
+    ] + [column for column in episode_features.columns if column.startswith("hidden_state_prob_")]
+    merge_columns = [column for column in merge_columns if column in episode_features.columns]
+    overlay_frame = sector_episode_ratios.merge(
+        episode_features[merge_columns],
+        on="episode_id",
+        how="left",
+    )
+    overlay_frame["overlay_target_score"] = (
+        pd.to_numeric(overlay_frame["recovery_ratio_vs_spy"], errors="coerce").fillna(0.0)
+        - pd.to_numeric(overlay_frame["sector_window_drawdown_ratio"], errors="coerce").fillna(0.0)
+    )
+    overlay_frame["defensive_target"] = (
+        pd.to_numeric(overlay_frame["sector_window_drawdown_ratio"], errors="coerce") < 1.0
+    ).astype(int)
+    overlay_frame["recovery_target"] = (
+        pd.to_numeric(overlay_frame["recovery_ratio_vs_spy"], errors="coerce") > 1.0
+    ).astype(int)
+    if sector_panel is not None and spy_close is not None and not sector_panel.empty:
+        overlay_frame = _attach_overlay_horizon_returns(
+            overlay_frame,
+            sector_panel=sector_panel,
+            spy_close=spy_close,
+        )
+        overlay_frame["overlay_target_score"] = pd.to_numeric(
+            overlay_frame["overlay_excess_return_target"], errors="coerce"
+        ).fillna(pd.to_numeric(overlay_frame["overlay_target_score"], errors="coerce"))
+    return overlay_frame.sort_values(["episode_id", "sector"]).reset_index(drop=True)
+
+
+def _attach_overlay_horizon_returns(
+    overlay_frame: pd.DataFrame,
+    *,
+    sector_panel: pd.DataFrame,
+    spy_close: pd.Series,
+) -> pd.DataFrame:
+    if overlay_frame.empty or sector_panel.empty:
+        return overlay_frame
+
+    close_wide = sector_panel.pivot(index="date", columns="sector", values="sector_close").sort_index()
+    spy_close = pd.to_numeric(spy_close, errors="coerce").sort_index()
+    trading_index = pd.DatetimeIndex(spy_close.index).sort_values()
+
+    exit_dates: list[pd.Timestamp | pd.NaT] = []
+    hold_days_values: list[int] = []
+    sector_returns: list[float | None] = []
+    spy_returns: list[float | None] = []
+    excess_returns: list[float | None] = []
+
+    for row in overlay_frame.itertuples(index=False):
+        hold_days = int(_overlay_hold_days(str(getattr(row, "overlay_regime", "TRANSITION"))))
+        onset_date = pd.Timestamp(row.onset_date)
+        if onset_date not in trading_index:
+            onset_position = int(trading_index.searchsorted(onset_date))
+            if onset_position >= len(trading_index):
+                exit_dates.append(pd.NaT)
+                hold_days_values.append(hold_days)
+                sector_returns.append(None)
+                spy_returns.append(None)
+                excess_returns.append(None)
+                continue
+            onset_date = trading_index[onset_position]
+
+        exit_date = _resolve_overlay_exit_date(
+            trading_index,
+            onset_date=onset_date,
+            hold_days=hold_days,
+        )
+        exit_dates.append(exit_date)
+        hold_days_values.append(hold_days)
+
+        spy_entry = _safe_float(spy_close.loc[onset_date]) if onset_date in spy_close.index else None
+        spy_exit = _safe_float(spy_close.loc[exit_date]) if exit_date in spy_close.index else None
+        spy_return = None
+        if spy_entry is not None and spy_exit is not None and spy_entry > 0.0:
+            spy_return = float(spy_exit / spy_entry - 1.0)
+
+        sector_return = _basket_return(
+            close_wide,
+            sectors=[row.sector],
+            entry_date=onset_date,
+            exit_date=exit_date,
+        )
+        sector_returns.append(sector_return)
+        spy_returns.append(spy_return)
+        if sector_return is None or spy_return is None:
+            excess_returns.append(None)
+        else:
+            excess_returns.append(float(sector_return - spy_return))
+
+    frame = overlay_frame.copy()
+    frame["overlay_exit_date"] = exit_dates
+    frame["overlay_hold_days"] = hold_days_values
+    frame["overlay_sector_return_target"] = sector_returns
+    frame["overlay_spy_return_target"] = spy_returns
+    frame["overlay_excess_return_target"] = excess_returns
+    return frame
+
+
+def build_overlay_rule_book(overlay_frame: pd.DataFrame) -> pd.DataFrame:
+    if overlay_frame.empty:
+        return pd.DataFrame()
+
+    rows: list[dict[str, Any]] = []
+    target_column = "overlay_excess_return_target" if "overlay_excess_return_target" in overlay_frame.columns else "overlay_target_score"
+    for overlay_regime in ("WEAK_FRAGILE", "STRONG_SHOCK", "TRANSITION"):
+        subset = overlay_frame.loc[overlay_frame["overlay_regime"] == overlay_regime].copy()
+        if subset.empty:
+            continue
+        sector_stats = (
+            subset.groupby("sector", as_index=True)
+            .agg(
+                observations=("episode_id", "count"),
+                avg_window_drawdown_ratio=("sector_window_drawdown_ratio", "mean"),
+                avg_recovery_ratio_vs_spy=("recovery_ratio_vs_spy", "mean"),
+                avg_overlay_excess_return=(target_column, "mean"),
+                avg_overlay_target_score=("overlay_target_score", "mean"),
+            )
+        )
+        if overlay_regime == "WEAK_FRAGILE":
+            defensive_pool = sector_stats.loc[sector_stats["avg_window_drawdown_ratio"] <= 1.05].copy()
+            if defensive_pool.empty:
+                defensive_pool = sector_stats.copy()
+            defense = defensive_pool.sort_values(
+                ["avg_overlay_excess_return", "avg_window_drawdown_ratio"],
+                ascending=[False, True],
+            ).head(2).copy()
+            defense["selection_role"] = "defense"
+            defense["rule_score"] = defense["avg_overlay_excess_return"] - 0.10 * defense["avg_window_drawdown_ratio"]
+            quality = (
+                sector_stats.drop(index=defense.index, errors="ignore")
+                .sort_values(["avg_overlay_excess_return", "avg_recovery_ratio_vs_spy"], ascending=[False, False])
+                .head(1)
+                .copy()
+            )
+            quality["selection_role"] = "quality"
+            quality["rule_score"] = quality["avg_overlay_excess_return"] + 0.05 * quality["avg_recovery_ratio_vs_spy"]
+            selected = pd.concat([defense, quality], axis=0)
+        elif overlay_regime == "STRONG_SHOCK":
+            rebound = sector_stats.sort_values(
+                ["avg_overlay_excess_return", "avg_recovery_ratio_vs_spy"],
+                ascending=[False, False],
+            ).head(2).copy()
+            rebound["selection_role"] = "rebound"
+            rebound["rule_score"] = rebound["avg_overlay_excess_return"] + 0.10 * rebound["avg_recovery_ratio_vs_spy"]
+            cyclical = (
+                sector_stats.drop(index=rebound.index, errors="ignore")
+                .sort_values(["avg_overlay_excess_return", "avg_recovery_ratio_vs_spy"], ascending=[False, False])
+                .head(1)
+                .copy()
+            )
+            cyclical["selection_role"] = "cyclical"
+            cyclical["rule_score"] = cyclical["avg_overlay_excess_return"] + 0.05 * cyclical["avg_recovery_ratio_vs_spy"]
+            selected = pd.concat([rebound, cyclical], axis=0)
+        else:
+            selected = sector_stats.copy()
+            selected["selection_role"] = "balanced"
+            selected["rule_score"] = (
+                selected["avg_overlay_excess_return"]
+                + 0.10 * selected["avg_recovery_ratio_vs_spy"]
+                - 0.05 * selected["avg_window_drawdown_ratio"]
+            )
+            selected = selected.sort_values(["rule_score", "avg_window_drawdown_ratio"], ascending=[False, True]).head(3)
+
+        selected = selected.reset_index(names="sector")
+        selected.insert(0, "overlay_regime", overlay_regime)
+        rows.extend(selected.to_dict(orient="records"))
+    return pd.DataFrame(rows)
+
+
+def build_overlay_ml_predictions(
+    overlay_frame: pd.DataFrame,
+    *,
+    min_train_episodes: int = 8,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    if overlay_frame.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    categorical_columns = [
+        column
+        for column in [
+            "sector",
+            "overlay_regime",
+            "hidden_state_label",
+            "stretch_bucket",
+            "pre_drawdown_market_strength_regime",
+        ]
+        if column in overlay_frame.columns
+    ]
+    numeric_columns = [
+        column
+        for column in [
+            "stretch_score",
+            "ratio_to_spy_zscore_252d",
+            "relative_return_63d",
+            "vix_pace_score",
+            "credit_pace_score",
+            "hidden_state_confidence",
+            "pre_drawdown_large_minus_small_surprise_pct",
+            "pre_drawdown_large_minus_small_eps_yoy_pct",
+            "size_earnings_signal",
+        ]
+        if column in overlay_frame.columns
+    ] + [column for column in overlay_frame.columns if column.startswith("hidden_state_prob_")]
+
+    feature_frame = overlay_frame[categorical_columns + numeric_columns].copy()
+    feature_frame = pd.get_dummies(feature_frame, columns=categorical_columns, dummy_na=False).astype(float)
+    predictions: list[pd.DataFrame] = []
+    target_column = "overlay_excess_return_target" if "overlay_excess_return_target" in overlay_frame.columns else "overlay_target_score"
+
+    episode_ids = sorted(int(value) for value in overlay_frame["episode_id"].dropna().unique())
+    for episode_id in episode_ids:
+        train_mask = overlay_frame["episode_id"] < episode_id
+        test_mask = overlay_frame["episode_id"] == episode_id
+        train_frame = overlay_frame.loc[train_mask]
+        test_frame = overlay_frame.loc[test_mask]
+        if train_frame["episode_id"].nunique() < min_train_episodes or test_frame.empty:
+            continue
+        if pd.to_numeric(train_frame[target_column], errors="coerce").dropna().empty:
+            continue
+
+        model = Pipeline(
+            steps=[
+                ("imputer", SimpleImputer(strategy="median")),
+                ("scaler", StandardScaler()),
+                ("model", Ridge(alpha=1.0)),
+            ]
+        )
+        model.fit(feature_frame.loc[train_mask], pd.to_numeric(train_frame[target_column], errors="coerce"))
+
+        fold = test_frame[
+            [
+                "episode_id",
+                "sector",
+                "overlay_regime",
+                target_column,
+                "sector_window_drawdown_ratio",
+                "recovery_ratio_vs_spy",
+            ]
+        ].copy()
+        fold = fold.rename(columns={target_column: "overlay_target_score"})
+        fold["ml_predicted_overlay_score"] = model.predict(feature_frame.loc[test_mask])
+        predictions.append(fold)
+
+    prediction_frame = pd.concat(predictions, ignore_index=True) if predictions else pd.DataFrame()
+    if prediction_frame.empty:
+        return prediction_frame, pd.DataFrame()
+
+    top_ranked = (
+        prediction_frame.sort_values(["episode_id", "ml_predicted_overlay_score"], ascending=[True, False])
+        .groupby("episode_id", as_index=False)
+        .head(3)
+    )
+    metric_frame = pd.DataFrame(
+        [
+            {
+                "observations": int(len(prediction_frame)),
+                "episode_count": int(prediction_frame["episode_id"].nunique()),
+                "prediction_correlation": _safe_float(
+                    prediction_frame["ml_predicted_overlay_score"].corr(prediction_frame["overlay_target_score"])
+                ),
+                "top3_mean_actual_overlay_score": _safe_float(top_ranked["overlay_target_score"].mean()),
+                "top3_mean_drawdown_ratio": _safe_float(top_ranked["sector_window_drawdown_ratio"].mean()),
+                "top3_mean_recovery_ratio_vs_spy": _safe_float(top_ranked["recovery_ratio_vs_spy"].mean()),
+            }
+        ]
+    )
+    return prediction_frame, metric_frame
+
+
+def _overlay_hold_days(overlay_regime: str) -> int:
+    if overlay_regime == "WEAK_FRAGILE":
+        return 40
+    if overlay_regime == "STRONG_SHOCK":
+        return 15
+    return 25
+
+
+def _sector_overlay_weight(overlay_regime: str, size_signal: Any) -> float:
+    numeric = _safe_float(size_signal)
+    if overlay_regime == "WEAK_FRAGILE":
+        return 0.25 if numeric is not None and numeric < 0.0 else 0.40
+    if overlay_regime == "STRONG_SHOCK":
+        return 0.50 if numeric is not None and numeric > 0.0 else 0.35
+    return 0.35
+
+
+def _resolve_overlay_exit_date(
+    trading_index: pd.DatetimeIndex,
+    *,
+    onset_date: pd.Timestamp,
+    hold_days: int,
+) -> pd.Timestamp:
+    entry_position = int(trading_index.searchsorted(onset_date))
+    if entry_position >= len(trading_index):
+        return trading_index[-1]
+    target_position = min(entry_position + hold_days, len(trading_index) - 1)
+    return trading_index[target_position]
+
+
+def _basket_return(
+    close_wide: pd.DataFrame,
+    *,
+    sectors: list[str],
+    entry_date: pd.Timestamp,
+    exit_date: pd.Timestamp,
+) -> float | None:
+    returns: list[float] = []
+    for sector in sectors:
+        if sector not in close_wide.columns or entry_date not in close_wide.index or exit_date not in close_wide.index:
+            continue
+        entry_price = _safe_float(close_wide.at[entry_date, sector])
+        exit_price = _safe_float(close_wide.at[exit_date, sector])
+        if entry_price is None or exit_price is None or entry_price <= 0.0:
+            continue
+        returns.append(float(exit_price / entry_price - 1.0))
+    if not returns:
+        return None
+    return float(np.mean(returns))
+
+
+def build_sector_tilt_overlay_backtest(
+    *,
+    episodes: pd.DataFrame,
+    overlay_frame: pd.DataFrame,
+    sector_panel: pd.DataFrame,
+    spy_close: pd.Series,
+    ml_predictions: pd.DataFrame,
+) -> pd.DataFrame:
+    if episodes.empty or overlay_frame.empty or sector_panel.empty:
+        return pd.DataFrame()
+
+    episode_features = build_overlay_episode_features(episodes)
+    close_wide = sector_panel.pivot(index="date", columns="sector", values="sector_close").sort_index()
+    trading_index = pd.DatetimeIndex(spy_close.index).sort_values()
+    ml_lookup = (
+        ml_predictions.set_index(["episode_id", "sector"]) if not ml_predictions.empty else pd.DataFrame()
+    )
+
+    rows: list[dict[str, Any]] = []
+    for episode in episode_features.sort_values("episode_id").itertuples(index=False):
+        training = overlay_frame.loc[overlay_frame["episode_id"] < int(episode.episode_id)].copy()
+        if training["episode_id"].nunique() < 4:
+            continue
+        current = overlay_frame.loc[overlay_frame["episode_id"] == int(episode.episode_id)].copy()
+        if current.empty:
+            continue
+
+        rule_book = build_overlay_rule_book(training)
+        candidate_rows = rule_book.loc[rule_book["overlay_regime"] == episode.overlay_regime].copy()
+        if candidate_rows.empty:
+            candidate_rows = build_overlay_rule_book(overlay_frame)
+            candidate_rows = candidate_rows.loc[candidate_rows["overlay_regime"] == episode.overlay_regime].copy()
+        if candidate_rows.empty:
+            continue
+
+        candidate_rows["rule_rank"] = np.arange(1, len(candidate_rows) + 1)
+        rule_sectors = candidate_rows["sector"].head(3).tolist()
+
+        ml_sectors = rule_sectors.copy()
+        if not ml_lookup.empty and int(episode.episode_id) in ml_predictions["episode_id"].values:
+            ranked = current.copy()
+            ranked["ml_predicted_overlay_score"] = ranked.apply(
+                lambda row: _safe_float(
+                    ml_lookup.at[(int(row["episode_id"]), row["sector"]), "ml_predicted_overlay_score"]
+                )
+                if (int(row["episode_id"]), row["sector"]) in ml_lookup.index
+                else np.nan,
+                axis=1,
+            )
+            ranked["rule_rank"] = ranked["sector"].map(dict(zip(candidate_rows["sector"], candidate_rows["rule_rank"]))).fillna(99)
+            ranked = ranked.sort_values(
+                ["ml_predicted_overlay_score", "rule_rank"],
+                ascending=[False, True],
+                na_position="last",
+            )
+            if not ranked.empty:
+                ml_sectors = ranked["sector"].head(3).tolist()
+
+        onset_date = pd.Timestamp(episode.onset_date)
+        if onset_date not in trading_index:
+            onset_position = int(trading_index.searchsorted(onset_date))
+            if onset_position >= len(trading_index):
+                continue
+            onset_date = trading_index[onset_position]
+        exit_date = _resolve_overlay_exit_date(
+            trading_index,
+            onset_date=onset_date,
+            hold_days=_overlay_hold_days(str(episode.overlay_regime)),
+        )
+        if onset_date not in spy_close.index or exit_date not in spy_close.index:
+            continue
+        spy_entry = _safe_float(spy_close.loc[onset_date])
+        spy_exit = _safe_float(spy_close.loc[exit_date])
+        if spy_entry is None or spy_exit is None or spy_entry <= 0.0:
+            continue
+
+        rule_sector_return = _basket_return(close_wide, sectors=rule_sectors, entry_date=onset_date, exit_date=exit_date)
+        ml_sector_return = _basket_return(close_wide, sectors=ml_sectors, entry_date=onset_date, exit_date=exit_date)
+        if rule_sector_return is None:
+            continue
+        if ml_sector_return is None:
+            ml_sector_return = rule_sector_return
+
+        spy_return = float(spy_exit / spy_entry - 1.0)
+        sector_weight = _sector_overlay_weight(str(episode.overlay_regime), episode.size_earnings_signal)
+        rows.append(
+            {
+                "episode_id": int(episode.episode_id),
+                "overlay_regime": episode.overlay_regime,
+                "onset_date": onset_date,
+                "exit_date": exit_date,
+                "hold_days": int(_overlay_hold_days(str(episode.overlay_regime))),
+                "sector_weight": sector_weight,
+                "spy_weight": 1.0 - sector_weight,
+                "size_earnings_signal": _safe_float(episode.size_earnings_signal),
+                "rule_selected_sectors": ", ".join(rule_sectors),
+                "ml_selected_sectors": ", ".join(ml_sectors),
+                "rule_sector_basket_return": rule_sector_return,
+                "ml_sector_basket_return": ml_sector_return,
+                "spy_return": spy_return,
+                "rule_overlay_return": (1.0 - sector_weight) * spy_return + sector_weight * rule_sector_return,
+                "ml_overlay_return": (1.0 - sector_weight) * spy_return + sector_weight * ml_sector_return,
+            }
+        )
+    return pd.DataFrame(rows).sort_values("onset_date").reset_index(drop=True)
+
+
+def _overlay_strategy_summary(periods: pd.DataFrame, *, return_column: str, strategy_label: str) -> dict[str, Any]:
+    if periods.empty or return_column not in periods.columns:
+        return {
+            "strategy_label": strategy_label,
+            "episodes": 0,
+            "total_return": 0.0,
+            "cagr": None,
+            "max_drawdown": 0.0,
+            "hit_rate_vs_spy": None,
+            "avg_excess_return": None,
+        }
+
+    returns = pd.to_numeric(periods[return_column], errors="coerce").dropna()
+    if returns.empty:
+        return {
+            "strategy_label": strategy_label,
+            "episodes": 0,
+            "total_return": 0.0,
+            "cagr": None,
+            "max_drawdown": 0.0,
+            "hit_rate_vs_spy": None,
+            "avg_excess_return": None,
+        }
+
+    equity = (1.0 + returns).cumprod()
+    total_return = float(equity.iloc[-1] - 1.0)
+    drawdown = equity / equity.cummax() - 1.0
+    total_days = float(
+        periods.loc[returns.index, ["onset_date", "exit_date"]]
+        .assign(days=lambda frame: (frame["exit_date"] - frame["onset_date"]).dt.days.clip(lower=1))
+        ["days"]
+        .sum()
+    )
+    years = max(total_days / 365.25, 0.25)
+    cagr = float(equity.iloc[-1] ** (1.0 / years) - 1.0) if equity.iloc[-1] > 0.0 else None
+    excess = pd.to_numeric(periods.loc[returns.index, return_column], errors="coerce") - pd.to_numeric(
+        periods.loc[returns.index, "spy_return"], errors="coerce"
+    )
+    return {
+        "strategy_label": strategy_label,
+        "episodes": int(len(returns)),
+        "total_return": total_return,
+        "cagr": cagr,
+        "max_drawdown": float(drawdown.min()) if not drawdown.empty else 0.0,
+        "hit_rate_vs_spy": _safe_float((excess > 0.0).mean()),
+        "avg_excess_return": _safe_float(excess.mean()),
+    }
+
+
+def build_sector_tilt_overlay_summary(periods: pd.DataFrame) -> pd.DataFrame:
+    if periods.empty:
+        return pd.DataFrame()
+    rows = [
+        _overlay_strategy_summary(periods, return_column="spy_return", strategy_label="SPY Benchmark"),
+        _overlay_strategy_summary(periods, return_column="rule_overlay_return", strategy_label="Rule-Based Sector Tilt Overlay"),
+        _overlay_strategy_summary(periods, return_column="ml_overlay_return", strategy_label="ML-Refined Sector Tilt Overlay"),
+    ]
+    return pd.DataFrame(rows)
+
+
 def build_sector_ratio_panel(
     *,
     root: Path,
@@ -949,6 +1662,11 @@ def build_spy_drawdown_regime_research(
         episodes,
         size_bucket_snapshots=size_bucket_snapshots,
     )
+
+    hmm_states = build_online_hmm_episode_states(panel, episodes)
+    hmm_states.to_csv(resolved_output_dir / "hmm_episode_states.csv", index=False)
+    if not hmm_states.empty:
+        episodes = episodes.merge(hmm_states, on=["episode_id", "peak_date"], how="left")
     episodes.to_csv(resolved_output_dir / "spy_drawdown_episodes.csv", index=False)
 
     strength_summary, combined_summary = build_drawdown_regime_summary(episodes)
@@ -963,6 +1681,11 @@ def build_spy_drawdown_regime_research(
 
     size_bucket_summary = build_size_bucket_effect_summary(episodes)
     size_bucket_summary.to_csv(resolved_output_dir / "size_bucket_effect_summary.csv", index=False)
+
+    hmm_state_summary, hmm_rules_crosstab, hmm_combined_crosstab = build_hmm_comparison_outputs(episodes)
+    hmm_state_summary.to_csv(resolved_output_dir / "hmm_state_summary.csv", index=False)
+    hmm_rules_crosstab.to_csv(resolved_output_dir / "hmm_vs_rules_strength_crosstab.csv", index=False)
+    hmm_combined_crosstab.to_csv(resolved_output_dir / "hmm_vs_rules_combined_crosstab.csv", index=False)
 
     sector_panel = build_sector_ratio_panel(
         root=root,
@@ -979,6 +1702,33 @@ def build_spy_drawdown_regime_research(
         spy_close=pd.to_numeric(panel["spy_close"], errors="coerce"),
     )
     sector_episode_ratios.to_csv(resolved_output_dir / "sector_drawdown_episode_ratios.csv", index=False)
+
+    overlay_frame = build_sector_overlay_training_frame(
+        sector_episode_ratios,
+        episodes,
+        sector_panel=sector_panel,
+        spy_close=pd.to_numeric(panel["spy_close"], errors="coerce"),
+    )
+    overlay_frame.to_csv(resolved_output_dir / "sector_tilt_overlay_training_frame.csv", index=False)
+
+    overlay_rule_book = build_overlay_rule_book(overlay_frame)
+    overlay_rule_book.to_csv(resolved_output_dir / "sector_tilt_overlay_rule_book.csv", index=False)
+
+    overlay_ml_predictions, overlay_ml_metrics = build_overlay_ml_predictions(overlay_frame)
+    overlay_ml_predictions.to_csv(resolved_output_dir / "sector_tilt_overlay_ml_predictions.csv", index=False)
+    overlay_ml_metrics.to_csv(resolved_output_dir / "sector_tilt_overlay_ml_metrics.csv", index=False)
+
+    overlay_periods = build_sector_tilt_overlay_backtest(
+        episodes=episodes,
+        overlay_frame=overlay_frame,
+        sector_panel=sector_panel,
+        spy_close=pd.to_numeric(panel["spy_close"], errors="coerce"),
+        ml_predictions=overlay_ml_predictions,
+    )
+    overlay_periods.to_csv(resolved_output_dir / "sector_tilt_overlay_periods.csv", index=False)
+
+    overlay_summary = build_sector_tilt_overlay_summary(overlay_periods)
+    overlay_summary.to_csv(resolved_output_dir / "sector_tilt_overlay_summary.csv", index=False)
 
     sector_regime_summary, sector_stretch_summary, sector_stretch_effect = build_sector_ratio_summary(
         sector_episode_ratios
@@ -1003,9 +1753,13 @@ def build_spy_drawdown_regime_research(
             "Faster VIX and credit deterioration at onset should coincide with deeper drawdowns and slower recovery.",
             "Sectors stretched rich versus SPY should suffer larger relative drawdowns during SPY stress windows.",
             "Large-minus-small earnings strength should help separate faster recoveries from persistent drawdowns.",
+            "An online HMM should separate shock repricing from fragile breakdowns more cleanly than the rules-only split.",
         ],
         "worst_sector_regime_ratios": worst_sectors.to_dict(orient="records"),
         "best_sector_regime_ratios": strongest_sectors.to_dict(orient="records"),
+        "overlay_rule_book": overlay_rule_book.to_dict(orient="records"),
+        "overlay_strategy_summary": overlay_summary.to_dict(orient="records"),
+        "overlay_ml_metrics": overlay_ml_metrics.to_dict(orient="records"),
     }
     (resolved_output_dir / "spy_drawdown_regime_summary.json").write_text(
         json.dumps(summary, indent=2),

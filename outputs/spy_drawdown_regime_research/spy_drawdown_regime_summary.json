@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-12T09:01:26.469955+00:00",
+  "generated_at_utc": "2026-05-12T09:24:14.056628+00:00",
   "output_dir": "D:\\dev\\price_action\\outputs\\spy_drawdown_regime_research",
   "rows": 6607,
   "episode_count": 24,
@@ -10,7 +10,8 @@
     "Strong markets should have shallower and slower drawdowns than weak markets.",
     "Faster VIX and credit deterioration at onset should coincide with deeper drawdowns and slower recovery.",
     "Sectors stretched rich versus SPY should suffer larger relative drawdowns during SPY stress windows.",
-    "Large-minus-small earnings strength should help separate faster recoveries from persistent drawdowns."
+    "Large-minus-small earnings strength should help separate faster recoveries from persistent drawdowns.",
+    "An online HMM should separate shock repricing from fragile breakdowns more cleanly than the rules-only split."
   ],
   "worst_sector_regime_ratios": [
     {
@@ -194,6 +195,146 @@
       "avg_window_drawdown_ratio": 0.6927271153839145,
       "avg_recovery_ratio_vs_spy": 0.6140694459892914,
       "avg_relative_return_63d": 0.00998995496678153
+    }
+  ],
+  "overlay_rule_book": [
+    {
+      "overlay_regime": "WEAK_FRAGILE",
+      "sector": "UTILITIES",
+      "observations": 15,
+      "avg_window_drawdown_ratio": 0.5459667014743963,
+      "avg_recovery_ratio_vs_spy": 0.7254445871317489,
+      "avg_overlay_excess_return": 0.009802387397097274,
+      "avg_overlay_target_score": 0.009802387397097274,
+      "selection_role": "defense",
+      "rule_score": -0.044794282750342355
+    },
+    {
+      "overlay_regime": "WEAK_FRAGILE",
+      "sector": "CONSUMER STAPLES",
+      "observations": 15,
+      "avg_window_drawdown_ratio": 0.6298749350655101,
+      "avg_recovery_ratio_vs_spy": 0.5450342871193626,
+      "avg_overlay_excess_return": 0.003548737711215,
+      "avg_overlay_target_score": 0.003548737711215,
+      "selection_role": "defense",
+      "rule_score": -0.059438755795336015
+    },
+    {
+      "overlay_regime": "WEAK_FRAGILE",
+      "sector": "TECHNOLOGY",
+      "observations": 15,
+      "avg_window_drawdown_ratio": 1.1062116494318945,
+      "avg_recovery_ratio_vs_spy": 1.2470857561795838,
+      "avg_overlay_excess_return": 0.010848573982512903,
+      "avg_overlay_target_score": 0.010848573982512903,
+      "selection_role": "quality",
+      "rule_score": 0.0732028617914921
+    },
+    {
+      "overlay_regime": "STRONG_SHOCK",
+      "sector": "CONSUMER DISCRETIONARY",
+      "observations": 8,
+      "avg_window_drawdown_ratio": 1.110795331544583,
+      "avg_recovery_ratio_vs_spy": 1.1320156738008755,
+      "avg_overlay_excess_return": 0.01298222693165188,
+      "avg_overlay_target_score": 0.01298222693165188,
+      "selection_role": "rebound",
+      "rule_score": 0.12618379431173943
+    },
+    {
+      "overlay_regime": "STRONG_SHOCK",
+      "sector": "TECHNOLOGY",
+      "observations": 8,
+      "avg_window_drawdown_ratio": 1.4445079625292925,
+      "avg_recovery_ratio_vs_spy": 1.2370312434109059,
+      "avg_overlay_excess_return": 0.012203664715438378,
+      "avg_overlay_target_score": 0.012203664715438378,
+      "selection_role": "rebound",
+      "rule_score": 0.13590678905652898
+    },
+    {
+      "overlay_regime": "STRONG_SHOCK",
+      "sector": "INDUSTRIALS",
+      "observations": 8,
+      "avg_window_drawdown_ratio": 0.9330286203638819,
+      "avg_recovery_ratio_vs_spy": 0.9904865027385323,
+      "avg_overlay_excess_return": 0.0006221682639103721,
+      "avg_overlay_target_score": 0.0006221682639103721,
+      "selection_role": "cyclical",
+      "rule_score": 0.05014649340083699
+    },
+    {
+      "overlay_regime": "TRANSITION",
+      "sector": "ENERGY",
+      "observations": 1,
+      "avg_window_drawdown_ratio": 0.5589752493916283,
+      "avg_recovery_ratio_vs_spy": 2.1490041667592363,
+      "avg_overlay_excess_return": 0.11393820960047274,
+      "avg_overlay_target_score": 0.11393820960047274,
+      "selection_role": "balanced",
+      "rule_score": 0.30088986380681493
+    },
+    {
+      "overlay_regime": "TRANSITION",
+      "sector": "UTILITIES",
+      "observations": 1,
+      "avg_window_drawdown_ratio": 0.752753641861464,
+      "avg_recovery_ratio_vs_spy": 1.8876834344139948,
+      "avg_overlay_excess_return": -0.007218945123135256,
+      "avg_overlay_target_score": -0.007218945123135256,
+      "selection_role": "balanced",
+      "rule_score": 0.14391171622519103
+    },
+    {
+      "overlay_regime": "TRANSITION",
+      "sector": "FINANCIALS",
+      "observations": 1,
+      "avg_window_drawdown_ratio": 0.4682277207551535,
+      "avg_recovery_ratio_vs_spy": 1.2122318646205996,
+      "avg_overlay_excess_return": 0.010801176464457884,
+      "avg_overlay_target_score": 0.010801176464457884,
+      "selection_role": "balanced",
+      "rule_score": 0.10861297688876019
+    }
+  ],
+  "overlay_strategy_summary": [
+    {
+      "strategy_label": "SPY Benchmark",
+      "episodes": 20,
+      "total_return": 0.7537788488875696,
+      "cagr": 0.2579912932018671,
+      "max_drawdown": -0.10205908722223489,
+      "hit_rate_vs_spy": 0.0,
+      "avg_excess_return": 0.0
+    },
+    {
+      "strategy_label": "Rule-Based Sector Tilt Overlay",
+      "episodes": 20,
+      "total_return": 0.6309556317902909,
+      "cagr": 0.22122232822415322,
+      "max_drawdown": -0.10680191156414043,
+      "hit_rate_vs_spy": 0.35,
+      "avg_excess_return": -0.004112877441185832
+    },
+    {
+      "strategy_label": "ML-Refined Sector Tilt Overlay",
+      "episodes": 20,
+      "total_return": 0.5858002291987441,
+      "cagr": 0.2072936771113736,
+      "max_drawdown": -0.1068019115641402,
+      "hit_rate_vs_spy": 0.3,
+      "avg_excess_return": -0.0055853873051606604
+    }
+  ],
+  "overlay_ml_metrics": [
+    {
+      "observations": 170,
+      "episode_count": 16,
+      "prediction_correlation": -0.1216946561963546,
+      "top3_mean_actual_overlay_score": -0.018130398417720548,
+      "top3_mean_drawdown_ratio": 0.6890497861158408,
+      "top3_mean_recovery_ratio_vs_spy": 0.6624534885670955
     }
   ]
 }
