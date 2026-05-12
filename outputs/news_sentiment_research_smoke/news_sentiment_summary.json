@@ -1,0 +1,52 @@
+{
+  "generated_at_utc": "2026-05-12T07:33:03.172005+00:00",
+  "status": "ok",
+  "provider": "alpha_vantage",
+  "provider_recommendation": {
+    "preferred_provider": "Alpha Vantage",
+    "provider_key": "alpha_vantage",
+    "reason": "Best first source for this repo because it returns point-in-time articles, article-level sentiment, topic tags, and per-ticker relevance plus ticker sentiment in a single payload.",
+    "main_tradeoff": "The free tier is too tight for deep history, so broader studies should use premium access or build cache incrementally.",
+    "fallback_provider": "Tiingo News"
+  },
+  "cache_dir": "D:\\dev\\price_action\\cache\\news_sentiment_smoke\\alpha_vantage",
+  "output_dir": "D:\\dev\\price_action\\outputs\\news_sentiment_research_smoke",
+  "cache_file_count": 1,
+  "cache_refresh_rows": 1,
+  "date_range": {
+    "start_date": "2026-05-05",
+    "end_date": "2026-05-07"
+  },
+  "query_filters": {
+    "tickers": "AAPL",
+    "topics": null
+  },
+  "article_count": 50,
+  "mapped_ticker_mentions": 171,
+  "unmapped_ticker_count": 6,
+  "sector_daily_rows": 0,
+  "sector_count": 0,
+  "event_study_rows": 0,
+  "strategy_summary": [
+    {
+      "strategy_name": "top1_sector_or_spy_5d",
+      "periods": 0,
+      "rotation_periods": 0,
+      "total_return": null,
+      "spy_total_return": null,
+      "avg_excess_return": null,
+      "hit_rate_vs_spy": null,
+      "max_drawdown": null
+    },
+    {
+      "strategy_name": "top3_sector_or_spy_5d",
+      "periods": 0,
+      "rotation_periods": 0,
+      "total_return": null,
+      "spy_total_return": null,
+      "avg_excess_return": null,
+      "hit_rate_vs_spy": null,
+      "max_drawdown": null
+    }
+  ]
+}

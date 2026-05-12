@@ -1,0 +1,5 @@
+provider,provider_key,point_in_time_articles,ticker_mapping,article_sentiment,ticker_level_sentiment,topic_tags,repo_fit_rank,access_model,notes
+Alpha Vantage,alpha_vantage,True,True,True,True,True,1,API key required; free tier is tight for large history,"Best first build for this repo because the payload already includes tickers, topics, and sentiment."
+Tiingo News,tiingo,True,True,False,False,True,2,API token required; bulk export is institutional,"Strong coverage and ticker tagging, but sentiment must be computed locally."
+Finnhub,finnhub,True,True,False,False,False,3,"API token required; company news free, sentiment premium","Useful for company news, but the sentiment endpoint is premium and not article-granular."
+GDELT,gdelt,True,False,True,False,True,4,Open access,"Good open fallback for macro or event studies, but ticker-to-sector mapping is materially weaker."
