@@ -1,637 +1,678 @@
 {
-  "generated_at": "2026-05-12T05:18:40.208085+00:00",
+  "generated_at": "2026-05-12T05:29:10.419180+00:00",
   "data_dir": "D:\\dev\\price_action\\fundamentals_history",
   "output_dir": "D:\\dev\\price_action\\outputs\\fundamentals_analysis",
   "overview_symbols": 6893,
+  "eligible_symbols": 5473,
+  "excluded_symbols": 1420,
   "annual_earnings_rows": 84934,
   "quarterly_earnings_rows": 327465,
-  "sector_count": 15,
+  "sector_count": 11,
   "quarters_analyzed": 119,
+  "cleaning": {
+    "eligible_symbol_count": 5473,
+    "excluded_symbol_count": 1420,
+    "raw_sector_count": 15,
+    "canonical_sector_count": 11,
+    "excluded_reasons": {
+      "low_quality_industry": 1150,
+      "unclassified_sector": 827,
+      "non_primary_security_name": 633,
+      "non_common_stock": 482
+    },
+    "sector_normalization_methods": {
+      "sector_direct": 3742,
+      "sector_alias": 2324,
+      "unclassified": 827
+    },
+    "raw_sector_labels": {
+      "HEALTHCARE": 1212,
+      "FINANCIAL SERVICES": 1179,
+      "TECHNOLOGY": 823,
+      "INDUSTRIALS": 719,
+      "CONSUMER CYCLICAL": 597,
+      "UNKNOWN": 567,
+      "COMMUNICATION SERVICES": 301,
+      "REAL ESTATE": 295,
+      "BASIC MATERIALS": 282,
+      "CONSUMER DEFENSIVE": 265,
+      "OTHER": 260,
+      "ENERGY": 252,
+      "UTILITIES": 119,
+      "FINANCIALS": 21,
+      "COMMUNICATIONS EQUIPMENT": 1
+    },
+    "clean_sector_labels": {
+      "HEALTHCARE": 1167,
+      "FINANCIALS": 816,
+      "TECHNOLOGY": 785,
+      "INDUSTRIALS": 690,
+      "CONSUMER DISCRETIONARY": 577,
+      "COMMUNICATION SERVICES": 285,
+      "REAL ESTATE": 270,
+      "MATERIALS": 267,
+      "CONSUMER STAPLES": 252,
+      "ENERGY": 250,
+      "UTILITIES": 114
+    },
+    "outlier_controls": {
+      "lower_quantile": 0.01,
+      "upper_quantile": 0.99,
+      "min_abs_eps_base": 0.05,
+      "surprise_pct": {
+        "eligible_rows": 227843,
+        "clipped_rows": 4558,
+        "lower_bound": -469.67693599999996,
+        "upper_bound": 280.8471479999968,
+        "low_base_rows": 35325
+      },
+      "quarterly_eps_yoy_pct": {
+        "eligible_rows": 272859,
+        "clipped_rows": 5458,
+        "lower_bound": -876.4951004016066,
+        "upper_bound": 620.541292818119,
+        "low_base_rows": 32946
+      },
+      "annual_eps_yoy_pct": {
+        "eligible_rows": 76828,
+        "clipped_rows": 1538,
+        "lower_bound": -1036.5591238242237,
+        "upper_bound": 826.5482999912853,
+        "low_base_rows": 2524
+      }
+    }
+  },
   "latest_sector_snapshot": [
     {
       "sector": "TECHNOLOGY",
-      "symbol_count": 823,
-      "avg_surprise_pct_cap_weighted": 2.852803458874707,
-      "latest_quarter_surprise_pct_cap_weighted": 0.853029165747282,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 56.69539179247855,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.2634447402299791,
-      "beat_rate_avg": 0.47610237389083065
-    },
-    {
-      "sector": "FINANCIAL SERVICES",
-      "symbol_count": 1179,
-      "avg_surprise_pct_cap_weighted": 6.799835682217643,
-      "latest_quarter_surprise_pct_cap_weighted": 9.96144975388787,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 194.73290677451146,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.07162929014423743,
-      "beat_rate_avg": 0.40197660033462046
-    },
-    {
-      "sector": "COMMUNICATION SERVICES",
-      "symbol_count": 301,
-      "avg_surprise_pct_cap_weighted": 46.305906011366936,
-      "latest_quarter_surprise_pct_cap_weighted": 7.4313894216981815,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 34.67716630601641,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.1736737104012868,
-      "beat_rate_avg": 0.40875158615405266
-    },
-    {
-      "sector": "CONSUMER CYCLICAL",
-      "symbol_count": 597,
-      "avg_surprise_pct_cap_weighted": 21.187763041180762,
-      "latest_quarter_surprise_pct_cap_weighted": 13.24486114241836,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 22.185585816525418,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.07585017071222305,
-      "beat_rate_avg": 0.4576323529630602
-    },
-    {
-      "sector": "HEALTHCARE",
-      "symbol_count": 1212,
-      "avg_surprise_pct_cap_weighted": -457.2727387855143,
-      "latest_quarter_surprise_pct_cap_weighted": 423.43756623848486,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 472.1714795370368,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.5458868153150699,
-      "beat_rate_avg": 0.3914903499856731
-    },
-    {
-      "sector": "INDUSTRIALS",
-      "symbol_count": 719,
-      "avg_surprise_pct_cap_weighted": 2.146016761612408,
-      "latest_quarter_surprise_pct_cap_weighted": 6.636322898230165,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 10.702350342218505,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.3646642626085398,
-      "beat_rate_avg": 0.42791341236046615
-    },
-    {
-      "sector": "CONSUMER DEFENSIVE",
-      "symbol_count": 265,
-      "avg_surprise_pct_cap_weighted": 5.452066229245657,
-      "latest_quarter_surprise_pct_cap_weighted": -1.0919028571273932,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 20.87425455712174,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.04009623807289886,
-      "beat_rate_avg": 0.4199404108747397
-    },
-    {
-      "sector": "ENERGY",
-      "symbol_count": 252,
-      "avg_surprise_pct_cap_weighted": 56.722425643533924,
-      "latest_quarter_surprise_pct_cap_weighted": 31.73013253262453,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 1530.4901027027418,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.9017886235407069,
-      "beat_rate_avg": 0.39375494040855147
-    },
-    {
-      "sector": "BASIC MATERIALS",
-      "symbol_count": 282,
-      "avg_surprise_pct_cap_weighted": 217.22416732134516,
-      "latest_quarter_surprise_pct_cap_weighted": -2.830742028572517,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 16.425565561271384,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.1326894926332528,
-      "beat_rate_avg": 0.33914662823896125
-    },
-    {
-      "sector": "UTILITIES",
-      "symbol_count": 119,
-      "avg_surprise_pct_cap_weighted": -307.1669775427978,
-      "latest_quarter_surprise_pct_cap_weighted": -1.44293442060855,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 281.1025559000917,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.08978173256714461,
-      "beat_rate_avg": 0.4230689088854235
-    },
-    {
-      "sector": "REAL ESTATE",
-      "symbol_count": 295,
-      "avg_surprise_pct_cap_weighted": 5.967068627197647,
-      "latest_quarter_surprise_pct_cap_weighted": 39.95618931094413,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 68.73844422229955,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.08717853785883169,
-      "beat_rate_avg": 0.3892933404015365
-    },
-    {
-      "sector": "UNKNOWN",
-      "symbol_count": 567,
-      "avg_surprise_pct_cap_weighted": -10.29766891822171,
-      "latest_quarter_surprise_pct_cap_weighted": -45.59950510306723,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 72.71874258182949,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.002656297444376343,
-      "beat_rate_avg": 0.5112038121818357
-    },
-    {
-      "sector": "OTHER",
-      "symbol_count": 260,
-      "avg_surprise_pct_cap_weighted": -219.3548,
-      "latest_quarter_surprise_pct_cap_weighted": null,
-      "latest_quarter_eps_yoy_pct_cap_weighted": 155.8901895264589,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.0,
-      "beat_rate_avg": 0.7854541799942848
+      "symbol_count": 785,
+      "avg_surprise_pct_cap_weighted": 8.354221070125252,
+      "latest_quarter_surprise_pct_cap_weighted": 7.289117421257811,
+      "latest_quarter_eps_yoy_pct_cap_weighted": 34.978377042327146,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.264182707455057,
+      "beat_rate_avg": 0.48328968395125926
     },
     {
       "sector": "FINANCIALS",
-      "symbol_count": 21,
-      "avg_surprise_pct_cap_weighted": -2593.041102722447,
-      "latest_quarter_surprise_pct_cap_weighted": -500.0,
-      "latest_quarter_eps_yoy_pct_cap_weighted": -54.968556885651715,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.0014971848950525732,
-      "beat_rate_avg": 0.5448780381518885
+      "symbol_count": 816,
+      "avg_surprise_pct_cap_weighted": 4.746960763715359,
+      "latest_quarter_surprise_pct_cap_weighted": 8.955172724027621,
+      "latest_quarter_eps_yoy_pct_cap_weighted": 21.06011823239574,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.07164737615245623,
+      "beat_rate_avg": 0.4505846279942247
     },
     {
-      "sector": "COMMUNICATIONS EQUIPMENT",
-      "symbol_count": 1,
-      "avg_surprise_pct_cap_weighted": null,
-      "latest_quarter_surprise_pct_cap_weighted": null,
-      "latest_quarter_eps_yoy_pct_cap_weighted": null,
-      "quarterly_revenue_growth_yoy_cap_weighted": 0.0,
-      "beat_rate_avg": null
+      "sector": "COMMUNICATION SERVICES",
+      "symbol_count": 285,
+      "avg_surprise_pct_cap_weighted": 6.688765111723935,
+      "latest_quarter_surprise_pct_cap_weighted": 9.539441018162533,
+      "latest_quarter_eps_yoy_pct_cap_weighted": 25.985522819360646,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.17365739390659732,
+      "beat_rate_avg": 0.4060541654977228
+    },
+    {
+      "sector": "CONSUMER DISCRETIONARY",
+      "symbol_count": 577,
+      "avg_surprise_pct_cap_weighted": 12.645132947091009,
+      "latest_quarter_surprise_pct_cap_weighted": 11.126211715309147,
+      "latest_quarter_eps_yoy_pct_cap_weighted": 17.22265302951466,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.07560172221619835,
+      "beat_rate_avg": 0.4610527758262243
+    },
+    {
+      "sector": "HEALTHCARE",
+      "symbol_count": 1167,
+      "avg_surprise_pct_cap_weighted": 3.4572877538475035,
+      "latest_quarter_surprise_pct_cap_weighted": 8.895010844916795,
+      "latest_quarter_eps_yoy_pct_cap_weighted": 37.173146105171504,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.5472512963159919,
+      "beat_rate_avg": 0.3936465385890969
+    },
+    {
+      "sector": "INDUSTRIALS",
+      "symbol_count": 690,
+      "avg_surprise_pct_cap_weighted": 6.610894217768848,
+      "latest_quarter_surprise_pct_cap_weighted": 4.5083556144301085,
+      "latest_quarter_eps_yoy_pct_cap_weighted": 5.764720131924268,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.3651817272127179,
+      "beat_rate_avg": 0.430253817812758
+    },
+    {
+      "sector": "CONSUMER STAPLES",
+      "symbol_count": 252,
+      "avg_surprise_pct_cap_weighted": 1.533971823967867,
+      "latest_quarter_surprise_pct_cap_weighted": -1.9953309367106178,
+      "latest_quarter_eps_yoy_pct_cap_weighted": 1.1864721963000453,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.040132237110518554,
+      "beat_rate_avg": 0.42512751656702097
+    },
+    {
+      "sector": "ENERGY",
+      "symbol_count": 250,
+      "avg_surprise_pct_cap_weighted": 3.1920941340712803,
+      "latest_quarter_surprise_pct_cap_weighted": 10.62516804573316,
+      "latest_quarter_eps_yoy_pct_cap_weighted": 13.417778071341159,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.9017886235407069,
+      "beat_rate_avg": 0.39124979553420663
+    },
+    {
+      "sector": "MATERIALS",
+      "symbol_count": 267,
+      "avg_surprise_pct_cap_weighted": -2.288789994967361,
+      "latest_quarter_surprise_pct_cap_weighted": 4.14332326523056,
+      "latest_quarter_eps_yoy_pct_cap_weighted": 25.61331855325471,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.13294682552378173,
+      "beat_rate_avg": 0.3444293996841525
+    },
+    {
+      "sector": "UTILITIES",
+      "symbol_count": 114,
+      "avg_surprise_pct_cap_weighted": -1.6976628718300943,
+      "latest_quarter_surprise_pct_cap_weighted": -2.1111100143067705,
+      "latest_quarter_eps_yoy_pct_cap_weighted": -2.3923466868023304,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.08977853830042315,
+      "beat_rate_avg": 0.42536845258353156
+    },
+    {
+      "sector": "REAL ESTATE",
+      "symbol_count": 270,
+      "avg_surprise_pct_cap_weighted": 8.697711277616081,
+      "latest_quarter_surprise_pct_cap_weighted": 0.5189452695438757,
+      "latest_quarter_eps_yoy_pct_cap_weighted": 15.059328321292474,
+      "quarterly_revenue_growth_yoy_cap_weighted": 0.10222199325381333,
+      "beat_rate_avg": 0.381432763228806
     }
   ],
   "strongest_same_quarter_surprise_relationships": [
     {
-      "source_sector": "CONSUMER CYCLICAL",
-      "target_sector": "CONSUMER DEFENSIVE",
-      "relationship": "same_quarter",
-      "correlation": 0.5701237655351131,
-      "overlap_quarters": 119,
-      "abs_correlation": 0.5701237655351131
-    },
-    {
-      "source_sector": "TECHNOLOGY",
-      "target_sector": "UNKNOWN",
-      "relationship": "same_quarter",
-      "correlation": 0.4902138585620988,
-      "overlap_quarters": 102,
-      "abs_correlation": 0.4902138585620988
-    },
-    {
-      "source_sector": "BASIC MATERIALS",
-      "target_sector": "COMMUNICATION SERVICES",
-      "relationship": "same_quarter",
-      "correlation": 0.46857295813545746,
-      "overlap_quarters": 119,
-      "abs_correlation": 0.46857295813545746
-    },
-    {
-      "source_sector": "CONSUMER DEFENSIVE",
-      "target_sector": "UNKNOWN",
-      "relationship": "same_quarter",
-      "correlation": 0.3778392587661842,
-      "overlap_quarters": 102,
-      "abs_correlation": 0.3778392587661842
-    },
-    {
-      "source_sector": "REAL ESTATE",
-      "target_sector": "UNKNOWN",
-      "relationship": "same_quarter",
-      "correlation": 0.3733214187467507,
-      "overlap_quarters": 102,
-      "abs_correlation": 0.3733214187467507
-    },
-    {
-      "source_sector": "REAL ESTATE",
-      "target_sector": "TECHNOLOGY",
-      "relationship": "same_quarter",
-      "correlation": 0.3609323174547397,
-      "overlap_quarters": 119,
-      "abs_correlation": 0.3609323174547397
-    },
-    {
-      "source_sector": "CONSUMER DEFENSIVE",
-      "target_sector": "INDUSTRIALS",
-      "relationship": "same_quarter",
-      "correlation": 0.3262425520753515,
-      "overlap_quarters": 119,
-      "abs_correlation": 0.3262425520753515
-    },
-    {
-      "source_sector": "CONSUMER CYCLICAL",
-      "target_sector": "UNKNOWN",
-      "relationship": "same_quarter",
-      "correlation": 0.28971180607420927,
-      "overlap_quarters": 102,
-      "abs_correlation": 0.28971180607420927
-    },
-    {
-      "source_sector": "COMMUNICATION SERVICES",
-      "target_sector": "UNKNOWN",
-      "relationship": "same_quarter",
-      "correlation": 0.17158373744800587,
-      "overlap_quarters": 102,
-      "abs_correlation": 0.17158373744800587
-    },
-    {
       "source_sector": "INDUSTRIALS",
       "target_sector": "TECHNOLOGY",
       "relationship": "same_quarter",
-      "correlation": 0.15726276381593812,
+      "correlation": 0.4385418052250706,
       "overlap_quarters": 119,
-      "abs_correlation": 0.15726276381593812
+      "abs_correlation": 0.4385418052250706
     },
     {
-      "source_sector": "COMMUNICATION SERVICES",
-      "target_sector": "TECHNOLOGY",
-      "relationship": "same_quarter",
-      "correlation": 0.14524775188242298,
-      "overlap_quarters": 119,
-      "abs_correlation": 0.14524775188242298
-    },
-    {
-      "source_sector": "CONSUMER CYCLICAL",
+      "source_sector": "HEALTHCARE",
       "target_sector": "INDUSTRIALS",
       "relationship": "same_quarter",
-      "correlation": 0.13729610017323282,
+      "correlation": 0.40739527778566614,
       "overlap_quarters": 119,
-      "abs_correlation": 0.13729610017323282
+      "abs_correlation": 0.40739527778566614
     },
     {
-      "source_sector": "INDUSTRIALS",
-      "target_sector": "UNKNOWN",
-      "relationship": "same_quarter",
-      "correlation": 0.1334060776233804,
-      "overlap_quarters": 102,
-      "abs_correlation": 0.1334060776233804
-    },
-    {
-      "source_sector": "BASIC MATERIALS",
-      "target_sector": "TECHNOLOGY",
-      "relationship": "same_quarter",
-      "correlation": 0.13069369948953172,
-      "overlap_quarters": 119,
-      "abs_correlation": 0.13069369948953172
-    },
-    {
-      "source_sector": "BASIC MATERIALS",
-      "target_sector": "CONSUMER DEFENSIVE",
-      "relationship": "same_quarter",
-      "correlation": -0.11988409126908123,
-      "overlap_quarters": 119,
-      "abs_correlation": 0.11988409126908123
-    },
-    {
-      "source_sector": "CONSUMER DEFENSIVE",
-      "target_sector": "UTILITIES",
-      "relationship": "same_quarter",
-      "correlation": 0.10884334697669537,
-      "overlap_quarters": 118,
-      "abs_correlation": 0.10884334697669537
-    },
-    {
-      "source_sector": "COMMUNICATION SERVICES",
-      "target_sector": "REAL ESTATE",
-      "relationship": "same_quarter",
-      "correlation": 0.10533060664637381,
-      "overlap_quarters": 119,
-      "abs_correlation": 0.10533060664637381
-    },
-    {
-      "source_sector": "CONSUMER CYCLICAL",
+      "source_sector": "CONSUMER DISCRETIONARY",
       "target_sector": "HEALTHCARE",
       "relationship": "same_quarter",
-      "correlation": -0.10131671180950196,
+      "correlation": 0.32107017241195723,
       "overlap_quarters": 119,
-      "abs_correlation": 0.10131671180950196
+      "abs_correlation": 0.32107017241195723
     },
     {
       "source_sector": "COMMUNICATION SERVICES",
-      "target_sector": "CONSUMER DEFENSIVE",
+      "target_sector": "INDUSTRIALS",
       "relationship": "same_quarter",
-      "correlation": -0.09367735517397162,
+      "correlation": 0.31003621439108026,
       "overlap_quarters": 119,
-      "abs_correlation": 0.09367735517397162
+      "abs_correlation": 0.31003621439108026
     },
     {
-      "source_sector": "CONSUMER CYCLICAL",
+      "source_sector": "COMMUNICATION SERVICES",
       "target_sector": "TECHNOLOGY",
       "relationship": "same_quarter",
-      "correlation": -0.08895544920218194,
+      "correlation": 0.3047985542934788,
       "overlap_quarters": 119,
-      "abs_correlation": 0.08895544920218194
+      "abs_correlation": 0.3047985542934788
+    },
+    {
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "INDUSTRIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.26978516273856235,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.26978516273856235
+    },
+    {
+      "source_sector": "MATERIALS",
+      "target_sector": "TECHNOLOGY",
+      "relationship": "same_quarter",
+      "correlation": 0.2633314054544943,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.2633314054544943
+    },
+    {
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "FINANCIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.25633938767147135,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.25633938767147135
+    },
+    {
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "TECHNOLOGY",
+      "relationship": "same_quarter",
+      "correlation": 0.252145941030992,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.252145941030992
+    },
+    {
+      "source_sector": "FINANCIALS",
+      "target_sector": "INDUSTRIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.2477441881272696,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.2477441881272696
+    },
+    {
+      "source_sector": "INDUSTRIALS",
+      "target_sector": "MATERIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.24444690922816967,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.24444690922816967
+    },
+    {
+      "source_sector": "HEALTHCARE",
+      "target_sector": "TECHNOLOGY",
+      "relationship": "same_quarter",
+      "correlation": 0.2403727323550849,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.2403727323550849
+    },
+    {
+      "source_sector": "FINANCIALS",
+      "target_sector": "HEALTHCARE",
+      "relationship": "same_quarter",
+      "correlation": 0.23210444791054582,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.23210444791054582
+    },
+    {
+      "source_sector": "CONSUMER STAPLES",
+      "target_sector": "TECHNOLOGY",
+      "relationship": "same_quarter",
+      "correlation": 0.2291713267734584,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.2291713267734584
+    },
+    {
+      "source_sector": "CONSUMER STAPLES",
+      "target_sector": "HEALTHCARE",
+      "relationship": "same_quarter",
+      "correlation": 0.22108200698222713,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.22108200698222713
+    },
+    {
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "MATERIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.22002426983164763,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.22002426983164763
+    },
+    {
+      "source_sector": "REAL ESTATE",
+      "target_sector": "TECHNOLOGY",
+      "relationship": "same_quarter",
+      "correlation": -0.2092390043263839,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.2092390043263839
+    },
+    {
+      "source_sector": "CONSUMER STAPLES",
+      "target_sector": "UTILITIES",
+      "relationship": "same_quarter",
+      "correlation": 0.20093463501256056,
+      "overlap_quarters": 118,
+      "abs_correlation": 0.20093463501256056
+    },
+    {
+      "source_sector": "ENERGY",
+      "target_sector": "INDUSTRIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.18651226624521658,
+      "overlap_quarters": 118,
+      "abs_correlation": 0.18651226624521658
+    },
+    {
+      "source_sector": "FINANCIALS",
+      "target_sector": "MATERIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.18560751756920785,
+      "overlap_quarters": 119,
+      "abs_correlation": 0.18560751756920785
     }
   ],
   "strongest_same_quarter_eps_growth_relationships": [
     {
-      "source_sector": "BASIC MATERIALS",
-      "target_sector": "CONSUMER CYCLICAL",
+      "source_sector": "INDUSTRIALS",
+      "target_sector": "TECHNOLOGY",
       "relationship": "same_quarter",
-      "correlation": 0.6119585147097045,
+      "correlation": 0.4743422760479403,
       "overlap_quarters": 115,
-      "abs_correlation": 0.6119585147097045
+      "abs_correlation": 0.4743422760479403
     },
     {
-      "source_sector": "BASIC MATERIALS",
-      "target_sector": "COMMUNICATION SERVICES",
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "TECHNOLOGY",
       "relationship": "same_quarter",
-      "correlation": 0.37550315581797244,
+      "correlation": 0.4721666913019133,
       "overlap_quarters": 115,
-      "abs_correlation": 0.37550315581797244
+      "abs_correlation": 0.4721666913019133
     },
     {
-      "source_sector": "BASIC MATERIALS",
-      "target_sector": "FINANCIAL SERVICES",
+      "source_sector": "INDUSTRIALS",
+      "target_sector": "MATERIALS",
       "relationship": "same_quarter",
-      "correlation": 0.3450276628276321,
+      "correlation": 0.46925648364991107,
       "overlap_quarters": 115,
-      "abs_correlation": 0.3450276628276321
-    },
-    {
-      "source_sector": "COMMUNICATION SERVICES",
-      "target_sector": "FINANCIAL SERVICES",
-      "relationship": "same_quarter",
-      "correlation": 0.3103487792746102,
-      "overlap_quarters": 115,
-      "abs_correlation": 0.3103487792746102
-    },
-    {
-      "source_sector": "ENERGY",
-      "target_sector": "OTHER",
-      "relationship": "same_quarter",
-      "correlation": -0.2673031982238629,
-      "overlap_quarters": 50,
-      "abs_correlation": 0.2673031982238629
-    },
-    {
-      "source_sector": "CONSUMER CYCLICAL",
-      "target_sector": "FINANCIAL SERVICES",
-      "relationship": "same_quarter",
-      "correlation": 0.21866241849884396,
-      "overlap_quarters": 115,
-      "abs_correlation": 0.21866241849884396
+      "abs_correlation": 0.46925648364991107
     },
     {
       "source_sector": "FINANCIALS",
-      "target_sector": "TECHNOLOGY",
+      "target_sector": "MATERIALS",
       "relationship": "same_quarter",
-      "correlation": -0.20627570647322097,
-      "overlap_quarters": 56,
-      "abs_correlation": 0.20627570647322097
+      "correlation": 0.4472043572855931,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.4472043572855931
     },
     {
       "source_sector": "ENERGY",
-      "target_sector": "UNKNOWN",
+      "target_sector": "INDUSTRIALS",
       "relationship": "same_quarter",
-      "correlation": 0.204534562164683,
-      "overlap_quarters": 114,
-      "abs_correlation": 0.204534562164683
+      "correlation": 0.42247040125399393,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.42247040125399393
+    },
+    {
+      "source_sector": "COMMUNICATION SERVICES",
+      "target_sector": "TECHNOLOGY",
+      "relationship": "same_quarter",
+      "correlation": 0.41988761590663604,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.41988761590663604
+    },
+    {
+      "source_sector": "COMMUNICATION SERVICES",
+      "target_sector": "CONSUMER DISCRETIONARY",
+      "relationship": "same_quarter",
+      "correlation": 0.4124434838436509,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.4124434838436509
+    },
+    {
+      "source_sector": "COMMUNICATION SERVICES",
+      "target_sector": "FINANCIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.40128978293648265,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.40128978293648265
+    },
+    {
+      "source_sector": "COMMUNICATION SERVICES",
+      "target_sector": "MATERIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.3951497951767437,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.3951497951767437
+    },
+    {
+      "source_sector": "MATERIALS",
+      "target_sector": "TECHNOLOGY",
+      "relationship": "same_quarter",
+      "correlation": 0.3763096714287201,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.3763096714287201
     },
     {
       "source_sector": "FINANCIALS",
       "target_sector": "INDUSTRIALS",
       "relationship": "same_quarter",
-      "correlation": 0.19403588240193784,
-      "overlap_quarters": 56,
-      "abs_correlation": 0.19403588240193784
+      "correlation": 0.3755176189444297,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.3755176189444297
     },
     {
-      "source_sector": "OTHER",
-      "target_sector": "TECHNOLOGY",
+      "source_sector": "CONSUMER STAPLES",
+      "target_sector": "INDUSTRIALS",
       "relationship": "same_quarter",
-      "correlation": -0.18762529738396744,
-      "overlap_quarters": 50,
-      "abs_correlation": 0.18762529738396744
-    },
-    {
-      "source_sector": "INDUSTRIALS",
-      "target_sector": "OTHER",
-      "relationship": "same_quarter",
-      "correlation": 0.12648898476426304,
-      "overlap_quarters": 50,
-      "abs_correlation": 0.12648898476426304
+      "correlation": 0.3700164254743322,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.3700164254743322
     },
     {
       "source_sector": "ENERGY",
-      "target_sector": "HEALTHCARE",
+      "target_sector": "MATERIALS",
       "relationship": "same_quarter",
-      "correlation": -0.11196430615080126,
+      "correlation": 0.3650241715564581,
       "overlap_quarters": 115,
-      "abs_correlation": 0.11196430615080126
-    },
-    {
-      "source_sector": "FINANCIALS",
-      "target_sector": "OTHER",
-      "relationship": "same_quarter",
-      "correlation": 0.10947753523378768,
-      "overlap_quarters": 50,
-      "abs_correlation": 0.10947753523378768
-    },
-    {
-      "source_sector": "BASIC MATERIALS",
-      "target_sector": "OTHER",
-      "relationship": "same_quarter",
-      "correlation": -0.09583597271551514,
-      "overlap_quarters": 50,
-      "abs_correlation": 0.09583597271551514
-    },
-    {
-      "source_sector": "FINANCIAL SERVICES",
-      "target_sector": "OTHER",
-      "relationship": "same_quarter",
-      "correlation": -0.09444757242751915,
-      "overlap_quarters": 50,
-      "abs_correlation": 0.09444757242751915
-    },
-    {
-      "source_sector": "CONSUMER CYCLICAL",
-      "target_sector": "REAL ESTATE",
-      "relationship": "same_quarter",
-      "correlation": -0.09407117640204973,
-      "overlap_quarters": 115,
-      "abs_correlation": 0.09407117640204973
-    },
-    {
-      "source_sector": "CONSUMER DEFENSIVE",
-      "target_sector": "TECHNOLOGY",
-      "relationship": "same_quarter",
-      "correlation": 0.08540609472815174,
-      "overlap_quarters": 115,
-      "abs_correlation": 0.08540609472815174
+      "abs_correlation": 0.3650241715564581
     },
     {
       "source_sector": "HEALTHCARE",
-      "target_sector": "OTHER",
+      "target_sector": "MATERIALS",
       "relationship": "same_quarter",
-      "correlation": 0.08137453504129999,
-      "overlap_quarters": 50,
-      "abs_correlation": 0.08137453504129999
+      "correlation": 0.34845117697405525,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.34845117697405525
     },
     {
-      "source_sector": "OTHER",
-      "target_sector": "UNKNOWN",
-      "relationship": "same_quarter",
-      "correlation": -0.07946598898898047,
-      "overlap_quarters": 50,
-      "abs_correlation": 0.07946598898898047
-    },
-    {
-      "source_sector": "BASIC MATERIALS",
+      "source_sector": "FINANCIALS",
       "target_sector": "TECHNOLOGY",
       "relationship": "same_quarter",
-      "correlation": 0.07895769323896949,
+      "correlation": 0.3461376049536534,
       "overlap_quarters": 115,
-      "abs_correlation": 0.07895769323896949
+      "abs_correlation": 0.3461376049536534
+    },
+    {
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "CONSUMER STAPLES",
+      "relationship": "same_quarter",
+      "correlation": 0.34168683744818845,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.34168683744818845
+    },
+    {
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "FINANCIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.3311623923218652,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.3311623923218652
+    },
+    {
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "INDUSTRIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.31896127814437897,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.31896127814437897
+    },
+    {
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "MATERIALS",
+      "relationship": "same_quarter",
+      "correlation": 0.3070333842453613,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.3070333842453613
+    },
+    {
+      "source_sector": "COMMUNICATION SERVICES",
+      "target_sector": "HEALTHCARE",
+      "relationship": "same_quarter",
+      "correlation": 0.29966679512361294,
+      "overlap_quarters": 115,
+      "abs_correlation": 0.29966679512361294
     }
   ],
   "strongest_surprise_lead_lag_relationships": [
     {
-      "source_sector": "BASIC MATERIALS",
-      "target_sector": "COMMUNICATION SERVICES",
+      "source_sector": "INDUSTRIALS",
+      "target_sector": "TECHNOLOGY",
       "relationship": "source_surprise_leads_target_by_1q",
-      "correlation": 0.7943707995650193,
+      "correlation": 0.38666024740370647,
       "overlap_quarters": 118,
-      "abs_correlation": 0.7943707995650193
+      "abs_correlation": 0.38666024740370647
+    },
+    {
+      "source_sector": "TECHNOLOGY",
+      "target_sector": "INDUSTRIALS",
+      "relationship": "source_surprise_lags_target_by_1q",
+      "correlation": 0.38666024740370647,
+      "overlap_quarters": 118,
+      "abs_correlation": 0.38666024740370647
+    },
+    {
+      "source_sector": "INDUSTRIALS",
+      "target_sector": "TECHNOLOGY",
+      "relationship": "source_surprise_lags_target_by_1q",
+      "correlation": 0.32576503287797726,
+      "overlap_quarters": 118,
+      "abs_correlation": 0.32576503287797726
+    },
+    {
+      "source_sector": "TECHNOLOGY",
+      "target_sector": "INDUSTRIALS",
+      "relationship": "source_surprise_leads_target_by_1q",
+      "correlation": 0.32576503287797726,
+      "overlap_quarters": 118,
+      "abs_correlation": 0.32576503287797726
     },
     {
       "source_sector": "COMMUNICATION SERVICES",
-      "target_sector": "BASIC MATERIALS",
+      "target_sector": "INDUSTRIALS",
       "relationship": "source_surprise_lags_target_by_1q",
-      "correlation": 0.7943707995650193,
+      "correlation": 0.30694830810699736,
       "overlap_quarters": 118,
-      "abs_correlation": 0.7943707995650193
+      "abs_correlation": 0.30694830810699736
     },
     {
       "source_sector": "INDUSTRIALS",
-      "target_sector": "TECHNOLOGY",
+      "target_sector": "COMMUNICATION SERVICES",
       "relationship": "source_surprise_leads_target_by_1q",
-      "correlation": 0.5171627406760402,
+      "correlation": 0.30694830810699736,
       "overlap_quarters": 118,
-      "abs_correlation": 0.5171627406760402
+      "abs_correlation": 0.30694830810699736
+    },
+    {
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "TECHNOLOGY",
+      "relationship": "source_surprise_lags_target_by_1q",
+      "correlation": 0.27429192276692044,
+      "overlap_quarters": 118,
+      "abs_correlation": 0.27429192276692044
     },
     {
       "source_sector": "TECHNOLOGY",
+      "target_sector": "CONSUMER DISCRETIONARY",
+      "relationship": "source_surprise_leads_target_by_1q",
+      "correlation": 0.2742919227669204,
+      "overlap_quarters": 118,
+      "abs_correlation": 0.2742919227669204
+    },
+    {
+      "source_sector": "INDUSTRIALS",
+      "target_sector": "HEALTHCARE",
+      "relationship": "source_surprise_leads_target_by_1q",
+      "correlation": 0.2580006351708298,
+      "overlap_quarters": 118,
+      "abs_correlation": 0.2580006351708298
+    },
+    {
+      "source_sector": "HEALTHCARE",
       "target_sector": "INDUSTRIALS",
       "relationship": "source_surprise_lags_target_by_1q",
-      "correlation": 0.5171627406760402,
+      "correlation": 0.2580006351708297,
       "overlap_quarters": 118,
-      "abs_correlation": 0.5171627406760402
+      "abs_correlation": 0.2580006351708297
     },
     {
       "source_sector": "COMMUNICATION SERVICES",
-      "target_sector": "UTILITIES",
-      "relationship": "source_surprise_leads_target_by_1q",
-      "correlation": -0.49328581810061983,
-      "overlap_quarters": 117,
-      "abs_correlation": 0.49328581810061983
+      "target_sector": "TECHNOLOGY",
+      "relationship": "source_surprise_lags_target_by_1q",
+      "correlation": 0.25580229243651054,
+      "overlap_quarters": 118,
+      "abs_correlation": 0.25580229243651054
     },
     {
-      "source_sector": "UTILITIES",
+      "source_sector": "TECHNOLOGY",
       "target_sector": "COMMUNICATION SERVICES",
-      "relationship": "source_surprise_lags_target_by_1q",
-      "correlation": -0.49328581810061983,
-      "overlap_quarters": 117,
-      "abs_correlation": 0.49328581810061983
-    },
-    {
-      "source_sector": "TECHNOLOGY",
-      "target_sector": "UNKNOWN",
-      "relationship": "source_surprise_lags_target_by_1q",
-      "correlation": 0.44921858607147236,
-      "overlap_quarters": 102,
-      "abs_correlation": 0.44921858607147236
-    },
-    {
-      "source_sector": "UNKNOWN",
-      "target_sector": "TECHNOLOGY",
       "relationship": "source_surprise_leads_target_by_1q",
-      "correlation": 0.44921858607147236,
-      "overlap_quarters": 102,
-      "abs_correlation": 0.44921858607147236
-    },
-    {
-      "source_sector": "ENERGY",
-      "target_sector": "INDUSTRIALS",
-      "relationship": "source_surprise_lags_target_by_1q",
-      "correlation": -0.3612736328085751,
+      "correlation": 0.25580229243651054,
       "overlap_quarters": 118,
-      "abs_correlation": 0.3612736328085751
+      "abs_correlation": 0.25580229243651054
     },
     {
-      "source_sector": "INDUSTRIALS",
-      "target_sector": "ENERGY",
-      "relationship": "source_surprise_leads_target_by_1q",
-      "correlation": -0.3612736328085751,
-      "overlap_quarters": 118,
-      "abs_correlation": 0.3612736328085751
-    },
-    {
-      "source_sector": "CONSUMER CYCLICAL",
+      "source_sector": "CONSUMER DISCRETIONARY",
       "target_sector": "HEALTHCARE",
       "relationship": "source_surprise_lags_target_by_1q",
-      "correlation": 0.31615077209632614,
+      "correlation": 0.24583100088331503,
       "overlap_quarters": 118,
-      "abs_correlation": 0.31615077209632614
+      "abs_correlation": 0.24583100088331503
     },
     {
       "source_sector": "HEALTHCARE",
-      "target_sector": "CONSUMER CYCLICAL",
+      "target_sector": "CONSUMER DISCRETIONARY",
       "relationship": "source_surprise_leads_target_by_1q",
-      "correlation": 0.31615077209632614,
+      "correlation": 0.24583100088331503,
       "overlap_quarters": 118,
-      "abs_correlation": 0.31615077209632614
-    },
-    {
-      "source_sector": "INDUSTRIALS",
-      "target_sector": "CONSUMER DEFENSIVE",
-      "relationship": "source_surprise_lags_target_by_1q",
-      "correlation": 0.303567003241612,
-      "overlap_quarters": 118,
-      "abs_correlation": 0.303567003241612
-    },
-    {
-      "source_sector": "CONSUMER DEFENSIVE",
-      "target_sector": "INDUSTRIALS",
-      "relationship": "source_surprise_leads_target_by_1q",
-      "correlation": 0.30356700324161195,
-      "overlap_quarters": 118,
-      "abs_correlation": 0.30356700324161195
+      "abs_correlation": 0.24583100088331503
     },
     {
       "source_sector": "HEALTHCARE",
       "target_sector": "TECHNOLOGY",
       "relationship": "source_surprise_leads_target_by_1q",
-      "correlation": -0.25265580843641455,
+      "correlation": 0.23738838856684166,
       "overlap_quarters": 118,
-      "abs_correlation": 0.25265580843641455
+      "abs_correlation": 0.23738838856684166
     },
     {
       "source_sector": "TECHNOLOGY",
       "target_sector": "HEALTHCARE",
       "relationship": "source_surprise_lags_target_by_1q",
-      "correlation": -0.25265580843641455,
+      "correlation": 0.23738838856684163,
       "overlap_quarters": 118,
-      "abs_correlation": 0.25265580843641455
+      "abs_correlation": 0.23738838856684163
     },
     {
-      "source_sector": "CONSUMER DEFENSIVE",
-      "target_sector": "ENERGY",
-      "relationship": "source_surprise_lags_target_by_1q",
-      "correlation": -0.20432146591151712,
-      "overlap_quarters": 118,
-      "abs_correlation": 0.20432146591151712
-    },
-    {
-      "source_sector": "ENERGY",
-      "target_sector": "CONSUMER DEFENSIVE",
+      "source_sector": "MATERIALS",
+      "target_sector": "CONSUMER DISCRETIONARY",
       "relationship": "source_surprise_leads_target_by_1q",
-      "correlation": -0.20432146591151712,
+      "correlation": 0.23018323178712724,
       "overlap_quarters": 118,
-      "abs_correlation": 0.20432146591151712
+      "abs_correlation": 0.23018323178712724
     },
     {
-      "source_sector": "CONSUMER DEFENSIVE",
-      "target_sector": "FINANCIAL SERVICES",
+      "source_sector": "CONSUMER DISCRETIONARY",
+      "target_sector": "MATERIALS",
       "relationship": "source_surprise_lags_target_by_1q",
-      "correlation": -0.20304228811255778,
+      "correlation": 0.2301832317871272,
       "overlap_quarters": 118,
-      "abs_correlation": 0.20304228811255778
+      "abs_correlation": 0.2301832317871272
     },
     {
-      "source_sector": "FINANCIAL SERVICES",
-      "target_sector": "CONSUMER DEFENSIVE",
+      "source_sector": "HEALTHCARE",
+      "target_sector": "INDUSTRIALS",
       "relationship": "source_surprise_leads_target_by_1q",
-      "correlation": -0.20304228811255778,
+      "correlation": 0.22586583731871065,
       "overlap_quarters": 118,
-      "abs_correlation": 0.20304228811255778
+      "abs_correlation": 0.22586583731871065
+    },
+    {
+      "source_sector": "INDUSTRIALS",
+      "target_sector": "HEALTHCARE",
+      "relationship": "source_surprise_lags_target_by_1q",
+      "correlation": 0.22586583731871065,
+      "overlap_quarters": 118,
+      "abs_correlation": 0.22586583731871065
     }
   ],
   "outputs": [
     "fundamentals_analysis_summary.json",
+    "sector_analysis_eligible_symbols.csv",
+    "sector_analysis_excluded_symbols.csv",
     "sector_eps_growth_correlation.csv",
     "sector_eps_growth_correlation_pairs.csv",
     "sector_fundamentals_summary.csv",

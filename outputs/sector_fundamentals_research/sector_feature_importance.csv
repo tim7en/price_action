@@ -1,0 +1,221 @@
+model_label,feature,importance
+Average Ensemble,log_dollar_volume_total,0.03968630705590876
+Average Ensemble,beat_rate_lag1,0.03899312824325207
+Average Ensemble,cap_weighted_quarterly_eps_yoy_pct_lag1_rank,0.03722550985159021
+Average Ensemble,beat_rate_lag1_rank,0.033325189382190284
+Average Ensemble,relative_ret_2q_rank,0.03086266587107958
+Average Ensemble,etf_sma_gap,0.03031903925444969
+Average Ensemble,avg_quarterly_eps_yoy_pct_lag1,0.03014099770740723
+Average Ensemble,median_surprise_pct_lag1,0.029208392062265193
+Average Ensemble,etf_sma_gap_rank,0.02882127619789362
+Average Ensemble,relative_ret_1y,0.028664701627387695
+Average Ensemble,log_market_cap_proxy_total,0.02630952742437082
+Average Ensemble,turnover_proxy_rank,0.02545331540358382
+Average Ensemble,etf_vol_1q,0.023504947354591067
+Average Ensemble,avg_surprise_pct_lag1,0.022780852072012556
+Average Ensemble,sector_CONSUMER STAPLES,0.02193770110029014
+Average Ensemble,market_cap_share_rank,0.021597772638262805
+Average Ensemble,etf_ret_1y,0.021370031078932233
+Average Ensemble,etf_atr_pct,0.020999198356038983
+Average Ensemble,sector_TECHNOLOGY,0.020826391524491384
+Average Ensemble,relative_drawdown_2q,0.020168929793678084
+Average Ensemble,avg_estimated_eps_lag1,0.019764850272516166
+Average Ensemble,relative_vol_1q,0.019468537626374495
+Average Ensemble,etf_vol_1q_rank,0.01891849410050547
+Average Ensemble,etf_vol_1m,0.018863350338809814
+Average Ensemble,market_cap_share,0.01885325019976325
+Average Ensemble,relative_ret_1q_rank,0.01757622280341391
+Average Ensemble,turnover_proxy,0.01708356216106731
+Average Ensemble,etf_ret_1q,0.01692309457271732
+Average Ensemble,turnover_proxy_qoq_pct,0.0168541623776628
+Average Ensemble,cap_weighted_quarterly_eps_yoy_pct_lag1,0.016656011574757868
+Average Ensemble,dollar_volume_total_qoq_pct,0.015609960433454369
+Average Ensemble,symbol_count_lag1,0.014777027677791162
+Average Ensemble,market_cap_proxy_total_qoq_pct,0.014630107220322194
+Average Ensemble,avg_reported_eps_lag1,0.014418840611523718
+Average Ensemble,spy_vol_1q,0.014401037629887516
+Average Ensemble,cap_weighted_quarterly_eps_yoy_pct_lag1_change,0.014255587511301676
+Average Ensemble,relative_ret_1q,0.01357975471232939
+Average Ensemble,spy_ret_2q,0.013403797027942569
+Average Ensemble,beat_rate_lag1_change,0.01315743854962427
+Average Ensemble,relative_ret_2q,0.013141632010729048
+Average Ensemble,sector_CONSUMER DISCRETIONARY,0.012853491143317533
+Average Ensemble,spy_ret_1q,0.012814920456166043
+Average Ensemble,etf_ret_2q,0.0125240298362337
+Average Ensemble,cap_weighted_surprise_pct_lag1_change,0.012290385362698322
+Average Ensemble,cap_weighted_surprise_pct_lag1_rank,0.012133321399154665
+Average Ensemble,sector_HEALTHCARE,0.011296745545184042
+Average Ensemble,cap_weighted_surprise_pct_lag1,0.010992549166775887
+Average Ensemble,sector_UTILITIES,0.007720013344607315
+Average Ensemble,symbol_count_lag1_change,0.006454323830497097
+Average Ensemble,sector_COMMUNICATION SERVICES,0.005198456137884309
+Average Ensemble,sector_REAL ESTATE,0.0047739635173646355
+Average Ensemble,sector_INDUSTRIALS,0.004575474961048641
+Average Ensemble,sector_ENERGY,0.004367839294039216
+Average Ensemble,sector_MATERIALS,0.0039530007532909
+Average Ensemble,sector_FINANCIALS,0.003518891839567266
+Elastic Net,beat_rate_lag1,0.07928356354018573
+Elastic Net,log_dollar_volume_total,0.05899131891330001
+Elastic Net,beat_rate_lag1_rank,0.049057682799386985
+Elastic Net,log_market_cap_proxy_total,0.047073945488528654
+Elastic Net,median_surprise_pct_lag1,0.04094160378214619
+Elastic Net,relative_ret_2q_rank,0.038246789347849273
+Elastic Net,etf_vol_1m,0.03045351848725204
+Elastic Net,cap_weighted_quarterly_eps_yoy_pct_lag1_rank,0.029898385555339146
+Elastic Net,etf_atr_pct,0.028060975585458687
+Elastic Net,etf_vol_1q,0.028049335780264455
+Elastic Net,relative_ret_1y,0.026769283789496133
+Elastic Net,etf_sma_gap,0.026494424165349355
+Elastic Net,relative_vol_1q,0.026035778268201297
+Elastic Net,turnover_proxy,0.024983723311469738
+Elastic Net,sector_CONSUMER DISCRETIONARY,0.02489023213816044
+Elastic Net,avg_estimated_eps_lag1,0.02459424170889907
+Elastic Net,avg_surprise_pct_lag1,0.02374947798805413
+Elastic Net,market_cap_share_rank,0.023045176380722513
+Elastic Net,turnover_proxy_qoq_pct,0.021488570896001393
+Elastic Net,spy_vol_1q,0.02084306178962449
+Elastic Net,etf_ret_1y,0.019071167165507098
+Elastic Net,etf_sma_gap_rank,0.018996538241713358
+Elastic Net,relative_ret_1q_rank,0.01646629056380012
+Elastic Net,avg_quarterly_eps_yoy_pct_lag1,0.01593552911721747
+Elastic Net,sector_HEALTHCARE,0.01590037573748072
+Elastic Net,market_cap_proxy_total_qoq_pct,0.01484225205326282
+Elastic Net,dollar_volume_total_qoq_pct,0.014792717869336327
+Elastic Net,sector_UTILITIES,0.01467607676365737
+Elastic Net,sector_CONSUMER STAPLES,0.014146268017266045
+Elastic Net,etf_ret_1q,0.013806575100153618
+Elastic Net,beat_rate_lag1_change,0.013775972586586952
+Elastic Net,relative_ret_1q,0.01347019707475224
+Elastic Net,sector_COMMUNICATION SERVICES,0.012250973180243544
+Elastic Net,sector_TECHNOLOGY,0.0121791285972777
+Elastic Net,market_cap_share,0.010332402724161574
+Elastic Net,cap_weighted_quarterly_eps_yoy_pct_lag1_change,0.009911216744674057
+Elastic Net,relative_drawdown_2q,0.009662255802084112
+Elastic Net,avg_reported_eps_lag1,0.009181261139546796
+Elastic Net,sector_ENERGY,0.008807690951207555
+Elastic Net,spy_ret_1q,0.00839299082111059
+Elastic Net,cap_weighted_quarterly_eps_yoy_pct_lag1,0.008077711997425865
+Elastic Net,spy_ret_2q,0.006991721866950252
+Elastic Net,sector_INDUSTRIALS,0.006396018680622543
+Elastic Net,cap_weighted_surprise_pct_lag1_rank,0.006347737619247433
+Elastic Net,etf_ret_2q,0.0059015749021424126
+Elastic Net,turnover_proxy_rank,0.0040557405541
+Elastic Net,symbol_count_lag1_change,0.0037511352913014912
+Elastic Net,relative_ret_2q,0.003699290948585708
+Elastic Net,sector_MATERIALS,0.0036932463428128344
+Elastic Net,sector_FINANCIALS,0.0034307584281487945
+Elastic Net,symbol_count_lag1,0.0033234912995699878
+Elastic Net,etf_vol_1q_rank,0.0019821224671519155
+Elastic Net,sector_REAL ESTATE,0.0017458193134872809
+Elastic Net,cap_weighted_surprise_pct_lag1,0.0006800428029087532
+Elastic Net,cap_weighted_surprise_pct_lag1_change,0.0003746175188150473
+ExtraTrees,etf_sma_gap_rank,0.0530104543337932
+ExtraTrees,turnover_proxy_rank,0.052890740146531674
+ExtraTrees,sector_CONSUMER STAPLES,0.05166683528360437
+ExtraTrees,cap_weighted_quarterly_eps_yoy_pct_lag1_rank,0.05038615721711012
+ExtraTrees,sector_TECHNOLOGY,0.05030004597619646
+ExtraTrees,etf_vol_1q_rank,0.04279483856216292
+ExtraTrees,relative_ret_2q_rank,0.042362686993187904
+ExtraTrees,etf_sma_gap,0.03348375927334048
+ExtraTrees,log_dollar_volume_total,0.03239308759106402
+ExtraTrees,market_cap_share_rank,0.030595725177188577
+ExtraTrees,avg_quarterly_eps_yoy_pct_lag1,0.030290851035157038
+ExtraTrees,beat_rate_lag1_rank,0.02985221000641559
+ExtraTrees,relative_ret_1q_rank,0.027588276235537022
+ExtraTrees,cap_weighted_surprise_pct_lag1_rank,0.02096507250964986
+ExtraTrees,market_cap_share,0.02020504304241442
+ExtraTrees,etf_ret_1y,0.01901662123857584
+ExtraTrees,sector_HEALTHCARE,0.017989860898071405
+ExtraTrees,spy_ret_1q,0.017247144359861723
+ExtraTrees,relative_drawdown_2q,0.016974232050656044
+ExtraTrees,etf_ret_1q,0.01672313819255431
+ExtraTrees,spy_ret_2q,0.016697570910392534
+ExtraTrees,relative_ret_1y,0.016267365495806152
+ExtraTrees,log_market_cap_proxy_total,0.016158643393423128
+ExtraTrees,symbol_count_lag1,0.01581139181641399
+ExtraTrees,cap_weighted_quarterly_eps_yoy_pct_lag1,0.01545496543647186
+ExtraTrees,etf_vol_1q,0.014790991620146507
+ExtraTrees,relative_vol_1q,0.014608578931450898
+ExtraTrees,beat_rate_lag1,0.01456488356049159
+ExtraTrees,etf_ret_2q,0.014322311384749514
+ExtraTrees,etf_atr_pct,0.013870944141889982
+ExtraTrees,sector_CONSUMER DISCRETIONARY,0.013670241291792161
+ExtraTrees,median_surprise_pct_lag1,0.013639375791679552
+ExtraTrees,avg_surprise_pct_lag1,0.01361414390332431
+ExtraTrees,sector_REAL ESTATE,0.012576071238606627
+ExtraTrees,relative_ret_2q,0.01094245762387405
+ExtraTrees,relative_ret_1q,0.009920863840426753
+ExtraTrees,etf_vol_1m,0.009614434222692477
+ExtraTrees,avg_estimated_eps_lag1,0.009091056733597804
+ExtraTrees,beat_rate_lag1_change,0.008761192298138813
+ExtraTrees,sector_UTILITIES,0.008483963270164575
+ExtraTrees,cap_weighted_surprise_pct_lag1,0.008340562153015768
+ExtraTrees,spy_vol_1q,0.00831626753952587
+ExtraTrees,sector_MATERIALS,0.008165755917059866
+ExtraTrees,cap_weighted_surprise_pct_lag1_change,0.007582866532931302
+ExtraTrees,sector_INDUSTRIALS,0.00733040620252338
+ExtraTrees,cap_weighted_quarterly_eps_yoy_pct_lag1_change,0.007246293414179341
+ExtraTrees,sector_FINANCIALS,0.007125917090553004
+ExtraTrees,symbol_count_lag1_change,0.006524682131623095
+ExtraTrees,avg_reported_eps_lag1,0.004748536201013622
+ExtraTrees,sector_ENERGY,0.004295826930910092
+ExtraTrees,market_cap_proxy_total_qoq_pct,0.0034388172326521318
+ExtraTrees,sector_COMMUNICATION SERVICES,0.0033443952334093812
+ExtraTrees,turnover_proxy,0.0018968681696669234
+ExtraTrees,turnover_proxy_qoq_pct,0.0013994015736247592
+ExtraTrees,dollar_volume_total_qoq_pct,0.0006451766487054193
+LightGBM,avg_quarterly_eps_yoy_pct_lag1,0.04419661296984717
+LightGBM,relative_ret_1y,0.0429574555968608
+LightGBM,relative_drawdown_2q,0.033870301528294094
+LightGBM,median_surprise_pct_lag1,0.033044196612969846
+LightGBM,cap_weighted_quarterly_eps_yoy_pct_lag1_rank,0.03139198678232136
+LightGBM,dollar_volume_total_qoq_pct,0.03139198678232136
+LightGBM,avg_surprise_pct_lag1,0.030978934324659233
+LightGBM,etf_sma_gap,0.030978934324659233
+LightGBM,avg_reported_eps_lag1,0.02932672449401074
+LightGBM,cap_weighted_surprise_pct_lag1_change,0.028913672036348616
+LightGBM,etf_vol_1q,0.027674514663362248
+LightGBM,log_dollar_volume_total,0.027674514663362248
+LightGBM,turnover_proxy_qoq_pct,0.027674514663362248
+LightGBM,cap_weighted_quarterly_eps_yoy_pct_lag1,0.02643535729037588
+LightGBM,etf_ret_1y,0.026022304832713755
+LightGBM,market_cap_share,0.026022304832713755
+LightGBM,avg_estimated_eps_lag1,0.02560925237505163
+LightGBM,cap_weighted_quarterly_eps_yoy_pct_lag1_change,0.02560925237505163
+LightGBM,market_cap_proxy_total_qoq_pct,0.02560925237505163
+LightGBM,symbol_count_lag1,0.025196199917389507
+LightGBM,relative_ret_2q,0.024783147459727387
+LightGBM,turnover_proxy,0.024370095002065262
+LightGBM,cap_weighted_surprise_pct_lag1,0.02395704254440314
+LightGBM,beat_rate_lag1,0.023130937629078894
+LightGBM,beat_rate_lag1_rank,0.021065675340768277
+LightGBM,etf_atr_pct,0.021065675340768277
+LightGBM,etf_ret_1q,0.020239570425444033
+LightGBM,turnover_proxy_rank,0.019413465510119784
+LightGBM,relative_vol_1q,0.017761255679471292
+LightGBM,etf_ret_2q,0.01734820322180917
+LightGBM,relative_ret_1q,0.01734820322180917
+LightGBM,beat_rate_lag1_change,0.016935150764147047
+LightGBM,etf_vol_1m,0.016522098306484923
+LightGBM,spy_ret_2q,0.016522098306484923
+LightGBM,log_market_cap_proxy_total,0.01569599339116068
+LightGBM,etf_sma_gap_rank,0.014456836018174308
+LightGBM,spy_vol_1q,0.014043783560512184
+LightGBM,spy_ret_1q,0.012804626187525816
+LightGBM,etf_vol_1q_rank,0.01197852127220157
+LightGBM,relative_ret_2q_rank,0.01197852127220157
+LightGBM,market_cap_share_rank,0.011152416356877323
+LightGBM,cap_weighted_surprise_pct_lag1_rank,0.009087154068566708
+LightGBM,symbol_count_lag1_change,0.009087154068566708
+LightGBM,relative_ret_1q_rank,0.008674101610904586
+LightGBM,sector_COMMUNICATION SERVICES,0.0
+LightGBM,sector_CONSUMER DISCRETIONARY,0.0
+LightGBM,sector_CONSUMER STAPLES,0.0
+LightGBM,sector_ENERGY,0.0
+LightGBM,sector_FINANCIALS,0.0
+LightGBM,sector_HEALTHCARE,0.0
+LightGBM,sector_INDUSTRIALS,0.0
+LightGBM,sector_MATERIALS,0.0
+LightGBM,sector_REAL ESTATE,0.0
+LightGBM,sector_TECHNOLOGY,0.0
+LightGBM,sector_UTILITIES,0.0

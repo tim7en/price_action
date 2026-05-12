@@ -1,0 +1,196 @@
+{
+  "panel_rows": 888,
+  "sector_count": 11,
+  "quarter_count": 91,
+  "feature_count": 55,
+  "feature_columns": [
+    "symbol_count_lag1",
+    "symbol_count_lag1_change",
+    "avg_surprise_pct_lag1",
+    "median_surprise_pct_lag1",
+    "cap_weighted_surprise_pct_lag1",
+    "cap_weighted_surprise_pct_lag1_change",
+    "beat_rate_lag1",
+    "beat_rate_lag1_change",
+    "avg_reported_eps_lag1",
+    "avg_estimated_eps_lag1",
+    "avg_quarterly_eps_yoy_pct_lag1",
+    "cap_weighted_quarterly_eps_yoy_pct_lag1",
+    "cap_weighted_quarterly_eps_yoy_pct_lag1_change",
+    "market_cap_share",
+    "market_cap_proxy_total_qoq_pct",
+    "dollar_volume_total_qoq_pct",
+    "turnover_proxy",
+    "turnover_proxy_qoq_pct",
+    "log_market_cap_proxy_total",
+    "log_dollar_volume_total",
+    "etf_ret_1q",
+    "etf_ret_2q",
+    "etf_ret_1y",
+    "relative_ret_1q",
+    "relative_ret_2q",
+    "relative_ret_1y",
+    "etf_vol_1m",
+    "etf_vol_1q",
+    "relative_vol_1q",
+    "etf_atr_pct",
+    "etf_sma_gap",
+    "relative_drawdown_2q",
+    "spy_ret_1q",
+    "spy_ret_2q",
+    "spy_vol_1q",
+    "cap_weighted_surprise_pct_lag1_rank",
+    "cap_weighted_quarterly_eps_yoy_pct_lag1_rank",
+    "beat_rate_lag1_rank",
+    "market_cap_share_rank",
+    "turnover_proxy_rank",
+    "relative_ret_1q_rank",
+    "relative_ret_2q_rank",
+    "etf_sma_gap_rank",
+    "etf_vol_1q_rank",
+    "sector_COMMUNICATION SERVICES",
+    "sector_CONSUMER DISCRETIONARY",
+    "sector_CONSUMER STAPLES",
+    "sector_ENERGY",
+    "sector_FINANCIALS",
+    "sector_HEALTHCARE",
+    "sector_INDUSTRIALS",
+    "sector_MATERIALS",
+    "sector_REAL ESTATE",
+    "sector_TECHNOLOGY",
+    "sector_UTILITIES"
+  ],
+  "validation_ensemble_metrics": {
+    "scope": "validation",
+    "model_label": "Average Ensemble",
+    "observations": 675,
+    "target_rate": 0.48592592592592593,
+    "brier_score": 0.2611131773890797,
+    "accuracy": 0.4888888888888889,
+    "precision": 0.473015873015873,
+    "recall": 0.45426829268292684,
+    "roc_auc": 0.48582800309271107
+  },
+  "holdout_ensemble_metrics": {
+    "scope": "holdout",
+    "model_label": "Average Ensemble",
+    "observations": 33,
+    "target_rate": 0.21212121212121213,
+    "brier_score": 0.23438076665506002,
+    "accuracy": 0.5757575757575758,
+    "precision": 0.26666666666666666,
+    "recall": 0.5714285714285714,
+    "roc_auc": 0.6813186813186813
+  },
+  "validation_strategy": {
+    "periods": 68,
+    "total_return": 2.5047874300909316,
+    "cagr": 0.07656169332620366,
+    "sharpe": 0.4705472029791045,
+    "max_drawdown": -0.4351235841643486,
+    "hit_rate": 0.4411764705882353,
+    "avg_excess_return": -0.005647489922763284
+  },
+  "holdout_strategy": {
+    "periods": 3,
+    "total_return": 0.24451934051170343,
+    "cagr": 0.33865562396627147,
+    "sharpe": 2.4717772933611424,
+    "max_drawdown": 0.0,
+    "hit_rate": 0.3333333333333333,
+    "avg_excess_return": 0.005557109446279222
+  },
+  "top_features": [
+    {
+      "feature": "log_dollar_volume_total",
+      "importance": 0.03968630705590876
+    },
+    {
+      "feature": "beat_rate_lag1",
+      "importance": 0.03899312824325207
+    },
+    {
+      "feature": "cap_weighted_quarterly_eps_yoy_pct_lag1_rank",
+      "importance": 0.03722550985159021
+    },
+    {
+      "feature": "beat_rate_lag1_rank",
+      "importance": 0.033325189382190284
+    },
+    {
+      "feature": "relative_ret_2q_rank",
+      "importance": 0.03086266587107958
+    },
+    {
+      "feature": "etf_sma_gap",
+      "importance": 0.03031903925444969
+    },
+    {
+      "feature": "avg_quarterly_eps_yoy_pct_lag1",
+      "importance": 0.03014099770740723
+    },
+    {
+      "feature": "median_surprise_pct_lag1",
+      "importance": 0.029208392062265193
+    },
+    {
+      "feature": "etf_sma_gap_rank",
+      "importance": 0.02882127619789362
+    },
+    {
+      "feature": "relative_ret_1y",
+      "importance": 0.028664701627387695
+    },
+    {
+      "feature": "log_market_cap_proxy_total",
+      "importance": 0.02630952742437082
+    },
+    {
+      "feature": "turnover_proxy_rank",
+      "importance": 0.02545331540358382
+    },
+    {
+      "feature": "etf_vol_1q",
+      "importance": 0.023504947354591067
+    },
+    {
+      "feature": "avg_surprise_pct_lag1",
+      "importance": 0.022780852072012556
+    },
+    {
+      "feature": "sector_CONSUMER STAPLES",
+      "importance": 0.02193770110029014
+    },
+    {
+      "feature": "market_cap_share_rank",
+      "importance": 0.021597772638262805
+    },
+    {
+      "feature": "etf_ret_1y",
+      "importance": 0.021370031078932233
+    },
+    {
+      "feature": "etf_atr_pct",
+      "importance": 0.020999198356038983
+    },
+    {
+      "feature": "sector_TECHNOLOGY",
+      "importance": 0.020826391524491384
+    },
+    {
+      "feature": "relative_drawdown_2q",
+      "importance": 0.020168929793678084
+    }
+  ],
+  "outputs": [
+    "sector_factor_panel.csv",
+    "sector_feature_importance.csv",
+    "sector_market_features_quarterly.csv",
+    "sector_market_structure_quarterly.csv",
+    "sector_model_holdout_predictions.csv",
+    "sector_model_metrics.csv",
+    "sector_model_validation_predictions.csv",
+    "sector_top3_holdout_strategy.csv",
+    "sector_top3_validation_strategy.csv"
+  ]
+}
