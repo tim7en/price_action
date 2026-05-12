@@ -18,7 +18,10 @@
       "Bash(./.venv/bin/python notebooks/_build_pit_top_holdings_notebook.py)",
       "Bash(./.venv/bin/python -m jupyter nbconvert --to notebook --execute notebooks/pit_top_holdings_review.ipynb --output pit_top_holdings_review.ipynb --ExecutePreprocessor.timeout=180)",
       "Bash(./.venv/bin/python build_macro_store.py)",
-      "Bash(./.venv/bin/python build_sector_rotation_report.py > /tmp/sector_report.log 2>&1)"
+      "Bash(./.venv/bin/python build_sector_rotation_report.py > /tmp/sector_report.log 2>&1)",
+      "Bash(python notebooks/_build_spy_drawdown_regime_book.py)",
+      "Bash(jupyter nbconvert *)",
+      "Bash(python backtest_drawdown_leverage.py)"
     ],
     "additionalDirectories": [
       "/tmp"

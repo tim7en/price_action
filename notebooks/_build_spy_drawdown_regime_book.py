@@ -189,7 +189,7 @@ def build_notebook() -> nbf.NotebookNode:
     cells.append(
         md(
             "**Interpretation.**\n\n"
-            "Higher VIX pace is usually the cleanest warning for a fast break. Credit pace often looks weaker for depth, but it can still matter for persistence and the character of the recovery. In other words, VIX pace tends to explain the *violence* of the move, while credit deterioration helps explain whether the backdrop is structurally sick."
+            "VIX pace is the cleanest signal in the sample. Its correlation with peak-to-trough speed is the highest of all pace factors (~0.57), and high-VIX-pace onsets recover within 60 days 40 percentage points less often than low-VIX-pace onsets. Credit pace correlates with speed too (~0.37), but is noticeably weaker on depth (~0.09 with max-drawdown abs) and shows **no edge** on the 60-day recovery rate (high and low buckets are identical). Treat VIX pace as the primary tell; credit pace is a confirmatory secondary."
         )
     )
 
@@ -246,11 +246,11 @@ def build_notebook() -> nbf.NotebookNode:
     cells.append(
         md(
             "**Interpretation.**\n\n"
-            "The online HMM separates a `Calm Trend` state from a `Fragile Grind` state more cleanly than the coarse strength split. In the current sample, `Calm Trend` episodes are materially shallower and recover inside 60 trading days much more reliably, while `Fragile Grind` captures the slower, more persistent unwind profile."
+            "The online HMM separates a `Calm Trend` state from a `Fragile Grind` state more cleanly than the coarse strength split. `Calm Trend` episodes average -6.4% max drawdown and recover within 60 trading days 100% of the time; `Fragile Grind` averages -16.7% and only 64% recover in 60 days. Note: per-day drawdown speeds are virtually identical between the two states (~0.0045 vs ~0.0048), so the difference is not pace but **duration** — Fragile Grind episodes average ~68 days peak-to-trough vs ~18 for Calm Trend."
         )
     )
 
-    cells.append(md("## 7. Do stretched sectors get hit differently?"))
+    cells.append(md("## 7. Do stretched sectors get hit differently?\n\n**Heads up on hypothesis 3.** The original framing — *rich sectors should crack harder during SPY stress* — is **rejected** by this sample. All 11 sectors show a *negative* correlation between pre-onset stretch and window drawdown ratio, meaning the richer the sector vs SPY at onset, the *less* it drops relative to SPY during the stress window. The momentum-leader effect dominates the crowded-trade effect inside these episodes."))
     cells.append(
         code(
             "display(sector_stretch.round(4))\n"
@@ -308,7 +308,7 @@ def build_notebook() -> nbf.NotebookNode:
 
     cells.append(
         md(
-            "Large-cap earnings growth and surprise strength look more helpful than small-cap strength in this sample. The cleaner signal is the **large-minus-small** spread: when large caps are holding up better into the peak, subsequent drawdowns are usually shallower and more likely to recover quickly."
+            "Large-cap earnings growth and surprise strength carry a (weak) negative correlation with subsequent max-drawdown abs (~-0.13 and -0.09 respectively). The **large-minus-small EPS spread** is the strongest of these signals on depth (~-0.18) and tilts positively on the 60-day recovery rate. But note the bucket-level evidence on recovery is thin: for large-minus-small EPS YoY, both high and low buckets recover 100% of the time, so the corr-based signal is not yet showing up in cleanly separated regime buckets. Treat this as a depth-tilt indicator, not a recovery-speed predictor."
         )
     )
 
@@ -372,14 +372,14 @@ def build_notebook() -> nbf.NotebookNode:
     cells.append(
         md(
             "## 10. What stands out\n\n"
-            "1. The strong-vs-weak question is not just about depth. Some strong-market drawdowns are *faster* because the market reprices quickly, even if the total damage is smaller.\n"
-            "2. VIX pace is usually the cleanest fingerprint for fast drawdown acceleration.\n"
-            "3. Credit pace and macro fragility help separate short-lived shocks from more persistent weak-market regimes.\n"
-            "4. The HMM layer meaningfully separates calm-trend peaks from fragile-grind peaks, even before the drawdown begins.\n"
-            "5. Large-cap earnings and large-minus-small earnings spreads add useful context for recovery odds.\n"
-            "6. Sector ratio analysis shows which groups act as leverage to SPY stress and which groups absorb it more defensively.\n"
-            "7. Stretch matters, but it is sector-specific. Some rich sectors are momentum leaders that keep relative strength; others are crowded and crack harder when the market breaks.\n"
-            "8. The overlay translation is not finished just because the labels look sensible. In the current walk-forward test, both the rules sleeve and the ML sleeve still trail SPY, so the next improvement has to come from better entry and exit logic rather than more storytelling."
+            "1. Depth and speed split cleanly: weak-market drawdowns are deeper (avg -20.6% vs -9.9% for strong), but strong-market drawdowns are actually *faster* per day (0.0057 vs 0.0031 abs-DD/day). Hypothesis test on speed direction is **not supported** in this sample.\n"
+            "2. VIX pace is the cleanest fingerprint: highest correlation with peak-to-trough speed (~0.57) and the strongest negative tilt to 60-day recovery odds (~-0.44).\n"
+            "3. Credit pace is a useful but weaker secondary: it correlates with speed (~0.37) but has effectively zero edge on the 60-day recovery rate at bucket level.\n"
+            "4. The HMM layer meaningfully separates `Calm Trend` peaks (avg -6.4%, 100% recovery) from `Fragile Grind` peaks (avg -16.7%, 64% recovery). The differentiation is mostly **duration**, not per-day speed.\n"
+            "5. Large-minus-small EPS spread shows a real (~-0.18) negative correlation with subsequent max-drawdown abs, but the bucket-level evidence on recovery is thin.\n"
+            "6. Defensive ratio behavior is consistent: utilities, staples, healthcare and real estate damp SPY stress with ratios well below 1.0 in both Strong and Weak regimes.\n"
+            "7. **Hypothesis 3 is rejected.** Pre-onset stretch is *negatively* correlated with sector window drawdown ratio in every one of the 11 sectors. Rich sectors at the peak behaved like momentum leaders, not crowded trades, through the stress window in this 24-episode sample.\n"
+            "8. The overlay sleeves still trail SPY: SPY 75.4% vs Rule overlay 63.1% vs ML overlay 58.6% on compounded return across 20 walk-forward windows. The regime classification adds structure but does not yet justify replacing SPY with a tilt basket."
         )
     )
 
