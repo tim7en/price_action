@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-12T08:38:40.689544+00:00",
+  "generated_at_utc": "2026-05-12T09:01:26.469955+00:00",
   "output_dir": "D:\\dev\\price_action\\outputs\\spy_drawdown_regime_research",
   "rows": 6607,
   "episode_count": 24,
@@ -9,7 +9,8 @@
   "hypotheses": [
     "Strong markets should have shallower and slower drawdowns than weak markets.",
     "Faster VIX and credit deterioration at onset should coincide with deeper drawdowns and slower recovery.",
-    "Sectors stretched rich versus SPY should suffer larger relative drawdowns during SPY stress windows."
+    "Sectors stretched rich versus SPY should suffer larger relative drawdowns during SPY stress windows.",
+    "Large-minus-small earnings strength should help separate faster recoveries from persistent drawdowns."
   ],
   "worst_sector_regime_ratios": [
     {

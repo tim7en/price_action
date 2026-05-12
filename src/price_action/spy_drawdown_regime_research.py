@@ -15,9 +15,11 @@ from .spy_regime_risk_management import _causal_zscore, build_risk_management_fr
 from .spy_vix_fear_greed_research import _safe_float, _signal_to_noise
 
 DEFAULT_OUTPUT_DIR = Path("outputs") / "spy_drawdown_regime_research"
+DEFAULT_FUNDAMENTALS_OUTPUT_DIR = Path("outputs") / "fundamentals_analysis"
 DEFAULT_DRAWNDOWN_THRESHOLD = -0.05
 DEFAULT_LOOKBACK_WINDOW = 252
 DEFAULT_MIN_PERIODS = 63
+SIZE_BUCKET_LABELS = ("SMALL_CAP", "MID_CAP", "LARGE_CAP")
 
 
 def parse_args() -> argparse.Namespace:
@@ -136,6 +138,157 @@ def _numeric_series(frame: pd.DataFrame, column: str) -> pd.Series:
     if column not in frame.columns:
         return pd.Series(np.nan, index=frame.index, dtype=float)
     return pd.to_numeric(frame[column], errors="coerce")
+
+
+def _weighted_average(values: pd.Series, weights: pd.Series) -> float | None:
+    pair = pd.DataFrame({"value": values, "weight": weights}).replace([np.inf, -np.inf], np.nan).dropna()
+    pair = pair.loc[pair["weight"] > 0.0]
+    if pair.empty:
+        numeric = pd.to_numeric(values, errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
+        return _safe_float(numeric.mean())
+    return float(np.average(pair["value"], weights=pair["weight"]))
+
+
+def _assign_size_buckets(frame: pd.DataFrame) -> pd.DataFrame:
+    bucketed = frame.copy()
+    bucketed["market_cap"] = pd.to_numeric(bucketed["market_cap"], errors="coerce")
+    valid = bucketed["market_cap"].gt(0.0) & bucketed["market_cap"].notna()
+    bucketed["size_bucket"] = pd.Series(pd.NA, index=bucketed.index, dtype="object")
+    if not valid.any():
+        return bucketed
+
+    percent_rank = bucketed.loc[valid, "market_cap"].rank(method="average", pct=True)
+    bucketed.loc[valid & percent_rank.le(1.0 / 3.0), "size_bucket"] = SIZE_BUCKET_LABELS[0]
+    bucketed.loc[valid & percent_rank.gt(1.0 / 3.0) & percent_rank.le(2.0 / 3.0), "size_bucket"] = (
+        SIZE_BUCKET_LABELS[1]
+    )
+    bucketed.loc[valid & percent_rank.gt(2.0 / 3.0), "size_bucket"] = SIZE_BUCKET_LABELS[2]
+    return bucketed
+
+
+def build_size_bucket_earnings_snapshots(
+    *,
+    root: Path,
+    event_dates: pd.DatetimeIndex,
+    fundamentals_output_dir: Path = DEFAULT_FUNDAMENTALS_OUTPUT_DIR,
+) -> pd.DataFrame:
+    if len(event_dates) == 0:
+        return pd.DataFrame()
+
+    resolved_output_dir = _resolve_output_path(root, fundamentals_output_dir)
+    quarterly_path = resolved_output_dir / "symbol_quarterly_earnings.csv"
+    if not quarterly_path.exists():
+        return pd.DataFrame()
+
+    quarterly = pd.read_csv(
+        quarterly_path,
+        usecols=[
+            "symbol",
+            "reported_date",
+            "surprise_pct",
+            "quarterly_eps_yoy_pct",
+            "beat_flag",
+            "reported_eps",
+            "estimated_eps",
+            "market_cap",
+            "eligible_for_sector_analysis",
+        ],
+        parse_dates=["reported_date"],
+        low_memory=False,
+    )
+    quarterly = quarterly.loc[quarterly["eligible_for_sector_analysis"].fillna(True)].copy()
+    quarterly = quarterly.dropna(subset=["symbol", "reported_date"])
+    if quarterly.empty:
+        return pd.DataFrame()
+
+    for column in ("surprise_pct", "quarterly_eps_yoy_pct", "reported_eps", "estimated_eps", "market_cap"):
+        quarterly[column] = pd.to_numeric(quarterly[column], errors="coerce")
+    quarterly["beat_flag"] = quarterly["beat_flag"].fillna(False).astype(bool)
+    quarterly = quarterly.sort_values(["reported_date", "symbol"]).reset_index(drop=True)
+
+    rows: list[dict[str, Any]] = []
+    for event_date in sorted(pd.DatetimeIndex(event_dates).dropna().unique()):
+        snapshot = quarterly.loc[quarterly["reported_date"] <= event_date].copy()
+        if snapshot.empty:
+            continue
+        snapshot = snapshot.groupby("symbol", as_index=False).tail(1)
+        snapshot = _assign_size_buckets(snapshot)
+        snapshot = snapshot.dropna(subset=["size_bucket"])
+        if snapshot.empty:
+            continue
+
+        total_market_cap = snapshot["market_cap"].sum(min_count=1)
+        for size_bucket, group in snapshot.groupby("size_bucket"):
+            rows.append(
+                {
+                    "snapshot_date": pd.Timestamp(event_date),
+                    "size_bucket": size_bucket,
+                    "symbol_count": int(group["symbol"].nunique()),
+                    "market_cap_share": _safe_float(group["market_cap"].sum(min_count=1) / total_market_cap)
+                    if pd.notna(total_market_cap) and total_market_cap > 0.0
+                    else None,
+                    "avg_surprise_pct": _safe_float(group["surprise_pct"].mean()),
+                    "cap_weighted_surprise_pct": _weighted_average(group["surprise_pct"], group["market_cap"]),
+                    "beat_rate": _safe_float(group["beat_flag"].mean()),
+                    "avg_reported_eps": _safe_float(group["reported_eps"].mean()),
+                    "avg_estimated_eps": _safe_float(group["estimated_eps"].mean()),
+                    "avg_quarterly_eps_yoy_pct": _safe_float(group["quarterly_eps_yoy_pct"].mean()),
+                    "cap_weighted_quarterly_eps_yoy_pct": _weighted_average(
+                        group["quarterly_eps_yoy_pct"], group["market_cap"]
+                    ),
+                }
+            )
+
+    if not rows:
+        return pd.DataFrame()
+
+    long_frame = pd.DataFrame(rows).sort_values(["snapshot_date", "size_bucket"]).reset_index(drop=True)
+    wide_rows: list[dict[str, Any]] = []
+    value_columns = [
+        "symbol_count",
+        "market_cap_share",
+        "avg_surprise_pct",
+        "cap_weighted_surprise_pct",
+        "beat_rate",
+        "avg_reported_eps",
+        "avg_estimated_eps",
+        "avg_quarterly_eps_yoy_pct",
+        "cap_weighted_quarterly_eps_yoy_pct",
+    ]
+    for snapshot_date, group in long_frame.groupby("snapshot_date"):
+        row: dict[str, Any] = {"snapshot_date": pd.Timestamp(snapshot_date)}
+        for record in group.itertuples(index=False):
+            prefix = str(record.size_bucket).lower()
+            for column in value_columns:
+                row[f"{prefix}_{column}"] = getattr(record, column)
+        wide_rows.append(row)
+    return pd.DataFrame(wide_rows).sort_values("snapshot_date").reset_index(drop=True)
+
+
+def attach_size_bucket_earnings_to_episodes(
+    episodes: pd.DataFrame,
+    *,
+    size_bucket_snapshots: pd.DataFrame,
+) -> pd.DataFrame:
+    if episodes.empty or size_bucket_snapshots.empty:
+        return episodes
+
+    peak_snapshots = size_bucket_snapshots.rename(
+        columns={
+            column: f"pre_drawdown_{column}"
+            for column in size_bucket_snapshots.columns
+            if column != "snapshot_date"
+        }
+    ).sort_values("snapshot_date")
+
+    merged = pd.merge_asof(
+        episodes.sort_values("peak_date"),
+        peak_snapshots,
+        left_on="peak_date",
+        right_on="snapshot_date",
+        direction="backward",
+    )
+    return merged.drop(columns=["snapshot_date"], errors="ignore").sort_values("onset_date").reset_index(drop=True)
 
 
 def build_drawdown_panel(
@@ -497,6 +650,81 @@ def build_pace_factor_summary(episodes: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values(["factor", "outcome"]).reset_index(drop=True)
 
 
+def build_size_bucket_effect_summary(episodes: pd.DataFrame) -> pd.DataFrame:
+    if episodes.empty:
+        return pd.DataFrame()
+
+    analysis_frame = episodes.copy()
+    if {
+        "pre_drawdown_large_cap_cap_weighted_surprise_pct",
+        "pre_drawdown_small_cap_cap_weighted_surprise_pct",
+    }.issubset(analysis_frame.columns):
+        analysis_frame["pre_drawdown_large_minus_small_surprise_pct"] = (
+            pd.to_numeric(analysis_frame["pre_drawdown_large_cap_cap_weighted_surprise_pct"], errors="coerce")
+            - pd.to_numeric(analysis_frame["pre_drawdown_small_cap_cap_weighted_surprise_pct"], errors="coerce")
+        )
+    if {
+        "pre_drawdown_large_cap_cap_weighted_quarterly_eps_yoy_pct",
+        "pre_drawdown_small_cap_cap_weighted_quarterly_eps_yoy_pct",
+    }.issubset(analysis_frame.columns):
+        analysis_frame["pre_drawdown_large_minus_small_eps_yoy_pct"] = (
+            pd.to_numeric(
+                analysis_frame["pre_drawdown_large_cap_cap_weighted_quarterly_eps_yoy_pct"],
+                errors="coerce",
+            )
+            - pd.to_numeric(
+                analysis_frame["pre_drawdown_small_cap_cap_weighted_quarterly_eps_yoy_pct"],
+                errors="coerce",
+            )
+        )
+
+    factor_columns = [
+        column
+        for column in [
+            "pre_drawdown_small_cap_cap_weighted_surprise_pct",
+            "pre_drawdown_mid_cap_cap_weighted_surprise_pct",
+            "pre_drawdown_large_cap_cap_weighted_surprise_pct",
+            "pre_drawdown_small_cap_cap_weighted_quarterly_eps_yoy_pct",
+            "pre_drawdown_mid_cap_cap_weighted_quarterly_eps_yoy_pct",
+            "pre_drawdown_large_cap_cap_weighted_quarterly_eps_yoy_pct",
+            "pre_drawdown_large_minus_small_surprise_pct",
+            "pre_drawdown_large_minus_small_eps_yoy_pct",
+        ]
+        if column in analysis_frame.columns
+    ]
+    outcome_columns = [
+        "max_drawdown_abs",
+        "drawdown_speed_from_peak_per_day",
+        "trough_to_20d_return",
+        "trough_to_60d_return",
+        "recovered_within_60d",
+    ]
+    rows: list[dict[str, Any]] = []
+    for factor_name in factor_columns:
+        pair = analysis_frame[[factor_name, *outcome_columns]].dropna(subset=[factor_name])
+        if pair.empty:
+            continue
+        upper_cut = float(pair[factor_name].quantile(0.80))
+        lower_cut = float(pair[factor_name].quantile(0.20))
+        high_bucket = pair.loc[pair[factor_name] >= upper_cut]
+        low_bucket = pair.loc[pair[factor_name] <= lower_cut]
+        for outcome_name in outcome_columns:
+            rows.append(
+                {
+                    "factor": factor_name,
+                    "outcome": outcome_name,
+                    "observations": int(pair[outcome_name].notna().sum()),
+                    "correlation": _safe_float(pair[factor_name].corr(pair[outcome_name])),
+                    "high_bucket_mean": _safe_float(high_bucket[outcome_name].mean()),
+                    "low_bucket_mean": _safe_float(low_bucket[outcome_name].mean()),
+                    "high_minus_low": _safe_float(high_bucket[outcome_name].mean() - low_bucket[outcome_name].mean())
+                    if not high_bucket.empty and not low_bucket.empty
+                    else None,
+                }
+            )
+    return pd.DataFrame(rows).sort_values(["factor", "outcome"]).reset_index(drop=True)
+
+
 def build_sector_ratio_panel(
     *,
     root: Path,
@@ -712,6 +940,15 @@ def build_spy_drawdown_regime_research(
     panel.reset_index().to_csv(resolved_output_dir / "drawdown_daily_panel.csv", index=False)
 
     episodes = build_spy_drawdown_episodes(panel, drawdown_threshold=drawdown_threshold)
+    size_bucket_snapshots = build_size_bucket_earnings_snapshots(
+        root=root,
+        event_dates=pd.DatetimeIndex(episodes["peak_date"]) if not episodes.empty else pd.DatetimeIndex([]),
+    )
+    size_bucket_snapshots.to_csv(resolved_output_dir / "size_bucket_earnings_snapshots.csv", index=False)
+    episodes = attach_size_bucket_earnings_to_episodes(
+        episodes,
+        size_bucket_snapshots=size_bucket_snapshots,
+    )
     episodes.to_csv(resolved_output_dir / "spy_drawdown_episodes.csv", index=False)
 
     strength_summary, combined_summary = build_drawdown_regime_summary(episodes)
@@ -723,6 +960,9 @@ def build_spy_drawdown_regime_research(
 
     pace_summary = build_pace_factor_summary(episodes)
     pace_summary.to_csv(resolved_output_dir / "pace_factor_summary.csv", index=False)
+
+    size_bucket_summary = build_size_bucket_effect_summary(episodes)
+    size_bucket_summary.to_csv(resolved_output_dir / "size_bucket_effect_summary.csv", index=False)
 
     sector_panel = build_sector_ratio_panel(
         root=root,
@@ -762,6 +1002,7 @@ def build_spy_drawdown_regime_research(
             "Strong markets should have shallower and slower drawdowns than weak markets.",
             "Faster VIX and credit deterioration at onset should coincide with deeper drawdowns and slower recovery.",
             "Sectors stretched rich versus SPY should suffer larger relative drawdowns during SPY stress windows.",
+            "Large-minus-small earnings strength should help separate faster recoveries from persistent drawdowns.",
         ],
         "worst_sector_regime_ratios": worst_sectors.to_dict(orient="records"),
         "best_sector_regime_ratios": strongest_sectors.to_dict(orient="records"),
