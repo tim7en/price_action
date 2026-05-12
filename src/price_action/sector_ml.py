@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import numpy as np
@@ -671,6 +672,8 @@ def _build_rotation_backtest_view(
                 "regime_label": regime_label,
                 "probability_selection": probability_labels,
                 "quality_selection": quality_labels,
+                "probability_weights": json.dumps(probability_weights, sort_keys=True),
+                "quality_weights": json.dumps(quality_weights, sort_keys=True),
                 "reserve_asset": reserve_asset_symbol or "Cash",
                 "reserve_sector": reserve_asset_symbol or "Cash",
                 "spy_drawdown_signal": spy_drawdown_signal,
@@ -1020,7 +1023,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         validation_predictions = predictions.loc[predictions["fold_label"].astype(str) != "holdout"].copy()
         holdout_predictions = predictions.loc[predictions["fold_label"].astype(str) == "holdout"].copy()
         validation_predictions_by_symbol[sector["symbol"]] = validation_predictions
-        oos_frame = predictions[
+        oos_frame = validation_predictions[
             [
                 "prob_elastic_net",
                 "prob_extra_trees",
@@ -1113,7 +1116,7 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
 
             if spec["key"] == "average_ensemble":
                 ensemble_all_scheduled, ensemble_all_summary = _evaluate_probability_column(
-                    predictions=predictions,
+                    predictions=validation_predictions,
                     probability_column=spec["probability_column"],
                     signal_threshold=float(config["signal_threshold"]),
                     label_horizon=int(config["label_horizon"]),
@@ -1277,9 +1280,9 @@ def build_sector_ml_view(project_root: str | Path | None = None) -> dict[str, An
         validation_quality_frame=validation_quality_frame,
         project_root=root,
         config=config,
-        scope_label="2006-2026 walk-forward history",
+        scope_label="2006-2024 walk-forward history",
         scope_kind="walkforward_history",
-        scope_note="This benchmark uses every walk-forward out-of-sample window from 2006 onward, including the 2008 financial crisis, the 2020 shock, and the 2022 rate-reset drawdown.",
+        scope_note="This benchmark uses pre-holdout walk-forward out-of-sample windows from 2006 onward, including the 2008 financial crisis, the 2020 shock, and the 2022 rate-reset drawdown.",
         quality_lookup_frame=quality_lookup_frame,
     )
     rebalance_rows: list[dict[str, Any]] = []

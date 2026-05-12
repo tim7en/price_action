@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-09-11T23:31:19.358549",
+  "symbol": "AIRO",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "AIRO",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedEPS": "0.3"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedDate": "2025-08-14",
+        "reportedEPS": "0.3",
+        "estimatedEPS": "-0.35",
+        "surprise": "0.65",
+        "surprisePercentage": "185.7143",
+        "reportTime": "post-market"
+      }
+    ]
+  }
+}

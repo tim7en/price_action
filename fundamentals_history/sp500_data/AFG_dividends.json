@@ -1,0 +1,934 @@
+{
+  "timestamp": "2025-09-11T23:22:20.020782",
+  "symbol": "AFG",
+  "data_type": "dividends",
+  "data": {
+    "symbol": "AFG",
+    "data": [
+      {
+        "ex_dividend_date": "2025-07-15",
+        "declaration_date": "2025-07-01",
+        "record_date": "2025-07-15",
+        "payment_date": "2025-07-25",
+        "amount": "0.8"
+      },
+      {
+        "ex_dividend_date": "2025-04-15",
+        "declaration_date": "2025-04-01",
+        "record_date": "2025-04-15",
+        "payment_date": "2025-04-25",
+        "amount": "0.8"
+      },
+      {
+        "ex_dividend_date": "2025-03-17",
+        "declaration_date": "2025-02-28",
+        "record_date": "2025-03-17",
+        "payment_date": "2025-03-28",
+        "amount": "2.0"
+      },
+      {
+        "ex_dividend_date": "2025-01-14",
+        "declaration_date": "2025-01-02",
+        "record_date": "2025-01-14",
+        "payment_date": "2025-01-24",
+        "amount": "0.8"
+      },
+      {
+        "ex_dividend_date": "2024-11-15",
+        "declaration_date": "2024-11-05",
+        "record_date": "2024-11-15",
+        "payment_date": "2024-11-26",
+        "amount": "4.0"
+      },
+      {
+        "ex_dividend_date": "2024-10-15",
+        "declaration_date": "2024-10-01",
+        "record_date": "2024-10-15",
+        "payment_date": "2024-10-25",
+        "amount": "0.8"
+      },
+      {
+        "ex_dividend_date": "2024-07-15",
+        "declaration_date": "2024-07-01",
+        "record_date": "2024-07-15",
+        "payment_date": "2024-07-25",
+        "amount": "0.71"
+      },
+      {
+        "ex_dividend_date": "2024-04-12",
+        "declaration_date": "2024-04-01",
+        "record_date": "2024-04-15",
+        "payment_date": "2024-04-25",
+        "amount": "0.71"
+      },
+      {
+        "ex_dividend_date": "2024-02-15",
+        "declaration_date": "2024-02-06",
+        "record_date": "2024-02-16",
+        "payment_date": "2024-02-28",
+        "amount": "2.5"
+      },
+      {
+        "ex_dividend_date": "2024-01-11",
+        "declaration_date": "2024-01-02",
+        "record_date": "2024-01-15",
+        "payment_date": "2024-01-25",
+        "amount": "0.71"
+      },
+      {
+        "ex_dividend_date": "2023-11-10",
+        "declaration_date": "2023-11-01",
+        "record_date": "2023-11-13",
+        "payment_date": "2023-11-22",
+        "amount": "1.5"
+      },
+      {
+        "ex_dividend_date": "2023-10-12",
+        "declaration_date": "2023-10-02",
+        "record_date": "2023-10-13",
+        "payment_date": "2023-10-25",
+        "amount": "0.71"
+      },
+      {
+        "ex_dividend_date": "2023-07-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.63"
+      },
+      {
+        "ex_dividend_date": "2023-04-13",
+        "declaration_date": "2023-04-03",
+        "record_date": "2023-04-14",
+        "payment_date": "2023-04-25",
+        "amount": "0.63"
+      },
+      {
+        "ex_dividend_date": "2023-02-14",
+        "declaration_date": "2023-02-01",
+        "record_date": "2023-02-15",
+        "payment_date": "2023-02-28",
+        "amount": "4.0"
+      },
+      {
+        "ex_dividend_date": "2023-01-12",
+        "declaration_date": "2023-01-03",
+        "record_date": "2023-01-13",
+        "payment_date": "2023-01-25",
+        "amount": "0.63"
+      },
+      {
+        "ex_dividend_date": "2022-11-14",
+        "declaration_date": "2022-11-02",
+        "record_date": "2022-11-15",
+        "payment_date": "2022-11-22",
+        "amount": "2.0"
+      },
+      {
+        "ex_dividend_date": "2022-10-13",
+        "declaration_date": "2022-10-03",
+        "record_date": "2022-10-14",
+        "payment_date": "2022-10-25",
+        "amount": "0.63"
+      },
+      {
+        "ex_dividend_date": "2022-07-14",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.56"
+      },
+      {
+        "ex_dividend_date": "2022-05-19",
+        "declaration_date": "2022-05-04",
+        "record_date": "2022-05-20",
+        "payment_date": "2022-05-27",
+        "amount": "8.0"
+      },
+      {
+        "ex_dividend_date": "2022-04-13",
+        "declaration_date": "2022-04-01",
+        "record_date": "2022-04-15",
+        "payment_date": "2022-04-25",
+        "amount": "0.56"
+      },
+      {
+        "ex_dividend_date": "2022-03-14",
+        "declaration_date": "2022-03-01",
+        "record_date": "2022-03-15",
+        "payment_date": "2022-03-22",
+        "amount": "2.0"
+      },
+      {
+        "ex_dividend_date": "2022-01-13",
+        "declaration_date": "2022-01-03",
+        "record_date": "2022-01-14",
+        "payment_date": "2022-01-25",
+        "amount": "0.56"
+      },
+      {
+        "ex_dividend_date": "2021-12-22",
+        "declaration_date": "2021-12-13",
+        "record_date": "2021-12-24",
+        "payment_date": "2021-12-30",
+        "amount": "2.0"
+      },
+      {
+        "ex_dividend_date": "2021-11-12",
+        "declaration_date": "2021-11-02",
+        "record_date": "2021-11-15",
+        "payment_date": "2021-11-22",
+        "amount": "4.0"
+      },
+      {
+        "ex_dividend_date": "2021-10-14",
+        "declaration_date": "2021-10-01",
+        "record_date": "2021-10-15",
+        "payment_date": "2021-10-25",
+        "amount": "0.56"
+      },
+      {
+        "ex_dividend_date": "2021-09-27",
+        "declaration_date": "2021-09-14",
+        "record_date": "2021-09-28",
+        "payment_date": "2021-10-05",
+        "amount": "4.0"
+      },
+      {
+        "ex_dividend_date": "2021-07-23",
+        "declaration_date": "2021-07-15",
+        "record_date": "2021-07-26",
+        "payment_date": "2021-08-02",
+        "amount": "2.0"
+      },
+      {
+        "ex_dividend_date": "2021-07-14",
+        "declaration_date": "2021-07-01",
+        "record_date": "2021-07-15",
+        "payment_date": "2021-07-26",
+        "amount": "0.5"
+      },
+      {
+        "ex_dividend_date": "2021-06-07",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "14.0"
+      },
+      {
+        "ex_dividend_date": "2021-04-14",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.5"
+      },
+      {
+        "ex_dividend_date": "2021-01-14",
+        "declaration_date": "2021-01-04",
+        "record_date": "2021-01-15",
+        "payment_date": "2021-01-25",
+        "amount": "0.5"
+      },
+      {
+        "ex_dividend_date": "2020-12-18",
+        "declaration_date": "2020-12-09",
+        "record_date": "2020-12-21",
+        "payment_date": "2020-12-29",
+        "amount": "2.0"
+      },
+      {
+        "ex_dividend_date": "2020-10-14",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.5"
+      },
+      {
+        "ex_dividend_date": "2020-07-14",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.45"
+      },
+      {
+        "ex_dividend_date": "2020-04-14",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.45"
+      },
+      {
+        "ex_dividend_date": "2020-01-14",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.45"
+      },
+      {
+        "ex_dividend_date": "2019-11-14",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "1.8"
+      },
+      {
+        "ex_dividend_date": "2019-10-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.45"
+      },
+      {
+        "ex_dividend_date": "2019-07-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.4"
+      },
+      {
+        "ex_dividend_date": "2019-05-14",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "1.5"
+      },
+      {
+        "ex_dividend_date": "2019-04-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.4"
+      },
+      {
+        "ex_dividend_date": "2019-01-14",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.4"
+      },
+      {
+        "ex_dividend_date": "2018-11-15",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "1.5"
+      },
+      {
+        "ex_dividend_date": "2018-10-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.4"
+      },
+      {
+        "ex_dividend_date": "2018-07-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.35"
+      },
+      {
+        "ex_dividend_date": "2018-05-14",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "1.5"
+      },
+      {
+        "ex_dividend_date": "2018-04-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.35"
+      },
+      {
+        "ex_dividend_date": "2018-01-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.35"
+      },
+      {
+        "ex_dividend_date": "2017-11-16",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "2.0"
+      },
+      {
+        "ex_dividend_date": "2017-10-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.35"
+      },
+      {
+        "ex_dividend_date": "2017-07-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.3125"
+      },
+      {
+        "ex_dividend_date": "2017-05-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "1.5"
+      },
+      {
+        "ex_dividend_date": "2017-04-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.3125"
+      },
+      {
+        "ex_dividend_date": "2017-01-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.3125"
+      },
+      {
+        "ex_dividend_date": "2016-11-21",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "1.0"
+      },
+      {
+        "ex_dividend_date": "2016-10-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.3125"
+      },
+      {
+        "ex_dividend_date": "2016-07-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.28"
+      },
+      {
+        "ex_dividend_date": "2016-04-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.28"
+      },
+      {
+        "ex_dividend_date": "2016-01-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.28"
+      },
+      {
+        "ex_dividend_date": "2015-12-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "1.0"
+      },
+      {
+        "ex_dividend_date": "2015-10-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.28"
+      },
+      {
+        "ex_dividend_date": "2015-07-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2015-04-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2015-01-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2014-12-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "1.0"
+      },
+      {
+        "ex_dividend_date": "2014-10-10",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2014-07-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.22"
+      },
+      {
+        "ex_dividend_date": "2014-04-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.22"
+      },
+      {
+        "ex_dividend_date": "2014-01-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.22"
+      },
+      {
+        "ex_dividend_date": "2013-12-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "1.0"
+      },
+      {
+        "ex_dividend_date": "2013-10-10",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.22"
+      },
+      {
+        "ex_dividend_date": "2013-07-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.195"
+      },
+      {
+        "ex_dividend_date": "2013-04-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.195"
+      },
+      {
+        "ex_dividend_date": "2013-01-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.195"
+      },
+      {
+        "ex_dividend_date": "2012-12-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2012-10-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.195"
+      },
+      {
+        "ex_dividend_date": "2012-07-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.175"
+      },
+      {
+        "ex_dividend_date": "2012-04-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.175"
+      },
+      {
+        "ex_dividend_date": "2012-01-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.175"
+      },
+      {
+        "ex_dividend_date": "2011-10-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.175"
+      },
+      {
+        "ex_dividend_date": "2011-07-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1625"
+      },
+      {
+        "ex_dividend_date": "2011-04-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1625"
+      },
+      {
+        "ex_dividend_date": "2011-01-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1625"
+      },
+      {
+        "ex_dividend_date": "2010-10-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1625"
+      },
+      {
+        "ex_dividend_date": "2010-07-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1375"
+      },
+      {
+        "ex_dividend_date": "2010-04-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1375"
+      },
+      {
+        "ex_dividend_date": "2010-01-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1375"
+      },
+      {
+        "ex_dividend_date": "2009-10-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.13"
+      },
+      {
+        "ex_dividend_date": "2009-07-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.13"
+      },
+      {
+        "ex_dividend_date": "2009-04-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.13"
+      },
+      {
+        "ex_dividend_date": "2009-01-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.13"
+      },
+      {
+        "ex_dividend_date": "2008-10-10",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2008-07-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2008-04-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2008-01-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2007-10-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1"
+      },
+      {
+        "ex_dividend_date": "2007-07-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1"
+      },
+      {
+        "ex_dividend_date": "2007-04-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1"
+      },
+      {
+        "ex_dividend_date": "2007-01-10",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1"
+      },
+      {
+        "ex_dividend_date": "2006-10-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1375"
+      },
+      {
+        "ex_dividend_date": "2006-07-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1375"
+      },
+      {
+        "ex_dividend_date": "2006-04-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1375"
+      },
+      {
+        "ex_dividend_date": "2006-01-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.1375"
+      },
+      {
+        "ex_dividend_date": "2005-10-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2005-07-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2005-04-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2005-01-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2004-10-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2004-07-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2004-04-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2004-01-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2003-10-10",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2003-07-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2003-04-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2003-01-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2002-10-10",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2002-07-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2002-04-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2002-01-16",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.125"
+      },
+      {
+        "ex_dividend_date": "2001-10-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2001-07-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2001-04-10",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2001-01-10",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2000-10-11",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2000-07-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2000-04-12",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "2000-01-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "1999-10-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "1999-07-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "1999-04-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      },
+      {
+        "ex_dividend_date": "1999-01-13",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.25"
+      }
+    ]
+  }
+}

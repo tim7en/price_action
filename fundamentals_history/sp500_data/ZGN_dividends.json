@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-09-11T22:09:18.057399",
+  "symbol": "ZGN",
+  "data_type": "dividends",
+  "data": {
+    "symbol": "ZGN",
+    "data": [
+      {
+        "ex_dividend_date": "2025-07-07",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.141"
+      },
+      {
+        "ex_dividend_date": "2024-07-05",
+        "declaration_date": "2024-05-21",
+        "record_date": "2024-07-05",
+        "payment_date": "2024-07-30",
+        "amount": "0.12"
+      },
+      {
+        "ex_dividend_date": "2023-07-05",
+        "declaration_date": "None",
+        "record_date": "None",
+        "payment_date": "None",
+        "amount": "0.109"
+      },
+      {
+        "ex_dividend_date": "2022-07-05",
+        "declaration_date": "2022-05-24",
+        "record_date": "2022-07-06",
+        "payment_date": "2022-07-28",
+        "amount": "0.09"
+      }
+    ]
+  }
+}

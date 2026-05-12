@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-09-11T21:47:30.435295",
+  "symbol": "AACI",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "AACI",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedEPS": "0.0281"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedDate": "2025-06-30",
+        "reportedEPS": "0.0281",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      }
+    ]
+  }
+}

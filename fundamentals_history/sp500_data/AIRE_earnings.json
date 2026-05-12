@@ -1,0 +1,87 @@
+{
+  "timestamp": "2025-09-11T23:30:42.840513",
+  "symbol": "AIRE",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "AIRE",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2025-07-31",
+        "reportedEPS": "-0.08"
+      },
+      {
+        "fiscalDateEnding": "2025-04-30",
+        "reportedEPS": "-0.19"
+      },
+      {
+        "fiscalDateEnding": "2024-04-30",
+        "reportedEPS": "-0.0656"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2025-07-31",
+        "reportedDate": "2025-08-14",
+        "reportedEPS": "-0.08",
+        "estimatedEPS": "-0.04",
+        "surprise": "-0.04",
+        "surprisePercentage": "-100",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2025-04-30",
+        "reportedDate": "2025-05-16",
+        "reportedEPS": "-0.06",
+        "estimatedEPS": "-0.04",
+        "surprise": "-0.02",
+        "surprisePercentage": "-50",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2025-01-31",
+        "reportedDate": "2025-04-18",
+        "reportedEPS": "-0.05",
+        "estimatedEPS": "-0.04",
+        "surprise": "-0.01",
+        "surprisePercentage": "-25",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-10-31",
+        "reportedDate": "2024-11-12",
+        "reportedEPS": "-0.05",
+        "estimatedEPS": "-0.03",
+        "surprise": "-0.02",
+        "surprisePercentage": "-66.6667",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-07-31",
+        "reportedDate": "2024-08-14",
+        "reportedEPS": "-0.03",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-04-30",
+        "reportedDate": "2024-06-30",
+        "reportedEPS": "-0.0334",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-01-31",
+        "reportedDate": "2024-04-19",
+        "reportedEPS": "-0.0322",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      }
+    ]
+  }
+}

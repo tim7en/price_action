@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-09-11T22:11:49.901883",
+  "symbol": "ZSPC",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "ZSPC",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedEPS": "-0.53"
+      },
+      {
+        "fiscalDateEnding": "2024-12-31",
+        "reportedEPS": "-0.145"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2025-06-30",
+        "reportedDate": "2025-08-14",
+        "reportedEPS": "-0.27",
+        "estimatedEPS": "0",
+        "surprise": "-0.27",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2025-03-31",
+        "reportedDate": "2025-05-14",
+        "reportedEPS": "-0.26",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-12-31",
+        "reportedDate": "2025-03-27",
+        "reportedEPS": "-0.145",
+        "estimatedEPS": "None",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      }
+    ]
+  }
+}

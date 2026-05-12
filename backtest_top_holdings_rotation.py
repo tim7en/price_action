@@ -306,13 +306,14 @@ def _latest_known_sector_holdings(
 
 def _prepare_signal_frame(scope: str, config: dict[str, Any]) -> pd.DataFrame:
     oos = _read_csv_output(REPORT_DIR / "sector_ml_oos_signal_frame.csv", parse_dates=["date"])
+    validation_oos = oos.loc[oos["fold_label"].astype(str) != "holdout"].copy()
     validation_predictions_by_symbol = {
         symbol: group.set_index("date").sort_index()
-        for symbol, group in oos.loc[oos["fold_label"].astype(str) != "holdout"].groupby("symbol")
+        for symbol, group in validation_oos.groupby("symbol")
     }
     quality_lookup = _build_point_in_time_quality(
         validation_predictions_by_symbol=validation_predictions_by_symbol,
-        signal_frame=oos,
+        signal_frame=validation_oos,
         config=config,
     )
 
@@ -320,7 +321,7 @@ def _prepare_signal_frame(scope: str, config: dict[str, Any]) -> pd.DataFrame:
         signal_frame = _read_csv_output(REPORT_DIR / "sector_ml_holdout_signal_frame.csv", parse_dates=["date"])
     elif scope == "history":
         historical_start = pd.Timestamp(str(config["historical_benchmark_start"]))
-        signal_frame = oos.loc[oos["date"] >= historical_start].copy()
+        signal_frame = validation_oos.loc[validation_oos["date"] >= historical_start].copy()
     else:
         raise ValueError(f"Unknown scope: {scope}")
 
@@ -357,6 +358,25 @@ def _sector_weights_for_signal(signal_frame: pd.DataFrame, signal_date: pd.Times
         top_n=int(config["top_n"]),
     )
     return weights
+
+
+def _parse_period_weights(raw_value: Any) -> dict[str, float]:
+    if raw_value is None:
+        return {}
+    if isinstance(raw_value, dict):
+        payload = raw_value
+    else:
+        if pd.isna(raw_value):
+            return {}
+        text = str(raw_value).strip()
+        if not text or text == "{}":
+            return {}
+        payload = json.loads(text)
+    return {
+        str(symbol): float(weight)
+        for symbol, weight in payload.items()
+        if pd.notna(weight) and float(weight) > 0.0
+    }
 
 
 def _constituent_weights(
@@ -573,12 +593,16 @@ def _run_scope(
         "sector_ml_holdout_period_log.csv" if scope == "holdout" else "sector_ml_history_period_log.csv"
     )
     period_log = pd.read_csv(period_path, parse_dates=["signal_date", "entry_date", "exit_date"])
+    if "quality_weights" not in period_log.columns:
+        raise ValueError(
+            f"{period_path} does not contain persisted quality_weights. "
+            "Regenerate the sector rotation report before running the top-5 holdings backtest."
+        )
     if mode == "regime_change":
         period_log = _build_regime_change_periods(period_log)
     elif mode != "ml_5bar":
         raise ValueError(f"Unknown mode: {mode}")
 
-    signal_frame = _prepare_signal_frame(scope=scope, config=config)
     cost_rate = float(config["cost_bps"]) / 10_000.0
 
     previous_weights: dict[str, float] = {}
@@ -594,7 +618,7 @@ def _run_scope(
         if entry_date not in price_panel.index or exit_date not in price_panel.index or exit_date <= entry_date:
             continue
 
-        sector_weights = _sector_weights_for_signal(signal_frame, signal_date, config=config)
+        sector_weights = _parse_period_weights(source_row.quality_weights)
         target_weights, sectors_used, missing_top_holdings = _constituent_weights(
             sector_weights=sector_weights,
             holdings=holdings,

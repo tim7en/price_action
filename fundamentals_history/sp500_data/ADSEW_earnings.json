@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-09-11T23:17:49.061697",
+  "symbol": "ADSEW",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "ADSEW",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2021-03-31",
+        "reportedEPS": "-95.8161"
+      },
+      {
+        "fiscalDateEnding": "2020-12-31",
+        "reportedEPS": "-49.8572"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2021-03-31",
+        "reportedDate": "2021-06-30",
+        "reportedEPS": "-95.8161",
+        "estimatedEPS": "0",
+        "surprise": "-95.8161",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2020-12-31",
+        "reportedDate": "2021-03-31",
+        "reportedEPS": "-94.7153",
+        "estimatedEPS": "0",
+        "surprise": "-94.7153",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2020-09-30",
+        "reportedDate": "2020-12-31",
+        "reportedEPS": "44.8581",
+        "estimatedEPS": "0",
+        "surprise": "44.8581",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      }
+    ]
+  }
+}

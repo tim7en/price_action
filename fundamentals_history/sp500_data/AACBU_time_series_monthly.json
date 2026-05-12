@@ -1,0 +1,78 @@
+{
+  "timestamp": "2025-09-11T21:20:31.527319",
+  "symbol": "AACBU",
+  "data_type": "time_series_monthly",
+  "data": {
+    "Meta Data": {
+      "1. Information": "Monthly Adjusted Prices and Volumes",
+      "2. Symbol": "AACBU",
+      "3. Last Refreshed": "2025-09-10",
+      "4. Time Zone": "US/Eastern"
+    },
+    "Monthly Adjusted Time Series": {
+      "2025-09-10": {
+        "1. open": "10.4000",
+        "2. high": "10.5000",
+        "3. low": "10.2700",
+        "4. close": "10.3000",
+        "5. adjusted close": "10.3000",
+        "6. volume": "1652",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-08-29": {
+        "1. open": "10.3000",
+        "2. high": "10.5000",
+        "3. low": "10.2900",
+        "4. close": "10.3100",
+        "5. adjusted close": "10.3100",
+        "6. volume": "2779",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-07-31": {
+        "1. open": "10.5000",
+        "2. high": "11.1700",
+        "3. low": "10.2900",
+        "4. close": "10.3000",
+        "5. adjusted close": "10.3000",
+        "6. volume": "7235",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-06-30": {
+        "1. open": "10.5000",
+        "2. high": "11.0000",
+        "3. low": "10.2700",
+        "4. close": "10.5000",
+        "5. adjusted close": "10.5000",
+        "6. volume": "109085",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-05-30": {
+        "1. open": "10.1300",
+        "2. high": "11.3500",
+        "3. low": "10.1300",
+        "4. close": "10.2800",
+        "5. adjusted close": "10.2800",
+        "6. volume": "160284",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-04-30": {
+        "1. open": "10.0901",
+        "2. high": "10.1671",
+        "3. low": "10.0600",
+        "4. close": "10.1300",
+        "5. adjusted close": "10.1300",
+        "6. volume": "43901",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-03-31": {
+        "1. open": "10.0300",
+        "2. high": "10.1000",
+        "3. low": "10.0200",
+        "4. close": "10.0700",
+        "5. adjusted close": "10.0700",
+        "6. volume": "871280",
+        "7. dividend amount": "0.0000"
+      }
+    }
+  }
+}

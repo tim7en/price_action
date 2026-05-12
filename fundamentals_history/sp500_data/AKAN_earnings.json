@@ -1,0 +1,56 @@
+{
+  "timestamp": "2025-09-11T23:33:01.485451",
+  "symbol": "AKAN",
+  "data_type": "earnings",
+  "data": {
+    "symbol": "AKAN",
+    "annualEarnings": [
+      {
+        "fiscalDateEnding": "2025-03-31",
+        "reportedEPS": "-7.24"
+      },
+      {
+        "fiscalDateEnding": "2021-12-31",
+        "reportedEPS": "0"
+      }
+    ],
+    "quarterlyEarnings": [
+      {
+        "fiscalDateEnding": "2025-03-31",
+        "reportedDate": "2025-04-30",
+        "reportedEPS": "-2.03",
+        "estimatedEPS": "0",
+        "surprise": "-2.03",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2024-09-30",
+        "reportedDate": "2024-10-30",
+        "reportedEPS": "-4.71",
+        "estimatedEPS": "0",
+        "surprise": "-4.71",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2022-03-31",
+        "reportedDate": "2022-05-02",
+        "reportedEPS": "-0.5",
+        "estimatedEPS": "0",
+        "surprise": "-0.5",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      },
+      {
+        "fiscalDateEnding": "2021-12-31",
+        "reportedDate": "2022-03-16",
+        "reportedEPS": "0",
+        "estimatedEPS": "0",
+        "surprise": "0",
+        "surprisePercentage": "None",
+        "reportTime": "pre-market"
+      }
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "timestamp": "2025-09-11T21:20:24.299855",
+  "symbol": "AACBR",
+  "data_type": "time_series_monthly",
+  "data": {
+    "Meta Data": {
+      "1. Information": "Monthly Adjusted Prices and Volumes",
+      "2. Symbol": "AACBR",
+      "3. Last Refreshed": "2025-09-10",
+      "4. Time Zone": "US/Eastern"
+    },
+    "Monthly Adjusted Time Series": {
+      "2025-09-10": {
+        "1. open": "0.2200",
+        "2. high": "0.2200",
+        "3. low": "0.1999",
+        "4. close": "0.2200",
+        "5. adjusted close": "0.2200",
+        "6. volume": "89961",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-08-29": {
+        "1. open": "0.2206",
+        "2. high": "0.2373",
+        "3. low": "0.2000",
+        "4. close": "0.2300",
+        "5. adjusted close": "0.2300",
+        "6. volume": "8659",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-07-31": {
+        "1. open": "0.2232",
+        "2. high": "0.2800",
+        "3. low": "0.1511",
+        "4. close": "0.2206",
+        "5. adjusted close": "0.2206",
+        "6. volume": "53536",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-06-30": {
+        "1. open": "0.2159",
+        "2. high": "0.2800",
+        "3. low": "0.2100",
+        "4. close": "0.2400",
+        "5. adjusted close": "0.2400",
+        "6. volume": "263706",
+        "7. dividend amount": "0.0000"
+      },
+      "2025-05-30": {
+        "1. open": "0.2200",
+        "2. high": "0.2400",
+        "3. low": "0.2000",
+        "4. close": "0.2159",
+        "5. adjusted close": "0.2159",
+        "6. volume": "482576",
+        "7. dividend amount": "0.0000"
+      }
+    }
+  }
+}
