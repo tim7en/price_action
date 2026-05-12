@@ -1,0 +1,33 @@
+target_key,target_label,scope,model_label,sample_count,positive_rate,roc_auc,brier,precision,recall
+macro_regime_change_next_window,Any Regime Change Within Next 2Q,validation,Elastic Net,64,0.6875,0.46022727272727276,0.34928779736720106,0.65,0.5909090909090909
+macro_regime_change_next_window,Any Regime Change Within Next 2Q,validation,Extra Trees,64,0.6875,0.30227272727272725,0.2517071421917572,0.6274509803921569,0.7272727272727273
+macro_regime_change_next_window,Any Regime Change Within Next 2Q,validation,LightGBM / HistGB,64,0.6875,0.4727272727272727,0.2499999998796411,0.65625,0.4772727272727273
+macro_regime_change_next_window,Any Regime Change Within Next 2Q,validation,Average Ensemble,64,0.6875,0.44886363636363635,0.256867497443352,0.65,0.5909090909090909
+macro_regime_change_next_window,Any Regime Change Within Next 2Q,holdout,Elastic Net,17,0.47058823529411764,0.5972222222222222,0.32917244030385717,0.4444444444444444,0.5
+macro_regime_change_next_window,Any Regime Change Within Next 2Q,holdout,Extra Trees,17,0.47058823529411764,0.5416666666666666,0.2504442430988718,0.42857142857142855,0.375
+macro_regime_change_next_window,Any Regime Change Within Next 2Q,holdout,LightGBM / HistGB,17,0.47058823529411764,0.5,0.24999999949912066,0.0,0.0
+macro_regime_change_next_window,Any Regime Change Within Next 2Q,holdout,Average Ensemble,17,0.47058823529411764,0.5972222222222222,0.2528647749981325,0.5,0.625
+macro_shift_to_benign_next_window,Shift To Benign Regime Within Next 2Q,validation,Elastic Net,64,0.46875,0.48431372549019613,0.3738692516271116,0.3939393939393939,0.43333333333333335
+macro_shift_to_benign_next_window,Shift To Benign Regime Within Next 2Q,validation,Extra Trees,64,0.46875,0.5769607843137254,0.24886248463350324,0.5,0.3333333333333333
+macro_shift_to_benign_next_window,Shift To Benign Regime Within Next 2Q,validation,LightGBM / HistGB,64,0.46875,0.4137254901960784,0.25000000043491877,0.45,0.6
+macro_shift_to_benign_next_window,Shift To Benign Regime Within Next 2Q,validation,Average Ensemble,64,0.46875,0.488235294117647,0.2664907883578683,0.3939393939393939,0.43333333333333335
+macro_shift_to_benign_next_window,Shift To Benign Regime Within Next 2Q,holdout,Elastic Net,17,0.5294117647058824,0.5,0.369212546045295,0.6666666666666666,0.4444444444444444
+macro_shift_to_benign_next_window,Shift To Benign Regime Within Next 2Q,holdout,Extra Trees,17,0.5294117647058824,0.4305555555555556,0.2508312573189416,0.5,0.3333333333333333
+macro_shift_to_benign_next_window,Shift To Benign Regime Within Next 2Q,holdout,LightGBM / HistGB,17,0.5294117647058824,0.5,0.2500000004173995,0.0,0.0
+macro_shift_to_benign_next_window,Shift To Benign Regime Within Next 2Q,holdout,Average Ensemble,17,0.5294117647058824,0.5,0.2663360013830738,0.6666666666666666,0.4444444444444444
+macro_improves_next_window,Macro Balance Improves > 0.5 Within Next 2Q,validation,Elastic Net,64,0.1875,0.5817307692307693,0.2604019000478468,0.25925925925925924,0.5833333333333334
+macro_improves_next_window,Macro Balance Improves > 0.5 Within Next 2Q,validation,Extra Trees,64,0.1875,0.5753205128205129,0.24805274314962822,0.1891891891891892,0.5833333333333334
+macro_improves_next_window,Macro Balance Improves > 0.5 Within Next 2Q,validation,LightGBM / HistGB,64,0.1875,0.3333333333333333,0.25000000383658405,0.15625,0.4166666666666667
+macro_improves_next_window,Macro Balance Improves > 0.5 Within Next 2Q,validation,Average Ensemble,64,0.1875,0.5817307692307693,0.23198518306813135,0.25925925925925924,0.5833333333333334
+macro_improves_next_window,Macro Balance Improves > 0.5 Within Next 2Q,holdout,Elastic Net,17,0.11764705882352941,0.7,0.31331304219975514,0.2222222222222222,1.0
+macro_improves_next_window,Macro Balance Improves > 0.5 Within Next 2Q,holdout,Extra Trees,17,0.11764705882352941,0.5666666666666667,0.24263623545718432,0.0,0.0
+macro_improves_next_window,Macro Balance Improves > 0.5 Within Next 2Q,holdout,LightGBM / HistGB,17,0.11764705882352941,0.5,0.2500000025322235,0.11764705882352941,1.0
+macro_improves_next_window,Macro Balance Improves > 0.5 Within Next 2Q,holdout,Average Ensemble,17,0.11764705882352941,0.7,0.25182864357489104,0.2222222222222222,1.0
+current_regime_is_benign,Current Regime Is Benign,validation,Elastic Net,64,0.3125,0.5681818181818182,0.2894985188676108,0.38461538461538464,0.5
+current_regime_is_benign,Current Regime Is Benign,validation,Extra Trees,64,0.3125,0.6761363636363636,0.2471667261078655,0.4,0.8
+current_regime_is_benign,Current Regime Is Benign,validation,LightGBM / HistGB,64,0.3125,0.5363636363636364,0.24999999917733945,0.3125,0.5
+current_regime_is_benign,Current Regime Is Benign,validation,Average Ensemble,64,0.3125,0.5761363636363637,0.23915475990765958,0.38461538461538464,0.5
+current_regime_is_benign,Current Regime Is Benign,holdout,Elastic Net,18,0.3888888888888889,0.7662337662337663,0.22041545574446939,0.6666666666666666,0.8571428571428571
+current_regime_is_benign,Current Regime Is Benign,holdout,Extra Trees,18,0.3888888888888889,0.5974025974025975,0.2481229116759949,0.5,0.7142857142857143
+current_regime_is_benign,Current Regime Is Benign,holdout,LightGBM / HistGB,18,0.3888888888888889,0.5,0.2499999991590174,0.0,0.0
+current_regime_is_benign,Current Regime Is Benign,holdout,Average Ensemble,18,0.3888888888888889,0.7662337662337663,0.20664693256965483,0.6666666666666666,0.8571428571428571

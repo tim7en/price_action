@@ -1,0 +1,55 @@
+direction,source_metric,target_metric,relationship_label,lead_quarters,observation_count,correlation,abs_correlation
+macro_to_earnings,macro_balance_score,median_eps_growth,Macro Balance vs Median EPS Growth,-4,77,-0.20340329354942815,0.20340329354942815
+macro_to_earnings,macro_balance_score,median_eps_growth,Macro Balance vs Median EPS Growth,-3,78,-0.08058844676094093,0.08058844676094093
+macro_to_earnings,macro_balance_score,median_eps_growth,Macro Balance vs Median EPS Growth,-2,78,0.054727228421039616,0.054727228421039616
+macro_to_earnings,macro_balance_score,median_eps_growth,Macro Balance vs Median EPS Growth,-1,78,0.33420818567975324,0.33420818567975324
+macro_to_earnings,macro_balance_score,median_eps_growth,Macro Balance vs Median EPS Growth,0,78,0.5290304143370052,0.5290304143370052
+macro_to_earnings,macro_balance_score,median_eps_growth,Macro Balance vs Median EPS Growth,1,77,0.5109747077219543,0.5109747077219543
+macro_to_earnings,macro_balance_score,median_eps_growth,Macro Balance vs Median EPS Growth,2,76,0.37853973807075575,0.37853973807075575
+macro_to_earnings,macro_balance_score,median_eps_growth,Macro Balance vs Median EPS Growth,3,75,0.0475522917155013,0.0475522917155013
+macro_to_earnings,macro_balance_score,median_eps_growth,Macro Balance vs Median EPS Growth,4,74,-0.27001076722181255,0.27001076722181255
+macro_to_earnings,macro_balance_score,negative_eps_growth_share,Macro Balance vs Negative EPS Share,-4,77,0.16367904403925831,0.16367904403925831
+macro_to_earnings,macro_balance_score,negative_eps_growth_share,Macro Balance vs Negative EPS Share,-3,78,0.057714443994175864,0.057714443994175864
+macro_to_earnings,macro_balance_score,negative_eps_growth_share,Macro Balance vs Negative EPS Share,-2,78,-0.007353629300937877,0.007353629300937877
+macro_to_earnings,macro_balance_score,negative_eps_growth_share,Macro Balance vs Negative EPS Share,-1,78,-0.3642232136403669,0.3642232136403669
+macro_to_earnings,macro_balance_score,negative_eps_growth_share,Macro Balance vs Negative EPS Share,0,78,-0.5775789226912669,0.5775789226912669
+macro_to_earnings,macro_balance_score,negative_eps_growth_share,Macro Balance vs Negative EPS Share,1,77,-0.6077337877809562,0.6077337877809562
+macro_to_earnings,macro_balance_score,negative_eps_growth_share,Macro Balance vs Negative EPS Share,2,76,-0.4935553851787015,0.4935553851787015
+macro_to_earnings,macro_balance_score,negative_eps_growth_share,Macro Balance vs Negative EPS Share,3,75,-0.2716335003202989,0.2716335003202989
+macro_to_earnings,macro_balance_score,negative_eps_growth_share,Macro Balance vs Negative EPS Share,4,74,0.006519525643296403,0.006519525643296403
+earnings_to_macro,median_eps_growth,macro_balance_score_change_1q,Median EPS Growth vs Macro Balance Change,-4,73,0.2031863390350524,0.2031863390350524
+earnings_to_macro,median_eps_growth,macro_balance_score_change_1q,Median EPS Growth vs Macro Balance Change,-3,74,0.405023156387132,0.405023156387132
+earnings_to_macro,median_eps_growth,macro_balance_score_change_1q,Median EPS Growth vs Macro Balance Change,-2,75,0.42337921607087053,0.42337921607087053
+earnings_to_macro,median_eps_growth,macro_balance_score_change_1q,Median EPS Growth vs Macro Balance Change,-1,76,0.16749654315008605,0.16749654315008605
+earnings_to_macro,median_eps_growth,macro_balance_score_change_1q,Median EPS Growth vs Macro Balance Change,0,77,0.02254929246552957,0.02254929246552957
+earnings_to_macro,median_eps_growth,macro_balance_score_change_1q,Median EPS Growth vs Macro Balance Change,1,78,-0.24818289170316513,0.24818289170316513
+earnings_to_macro,median_eps_growth,macro_balance_score_change_1q,Median EPS Growth vs Macro Balance Change,2,78,-0.3558144044651087,0.3558144044651087
+earnings_to_macro,median_eps_growth,macro_balance_score_change_1q,Median EPS Growth vs Macro Balance Change,3,78,-0.17227249540786405,0.17227249540786405
+earnings_to_macro,median_eps_growth,macro_balance_score_change_1q,Median EPS Growth vs Macro Balance Change,4,77,-0.1522615692018244,0.1522615692018244
+earnings_to_macro,median_surprise,macro_balance_score_change_1q,Median Surprise vs Macro Balance Change,-4,73,-0.055891104164726466,0.055891104164726466
+earnings_to_macro,median_surprise,macro_balance_score_change_1q,Median Surprise vs Macro Balance Change,-3,74,-0.06595370014263781,0.06595370014263781
+earnings_to_macro,median_surprise,macro_balance_score_change_1q,Median Surprise vs Macro Balance Change,-2,75,0.2124306138788949,0.2124306138788949
+earnings_to_macro,median_surprise,macro_balance_score_change_1q,Median Surprise vs Macro Balance Change,-1,76,0.14116745969162336,0.14116745969162336
+earnings_to_macro,median_surprise,macro_balance_score_change_1q,Median Surprise vs Macro Balance Change,0,77,0.2596208890771262,0.2596208890771262
+earnings_to_macro,median_surprise,macro_balance_score_change_1q,Median Surprise vs Macro Balance Change,1,78,0.3312793013451549,0.3312793013451549
+earnings_to_macro,median_surprise,macro_balance_score_change_1q,Median Surprise vs Macro Balance Change,2,78,-0.14671192344001802,0.14671192344001802
+earnings_to_macro,median_surprise,macro_balance_score_change_1q,Median Surprise vs Macro Balance Change,3,78,-0.09049297423611319,0.09049297423611319
+earnings_to_macro,median_surprise,macro_balance_score_change_1q,Median Surprise vs Macro Balance Change,4,77,-0.13222378172406993,0.13222378172406993
+earnings_to_macro,negative_eps_growth_share,macro_balance_score_change_1q,Negative EPS Share vs Macro Balance Change,-4,73,-0.20270972940805204,0.20270972940805204
+earnings_to_macro,negative_eps_growth_share,macro_balance_score_change_1q,Negative EPS Share vs Macro Balance Change,-3,74,-0.35201834334888854,0.35201834334888854
+earnings_to_macro,negative_eps_growth_share,macro_balance_score_change_1q,Negative EPS Share vs Macro Balance Change,-2,75,-0.28137599077208697,0.28137599077208697
+earnings_to_macro,negative_eps_growth_share,macro_balance_score_change_1q,Negative EPS Share vs Macro Balance Change,-1,76,-0.14442789984359503,0.14442789984359503
+earnings_to_macro,negative_eps_growth_share,macro_balance_score_change_1q,Negative EPS Share vs Macro Balance Change,0,77,0.03705567548972776,0.03705567548972776
+earnings_to_macro,negative_eps_growth_share,macro_balance_score_change_1q,Negative EPS Share vs Macro Balance Change,1,78,0.2717921616793324,0.2717921616793324
+earnings_to_macro,negative_eps_growth_share,macro_balance_score_change_1q,Negative EPS Share vs Macro Balance Change,2,78,0.4543197895044874,0.4543197895044874
+earnings_to_macro,negative_eps_growth_share,macro_balance_score_change_1q,Negative EPS Share vs Macro Balance Change,3,78,0.08271596383080315,0.08271596383080315
+earnings_to_macro,negative_eps_growth_share,macro_balance_score_change_1q,Negative EPS Share vs Macro Balance Change,4,77,0.13915778379830068,0.13915778379830068
+macro_to_earnings,stress_axis,median_eps_growth,Stress Axis vs Median EPS Growth,-4,77,0.081344912824039,0.081344912824039
+macro_to_earnings,stress_axis,median_eps_growth,Stress Axis vs Median EPS Growth,-3,78,-0.028576455410095535,0.028576455410095535
+macro_to_earnings,stress_axis,median_eps_growth,Stress Axis vs Median EPS Growth,-2,78,-0.12425514401133857,0.12425514401133857
+macro_to_earnings,stress_axis,median_eps_growth,Stress Axis vs Median EPS Growth,-1,78,-0.27573912401886314,0.27573912401886314
+macro_to_earnings,stress_axis,median_eps_growth,Stress Axis vs Median EPS Growth,0,78,-0.49455869940469555,0.49455869940469555
+macro_to_earnings,stress_axis,median_eps_growth,Stress Axis vs Median EPS Growth,1,77,-0.5125320397075155,0.5125320397075155
+macro_to_earnings,stress_axis,median_eps_growth,Stress Axis vs Median EPS Growth,2,76,-0.38576278596306607,0.38576278596306607
+macro_to_earnings,stress_axis,median_eps_growth,Stress Axis vs Median EPS Growth,3,75,-0.1766275161928562,0.1766275161928562
+macro_to_earnings,stress_axis,median_eps_growth,Stress Axis vs Median EPS Growth,4,74,0.1290726096432224,0.1290726096432224
