@@ -1,0 +1,117 @@
+{
+  "generated_at_utc": "2026-05-12T07:59:29.486435+00:00",
+  "output_dir": "D:\\dev\\price_action\\outputs\\spy_vix_fear_greed_research",
+  "rows": 6607,
+  "first_signal_date": "2000-01-31",
+  "last_signal_date": "2026-05-07",
+  "lookback_window": 252,
+  "min_periods": 63,
+  "bucket_count": 5,
+  "hold_days": 5,
+  "horizons": [
+    1,
+    5,
+    10,
+    20
+  ],
+  "implementation_note": "Forward returns enter on the next bar after the signal date, so the study avoids same-close lookahead when SPY and VIX are used to build the signal.",
+  "state_counts": {
+    "Fear": 1130,
+    "Greed": 1822,
+    "Neutral": 1830,
+    "Panic": 202
+  },
+  "best_state_by_signal_to_noise": [
+    {
+      "horizon_days": 1,
+      "state": "Panic",
+      "mean_return": 0.0025229817068096764,
+      "signal_to_noise": 0.0731000016904994
+    },
+    {
+      "horizon_days": 5,
+      "state": "Greed",
+      "mean_return": 0.0019175599460760993,
+      "signal_to_noise": 0.1297021169311568
+    },
+    {
+      "horizon_days": 10,
+      "state": "Greed",
+      "mean_return": 0.004520891369246159,
+      "signal_to_noise": 0.22246965807733057
+    },
+    {
+      "horizon_days": 20,
+      "state": "Greed",
+      "mean_return": 0.008290337819500466,
+      "signal_to_noise": 0.2683450705626736
+    }
+  ],
+  "strategy_summary": [
+    {
+      "strategy_name": "fear_panic_avoidance",
+      "hold_days": 5,
+      "periods": 1321,
+      "active_periods": 728,
+      "total_return": 2.2520928963924582,
+      "spy_total_return": 7.262657102205372,
+      "avg_return": 0.0009932788963578798,
+      "avg_excess_return": -0.0009358804202120463,
+      "hit_rate_vs_spy": 0.19000757002271007,
+      "signal_to_noise": 0.07054467622872557,
+      "max_drawdown": -0.3381123778017616
+    },
+    {
+      "strategy_name": "greed_follow",
+      "hold_days": 5,
+      "periods": 1321,
+      "active_periods": 359,
+      "total_return": 0.7756814331357258,
+      "spy_total_return": 7.262657102205372,
+      "avg_return": 0.00046865714477421484,
+      "avg_excess_return": -0.0014605021717957114,
+      "hit_rate_vs_spy": 0.2906888720666162,
+      "signal_to_noise": 0.05694552648196173,
+      "max_drawdown": -0.1397406009406097
+    },
+    {
+      "strategy_name": "high_conviction_risk_off",
+      "hold_days": 5,
+      "periods": 1321,
+      "active_periods": 198,
+      "total_return": -0.6496147145474614,
+      "spy_total_return": 7.262657102205372,
+      "avg_return": -0.0006536646859928875,
+      "avg_excess_return": -0.0025828240025628137,
+      "hit_rate_vs_spy": 0.40423921271763813,
+      "signal_to_noise": -0.039006950889411474,
+      "max_drawdown": -0.6702908227705144
+    },
+    {
+      "strategy_name": "high_conviction_risk_on",
+      "hold_days": 5,
+      "periods": 1321,
+      "active_periods": 443,
+      "total_return": 0.7872511474762174,
+      "spy_total_return": 7.262657102205372,
+      "avg_return": 0.00048566379005868764,
+      "avg_excess_return": -0.0014434955265112384,
+      "hit_rate_vs_spy": 0.26419379258137776,
+      "signal_to_noise": 0.05071022039750811,
+      "max_drawdown": -0.24597963647537469
+    },
+    {
+      "strategy_name": "panic_rebound",
+      "hold_days": 5,
+      "periods": 1321,
+      "active_periods": 48,
+      "total_return": 0.1113173352077248,
+      "spy_total_return": 7.262657102205372,
+      "avg_return": 0.0001608131913155851,
+      "avg_excess_return": -0.001768346125254341,
+      "hit_rate_vs_spy": 0.3906131718395155,
+      "signal_to_noise": 0.012821245720098033,
+      "max_drawdown": -0.37748608394032435
+    }
+  ]
+}
