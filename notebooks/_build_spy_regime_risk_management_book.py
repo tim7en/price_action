@@ -1,0 +1,312 @@
+"""Build the SPY regime risk-management research notebook.
+
+Run:
+    python notebooks/_build_spy_regime_risk_management_book.py
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import nbformat as nbf
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+NOTEBOOK_PATH = PROJECT_ROOT / "notebooks" / "spy_regime_risk_management_book.ipynb"
+
+
+def md(source: str) -> nbf.NotebookNode:
+    return nbf.v4.new_markdown_cell(source)
+
+
+def code(source: str) -> nbf.NotebookNode:
+    return nbf.v4.new_code_cell(source)
+
+
+def build_notebook() -> nbf.NotebookNode:
+    nb = nbf.v4.new_notebook()
+    cells: list[nbf.NotebookNode] = []
+
+    cells.append(
+        md(
+            "# SPY Risk Management Under Instability: A 60/40 Tactical Sleeve\n\n"
+            "**Goal.** Build a no-lookahead automatic risk-management stack that keeps **60% in SPY at all times** and uses a **40% tactical sleeve** only during extreme risk-off windows. The tactical sleeve is evaluated through three lenses: a Markov transition model, a Bayesian posterior model, and a walk-forward ML model.\n\n"
+            "**Why this notebook exists**\n"
+            "1. SPY has a strong positive drift, so naive de-risking often destroys long-run return.\n"
+            "2. Panic is not the same thing as a short signal. In the previous SPY/VIX study, severe stress often behaved more like a future rebound setup than a continuation setup.\n"
+            "3. A Medallion-style mindset means *small edges, strict leakage controls, and regime-specific capital allocation*, not one heroic forecast.\n\n"
+            "**Research questions**\n"
+            "1. Can we detect extreme risk-off regimes from current and trailing market plus macro context without lookahead?\n"
+            "2. Inside those regimes, is the next move more likely to be continuation or rebound?\n"
+            "3. Does a 60% core plus 40% tactical sleeve beat simpler heuristics on instability-adjusted performance?\n"
+            "4. Which modelling family looks most sound: Markov transitions, Bayesian shrinkage, or walk-forward ML?\n"
+        )
+    )
+
+    cells.append(md("## 1. Load the research outputs"))
+    cells.append(
+        code(
+            "import json\n"
+            "from pathlib import Path\n"
+            "\n"
+            "import matplotlib.pyplot as plt\n"
+            "import pandas as pd\n"
+            "import seaborn as sns\n"
+            "from IPython.display import display\n"
+            "\n"
+            "plt.rcParams.update({\n"
+            "    'figure.figsize': (12, 5),\n"
+            "    'figure.dpi': 120,\n"
+            "    'axes.grid': True,\n"
+            "    'grid.alpha': 0.22,\n"
+            "    'axes.spines.top': False,\n"
+            "    'axes.spines.right': False,\n"
+            "    'font.size': 10,\n"
+            "})\n"
+            "sns.set_theme(style='whitegrid', context='notebook')\n"
+            "pd.options.display.float_format = '{:,.4f}'.format\n"
+            "\n"
+            "PROJECT_ROOT = Path.cwd().parent if Path.cwd().name == 'notebooks' else Path.cwd()\n"
+            "RESEARCH_DIR = PROJECT_ROOT / 'outputs' / 'spy_regime_risk_management'\n"
+            "print('research dir:', RESEARCH_DIR)"
+        )
+    )
+    cells.append(
+        code(
+            "with open(RESEARCH_DIR / 'spy_regime_risk_management_summary.json', encoding='utf-8') as f:\n"
+            "    summary = json.load(f)\n"
+            "\n"
+            "drift = pd.read_csv(RESEARCH_DIR / 'drift_summary.csv')\n"
+            "events = pd.read_csv(RESEARCH_DIR / 'extreme_risk_off_events.csv', parse_dates=['signal_date', 'entry_date'])\n"
+            "state_summary = pd.read_csv(RESEARCH_DIR / 'event_state_summary.csv')\n"
+            "transition_summary = pd.read_csv(RESEARCH_DIR / 'markov_transition_summary.csv')\n"
+            "model_metrics = pd.read_csv(RESEARCH_DIR / 'model_metrics.csv')\n"
+            "event_predictions = pd.read_csv(RESEARCH_DIR / 'event_model_predictions.csv', parse_dates=['signal_date'])\n"
+            "strategy_summary = pd.read_csv(RESEARCH_DIR / 'strategy_summary.csv')\n"
+            "strategy_periods = pd.read_csv(RESEARCH_DIR / 'strategy_periods.csv', parse_dates=['signal_date'])\n"
+            "panel = pd.read_csv(RESEARCH_DIR / 'risk_management_signal_panel.csv', parse_dates=['signal_date', 'entry_date'])\n"
+            "\n"
+            "headline = pd.DataFrame({\n"
+            "    'metric': ['panel rows', 'extreme risk-off events', 'predicted events', 'hold days', 'core weight', 'tactical sleeve'],\n"
+            "    'value': [summary['rows'], summary['extreme_risk_off_events'], summary['prediction_rows'], summary['hold_days'], summary['core_weight'], summary['tactical_weight']],\n"
+            "})\n"
+            "display(headline)"
+        )
+    )
+
+    cells.append(
+        md(
+            "## 2. Leakage controls first\n\n"
+            "If the leakage controls are not sound, nothing else matters. The research module uses four rules:\n"
+            "1. Features come only from current and trailing history.\n"
+            "2. The sleeve enters **one bar after** the signal date.\n"
+            "3. Markov and Bayesian probabilities are expanding-history estimates.\n"
+            "4. ML predictions are walk-forward and only evaluated out of sample.\n"
+        )
+    )
+    cells.append(
+        code(
+            "for guardrail in summary['leakage_guardrails']:\n"
+            "    print('-', guardrail)"
+        )
+    )
+
+    cells.append(
+        md(
+            "## 3. The positive-drift problem\n\n"
+            "SPY rises more often than it falls over medium horizons. That means a tactical sleeve should not react to fear alone. It has to beat the positive drift that already exists in the baseline."
+        )
+    )
+    cells.append(
+        code(
+            "display(drift)\n"
+            "\n"
+            "fig, ax = plt.subplots(figsize=(10.5, 4.8))\n"
+            "sns.barplot(data=drift, x='group', y='mean_return', hue='group', dodge=False, legend=False, palette='crest', ax=ax)\n"
+            "ax.axhline(0.0, color='black', linestyle='--', linewidth=1.0)\n"
+            "ax.set_title('Forward drift by context group')\n"
+            "ax.set_xlabel('')\n"
+            "ax.set_ylabel('mean forward return')\n"
+            "plt.xticks(rotation=15)\n"
+            "plt.tight_layout()\n"
+            "plt.show()"
+        )
+    )
+
+    cells.append(
+        md(
+            "## 4. Defining the extreme risk-off window\n\n"
+            "The sleeve only activates when market stress and macro fragility line up. The gate is deliberately strict because false positives are expensive against a market with positive drift."
+        )
+    )
+    cells.append(
+        code(
+            "display(state_summary.round(4))\n"
+            "\n"
+            "fig, axes = plt.subplots(1, 2, figsize=(14, 5.2))\n"
+            "sns.barplot(data=state_summary, y='source_state', x='events', hue='source_state', dodge=False, legend=False, palette='rocket', ax=axes[0])\n"
+            "axes[0].set_title('Extreme risk-off states by count')\n"
+            "axes[0].set_xlabel('event count')\n"
+            "axes[0].set_ylabel('')\n"
+            "\n"
+            "sns.barplot(data=state_summary, y='source_state', x='mean_event_return', hue='source_state', dodge=False, legend=False, palette='viridis', ax=axes[1])\n"
+            "axes[1].axvline(0.0, color='black', linestyle='--', linewidth=1.0)\n"
+            "axes[1].set_title('Average forward return by extreme state')\n"
+            "axes[1].set_xlabel('forward return over sleeve window')\n"
+            "axes[1].set_ylabel('')\n"
+            "plt.tight_layout()\n"
+            "plt.show()"
+        )
+    )
+
+    cells.append(
+        md(
+            "## 5. Markov chain view\n\n"
+            "The Markov lens asks: *when the market enters this extreme state, where does it tend to go next by the sleeve exit?* This is transition modelling, not prediction magic. The edge comes from asymmetry in the transition table."
+        )
+    )
+    cells.append(
+        code(
+            "display(transition_summary.round(4))\n"
+            "\n"
+            "heatmap = transition_summary.pivot(index='source_state', columns='future_sentiment_state', values='transition_count').fillna(0)\n"
+            "fig, ax = plt.subplots(figsize=(11, 5.5))\n"
+            "sns.heatmap(heatmap, annot=True, fmt='.0f', cmap='YlGnBu', ax=ax)\n"
+            "ax.set_title('Empirical transition counts from extreme risk-off states')\n"
+            "ax.set_xlabel('future sentiment state at sleeve exit')\n"
+            "ax.set_ylabel('current extreme state')\n"
+            "plt.tight_layout()\n"
+            "plt.show()"
+        )
+    )
+
+    cells.append(
+        md(
+            "## 6. Bayesian shrinkage view\n\n"
+            "The Bayesian model takes the same state-level evidence but shrinks it toward the global instability baseline. This is the right mindset when event counts are small: do not trust a sparse state as much as a broad prior."
+        )
+    )
+    cells.append(
+        code(
+            "posterior_cols = [\n"
+            "    'signal_date', 'bayesian_expected_return', 'bayesian_positive_prob', 'bayesian_training_mean_return', 'bayesian_training_positive_rate'\n"
+            "]\n"
+            "display(event_predictions[posterior_cols].dropna().head(12).round(4))"
+        )
+    )
+
+    cells.append(
+        md(
+            "## 7. Walk-forward ML view\n\n"
+            "The ML block is intentionally modest. It predicts the tactical sleeve return from lagged SPY, VIX, credit, financial conditions, curve stress, policy uncertainty, and release-aware consumer sentiment."
+        )
+    )
+    cells.append(
+        code(
+            "display(model_metrics.round(4))\n"
+            "\n"
+            "metric_plot = model_metrics.loc[model_metrics['scope'].isin(['validation', 'holdout'])].copy()\n"
+            "fig, axes = plt.subplots(1, 2, figsize=(14.5, 5.2))\n"
+            "sns.barplot(data=metric_plot, x='model_name', y='roc_auc', hue='scope', ax=axes[0])\n"
+            "axes[0].axhline(0.5, color='black', linestyle='--', linewidth=1.0)\n"
+            "axes[0].set_title('Positive-return discrimination')\n"
+            "axes[0].set_xlabel('')\n"
+            "axes[0].set_ylabel('ROC AUC')\n"
+            "\n"
+            "sns.barplot(data=metric_plot, x='model_name', y='top_quintile_mean_return', hue='scope', ax=axes[1])\n"
+            "axes[1].axhline(0.0, color='black', linestyle='--', linewidth=1.0)\n"
+            "axes[1].set_title('Actual return in the top predicted quintile')\n"
+            "axes[1].set_xlabel('')\n"
+            "axes[1].set_ylabel('mean return')\n"
+            "plt.tight_layout()\n"
+            "plt.show()"
+        )
+    )
+
+    cells.append(
+        md(
+            "## 8. Ensemble and tactical capital allocation\n\n"
+            "The final sleeve averages the Markov, Bayesian, and ML expected returns and probabilities. The sleeve only deploys if the ensemble beats the historical instability baseline. That is the core drift-aware risk-management rule."
+        )
+    )
+    cells.append(
+        code(
+            "display(strategy_summary.round(4))"
+        )
+    )
+    cells.append(
+        code(
+            "fig, ax = plt.subplots(figsize=(13, 5.4))\n"
+            "for strategy_name in ['core_60_only', 'full_spy_100', 'heuristic_panic_rebound', 'ensemble_mobilized', 'ensemble_long_short']:\n"
+            "    subset = strategy_periods.loc[strategy_periods['strategy_name'] == strategy_name].copy()\n"
+            "    if subset.empty:\n"
+            "        continue\n"
+            "    subset = subset.sort_values('signal_date')\n"
+            "    subset['equity'] = (1.0 + subset['strategy_return']).cumprod()\n"
+            "    ax.plot(subset['signal_date'], subset['equity'], linewidth=2.0, label=strategy_name)\n"
+            "ax.set_title('Equity curves: core, benchmark, heuristic, and ensemble sleeve')\n"
+            "ax.set_xlabel('signal date')\n"
+            "ax.set_ylabel('equity growth')\n"
+            "ax.legend(frameon=False, ncol=2)\n"
+            "plt.tight_layout()\n"
+            "plt.show()"
+        )
+    )
+
+    cells.append(
+        md(
+            "## 9. Where the model still fails\n\n"
+            "A sound model is not one that always makes money. It is one that shows you **where it fails** and why. If the tactical sleeve cannot reliably beat the drift baseline, the honest conclusion is that the sleeve is a risk-shaping tool, not a magic return engine."
+        )
+    )
+    cells.append(
+        code(
+            "display(\n"
+            "    strategy_periods.loc[strategy_periods['strategy_name'].isin(['heuristic_panic_rebound', 'ensemble_mobilized', 'ensemble_long_short'])]\n"
+            "    .groupby('strategy_name')[['strategy_return', 'spy_return', 'excess_return_vs_spy', 'excess_return_vs_core']]\n"
+            "    .mean()\n"
+            "    .round(4)\n"
+            ")\n"
+            "\n"
+            "recent_bad = strategy_periods.loc[\n"
+            "    (strategy_periods['strategy_name'] == 'ensemble_long_short')\n"
+            "    & (strategy_periods['excess_return_vs_spy'] < 0.0)\n"
+            "].sort_values('signal_date', ascending=False).head(12)\n"
+            "display(recent_bad.round(4))"
+        )
+    )
+
+    cells.append(
+        md(
+            "## 10. Conclusions\n\n"
+            "**Read this as a portfolio engineer, not as a storyteller.**\n"
+            "1. The 60% core is the anchor because SPY drift is too strong to abandon lightly.\n"
+            "2. The 40% sleeve is justified only when instability creates an edge larger than the drift baseline.\n"
+            "3. Markov transitions help with path context, Bayesian shrinkage prevents overreacting to sparse states, and ML helps when feature interactions matter.\n"
+            "4. If the ensemble improves drawdown or instability capture without beating 100% SPY on terminal wealth, that is still useful risk management.\n"
+            "5. The next step is not more narrative. It is better execution logic, better features, and cleaner event definitions.\n"
+        )
+    )
+
+    nb["cells"] = cells
+    nb["metadata"] = {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3",
+        },
+        "language_info": {
+            "name": "python",
+            "version": "3.11",
+        },
+    }
+    return nb
+
+
+def main() -> None:
+    notebook = build_notebook()
+    NOTEBOOK_PATH.write_text(nbf.writes(notebook), encoding="utf-8")
+    print(f"Wrote {NOTEBOOK_PATH}")
+
+
+if __name__ == "__main__":
+    main()

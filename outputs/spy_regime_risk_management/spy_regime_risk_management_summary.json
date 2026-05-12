@@ -1,0 +1,75 @@
+{
+  "generated_at_utc": "2026-05-12T08:17:53.709497+00:00",
+  "output_dir": "D:\\dev\\price_action\\outputs\\spy_regime_risk_management",
+  "rows": 6607,
+  "extreme_risk_off_events": 1205,
+  "prediction_rows": 1205,
+  "hold_days": 5,
+  "core_weight": 0.6,
+  "tactical_weight": 0.4,
+  "lookback_window": 252,
+  "min_periods": 63,
+  "holdout_start": "2020-01-01",
+  "leakage_guardrails": [
+    "All regime features are computed from current and trailing history only.",
+    "The tactical sleeve enters on the next bar after the signal date.",
+    "Markov and Bayesian estimates use expanding history only; ML predictions are walk-forward and never see future labels in training.",
+    "Strategy periods are sampled on a non-overlapping hold-day schedule."
+  ],
+  "drift_summary": [
+    {
+      "group": "all_dates",
+      "observations": 6601,
+      "mean_return": 0.0018951245257324977,
+      "median_return": 0.003554364968921142,
+      "positive_rate": 0.5815785487047417,
+      "signal_to_noise": 0.07695932617864769,
+      "t_stat": 6.252678848672598
+    },
+    {
+      "group": "risk_off_dates",
+      "observations": 1676,
+      "mean_return": 0.0031938458315648715,
+      "median_return": 0.006411397072985325,
+      "positive_rate": 0.5847255369928401,
+      "signal_to_noise": 0.08838556694832375,
+      "t_stat": 3.618414867513897
+    },
+    {
+      "group": "extreme_risk_off_dates",
+      "observations": 1205,
+      "mean_return": 0.003054813370820035,
+      "median_return": 0.006298236265357859,
+      "positive_rate": 0.5759336099585062,
+      "signal_to_noise": 0.07880085572305578,
+      "t_stat": 2.735422766143554
+    },
+    {
+      "group": "non_risk_off_dates",
+      "observations": 4925,
+      "mean_return": 0.0014531637321131962,
+      "median_return": 0.003067682309307873,
+      "positive_rate": 0.580507614213198,
+      "signal_to_noise": 0.07579035131668779,
+      "t_stat": 5.318841364628369
+    }
+  ],
+  "best_strategy": [
+    {
+      "strategy_name": "full_spy_100",
+      "hold_days": 5,
+      "periods": 1321,
+      "active_periods": 1321,
+      "total_return": 7.262657102205372,
+      "avg_return": 0.0019291593165699263,
+      "avg_excess_return_vs_spy": 0.0,
+      "avg_excess_return_vs_core": 0.0007716637266279705,
+      "annualized_return": 0.08390392915321088,
+      "annualized_vol": 0.18104433077173526,
+      "signal_to_noise": 0.07564817113568138,
+      "hit_rate_vs_spy": 0.0,
+      "hit_rate_vs_core": 0.5942467827403483,
+      "max_drawdown": -0.5469204671167519
+    }
+  ]
+}
