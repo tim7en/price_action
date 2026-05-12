@@ -1,4 +1,5 @@
 {
+  "output_dir": "D:\\dev\\price_action\\outputs\\sector_fundamentals_research",
   "panel_rows": 888,
   "sector_count": 11,
   "quarter_count": 91,
@@ -76,7 +77,7 @@
     "model_label": "Average Ensemble",
     "observations": 33,
     "target_rate": 0.21212121212121213,
-    "brier_score": 0.23438076665506002,
+    "brier_score": 0.23438076665506,
     "accuracy": 0.5757575757575758,
     "precision": 0.26666666666666666,
     "recall": 0.5714285714285714,
@@ -103,19 +104,19 @@
   "top_features": [
     {
       "feature": "log_dollar_volume_total",
-      "importance": 0.03968630705590876
+      "importance": 0.03968630705590884
     },
     {
       "feature": "beat_rate_lag1",
-      "importance": 0.03899312824325207
+      "importance": 0.03899312824325205
     },
     {
       "feature": "cap_weighted_quarterly_eps_yoy_pct_lag1_rank",
-      "importance": 0.03722550985159021
+      "importance": 0.0372255098515902
     },
     {
       "feature": "beat_rate_lag1_rank",
-      "importance": 0.033325189382190284
+      "importance": 0.033325189382190236
     },
     {
       "feature": "relative_ret_2q_rank",
@@ -123,7 +124,7 @@
     },
     {
       "feature": "etf_sma_gap",
-      "importance": 0.03031903925444969
+      "importance": 0.030319039254449693
     },
     {
       "feature": "avg_quarterly_eps_yoy_pct_lag1",
@@ -131,51 +132,51 @@
     },
     {
       "feature": "median_surprise_pct_lag1",
-      "importance": 0.029208392062265193
+      "importance": 0.029208392062265175
     },
     {
       "feature": "etf_sma_gap_rank",
-      "importance": 0.02882127619789362
+      "importance": 0.02882127619789363
     },
     {
       "feature": "relative_ret_1y",
-      "importance": 0.028664701627387695
+      "importance": 0.028664701627387722
     },
     {
       "feature": "log_market_cap_proxy_total",
-      "importance": 0.02630952742437082
+      "importance": 0.02630952742437086
     },
     {
       "feature": "turnover_proxy_rank",
-      "importance": 0.02545331540358382
+      "importance": 0.025453315403583848
     },
     {
       "feature": "etf_vol_1q",
-      "importance": 0.023504947354591067
+      "importance": 0.02350494735459106
     },
     {
       "feature": "avg_surprise_pct_lag1",
-      "importance": 0.022780852072012556
+      "importance": 0.022780852072012525
     },
     {
       "feature": "sector_CONSUMER STAPLES",
-      "importance": 0.02193770110029014
+      "importance": 0.021937701100290172
     },
     {
       "feature": "market_cap_share_rank",
-      "importance": 0.021597772638262805
+      "importance": 0.021597772638262795
     },
     {
       "feature": "etf_ret_1y",
-      "importance": 0.021370031078932233
+      "importance": 0.021370031078932247
     },
     {
       "feature": "etf_atr_pct",
-      "importance": 0.020999198356038983
+      "importance": 0.02099919835603901
     },
     {
       "feature": "sector_TECHNOLOGY",
-      "importance": 0.020826391524491384
+      "importance": 0.020826391524491356
     },
     {
       "feature": "relative_drawdown_2q",
@@ -190,6 +191,7 @@
     "sector_model_holdout_predictions.csv",
     "sector_model_metrics.csv",
     "sector_model_validation_predictions.csv",
+    "sector_research_summary.json",
     "sector_top3_holdout_strategy.csv",
     "sector_top3_validation_strategy.csv"
   ]

@@ -272,12 +272,11 @@ def build_sector_structure_features(
         return pd.DataFrame()
 
     symbols_quarterly = pd.concat(monthly_frames, ignore_index=True)
+    grouped = symbols_quarterly.groupby(["sector", "fiscal_quarter"])
     sector_quarterly = (
-        symbols_quarterly.groupby(["sector", "fiscal_quarter"])
-        .agg(
+        grouped.agg(
             quarter_end_date=("quarter_end_date", "max"),
             constituent_count=("symbol", "nunique"),
-            market_cap_proxy_total=("market_cap_proxy", "sum"),
             market_cap_proxy_median=("market_cap_proxy", "median"),
             dollar_volume_total=("dollar_volume_total", "sum"),
             volume_total=("volume_total", "sum"),
@@ -286,13 +285,20 @@ def build_sector_structure_features(
         .reset_index()
         .sort_values(["sector", "fiscal_quarter"])
     )
-    sector_quarterly["quarter_end_date"] = pd.to_datetime(sector_quarterly["quarter_end_date"], errors="coerce")
-    sector_quarterly["market_cap_share"] = (
-        sector_quarterly["market_cap_proxy_total"]
-        / sector_quarterly.groupby("fiscal_quarter")["market_cap_proxy_total"].transform("sum")
+    market_cap_totals = grouped["market_cap_proxy"].sum(min_count=1).reset_index(name="market_cap_proxy_total")
+    market_cap_coverage = (
+        grouped["market_cap_proxy"].apply(lambda series: int(series.notna().sum())).reset_index(name="market_cap_coverage_count")
     )
+    sector_quarterly = sector_quarterly.merge(market_cap_totals, on=["sector", "fiscal_quarter"], how="left")
+    sector_quarterly = sector_quarterly.merge(market_cap_coverage, on=["sector", "fiscal_quarter"], how="left")
+    sector_quarterly["quarter_end_date"] = pd.to_datetime(sector_quarterly["quarter_end_date"], errors="coerce")
+    quarter_market_cap_total = sector_quarterly.groupby("fiscal_quarter")["market_cap_proxy_total"].transform(
+        lambda series: series.sum(min_count=1)
+    )
+    sector_quarterly["market_cap_share"] = sector_quarterly["market_cap_proxy_total"] / quarter_market_cap_total
     sector_quarterly["turnover_proxy"] = (
-        sector_quarterly["dollar_volume_total"] / sector_quarterly["market_cap_proxy_total"]
+        sector_quarterly["dollar_volume_total"]
+        / sector_quarterly["market_cap_proxy_total"].where(sector_quarterly["market_cap_proxy_total"] > 0.0)
     )
     sector_quarterly["log_market_cap_proxy_total"] = np.log(
         sector_quarterly["market_cap_proxy_total"].where(sector_quarterly["market_cap_proxy_total"] > 0.0)
