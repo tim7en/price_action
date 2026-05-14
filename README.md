@@ -127,6 +127,36 @@ The command writes:
 - add point-in-time universe snapshots and delisted assets to reduce survivorship bias
 
 
+## Research notebooks
+
+The repo ships a set of Kaggle-style research notebooks under [notebooks/](notebooks/). Each one is a narrative walkthrough — load, plot, finding — that reads pre-computed CSV/JSON exports from `outputs/`. Notebooks do not retrain models; the corresponding build script writes the inputs first, then the notebook visualizes them.
+
+| Notebook | Topic | Build script | Reads from |
+| --- | --- | --- | --- |
+| [sector_strategy_review.ipynb](notebooks/sector_strategy_review.ipynb) | Macro × SPY × sector-ETF quality rotation, walk-forward fold audit, feature importance, bootstrap CIs, confidence-gated ML variant | [build_sector_rotation_report.py](build_sector_rotation_report.py) | `outputs/sector_rotation_report/`, `outputs/sector_strategy_review/` |
+| [pit_top_holdings_review.ipynb](notebooks/pit_top_holdings_review.ipynb) | Point-in-time top-5 holdings rotation vs sector ETF rotation and SPY buy-and-hold; forward-bias controls, leaderboard, 2025+ holdout assessment | [build_sector_rotation_report.py](build_sector_rotation_report.py) | `outputs/sector_rotation_report/` |
+| [sector_fundamentals_research.ipynb](notebooks/sector_fundamentals_research.ipynb) | Sector earnings, market structure, and ETF leadership; cleaned `fundamentals_history` universe, lagged-fundamentals panel model, holdout-quarter picks | [build_sector_fundamentals_research.py](build_sector_fundamentals_research.py) | `outputs/sector_fundamentals_research/`, `outputs/fundamentals_analysis/` |
+| [sector_macro_regime_book.ipynb](notebooks/sector_macro_regime_book.ipynb) | Macro regime shifts vs sector earnings breadth, lead/lag study, quarterly ML regime screen, sector trough → reversal windows | [build_sector_macro_regime_research.py](build_sector_macro_regime_research.py) | `outputs/sector_macro_regime_research/` |
+| [spy_regime_risk_management_book.ipynb](notebooks/spy_regime_risk_management_book.ipynb) | 60/40 tactical sleeve under extreme risk-off regimes; Markov, Bayesian, and walk-forward ML lenses with no-lookahead controls | [build_spy_regime_risk_management.py](build_spy_regime_risk_management.py) | `outputs/spy_regime_risk_management/` |
+| [spy_drawdown_regime_book.ipynb](notebooks/spy_drawdown_regime_book.ipynb) | SPY drawdown regimes, VIX/credit pace, sector spillover, online hidden-state layer, sector-tilt overlay | [build_spy_drawdown_regime_research.py](build_spy_drawdown_regime_research.py) | `outputs/spy_drawdown_regime_research/` |
+
+### Refresh a notebook
+
+Each notebook has a companion builder in `notebooks/_build_*.py` that regenerates the `.ipynb` cells from the latest research outputs. Typical refresh cycle:
+
+```powershell
+# 1. regenerate the research outputs under outputs/<name>/
+d:/dev/price_action/.venv/Scripts/python.exe build_spy_drawdown_regime_research.py
+
+# 2. rebuild the notebook structure from the builder script
+d:/dev/price_action/.venv/Scripts/python.exe notebooks/_build_spy_drawdown_regime_book.py
+
+# 3. execute cells in place
+d:/dev/price_action/.venv/Scripts/jupyter.exe nbconvert --to notebook --execute --inplace notebooks/spy_drawdown_regime_book.ipynb
+```
+
+Substitute the matching build script and builder for any of the notebooks in the table above.
+
 ## Research notes
 
-See [docs/data_gaps_and_bias.md](docs/data_gaps_and_bias.md) for the current missing context features and the survivorship-bias controls this repo still needs.
+See [docs/data_gaps_and_bias.md](docs/data_gaps_and_bias.md) for the current missing context features and the survivorship-bias controls this repo still needs. Supporting write-ups also live alongside the notebooks: [docs/macro_regime_chapter.md](docs/macro_regime_chapter.md) and [docs/point_in_time_holdings.md](docs/point_in_time_holdings.md).

@@ -21,7 +21,8 @@
       "Bash(./.venv/bin/python build_sector_rotation_report.py > /tmp/sector_report.log 2>&1)",
       "Bash(python notebooks/_build_spy_drawdown_regime_book.py)",
       "Bash(jupyter nbconvert *)",
-      "Bash(python backtest_drawdown_leverage.py)"
+      "Bash(python backtest_drawdown_leverage.py)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "/tmp"
