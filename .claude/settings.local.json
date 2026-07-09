@@ -22,7 +22,11 @@
       "Bash(python notebooks/_build_spy_drawdown_regime_book.py)",
       "Bash(jupyter nbconvert *)",
       "Bash(python backtest_drawdown_leverage.py)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(python3 -c ' *)",
+      "Bash(git add *)",
+      "Bash(GIT_EDITOR=true git rebase --continue)",
+      "Bash(echo \"=== exit: $? ===\")"
     ],
     "additionalDirectories": [
       "/tmp"
