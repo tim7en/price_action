@@ -70,6 +70,25 @@ DEBT_PHASE_COLORS: dict[str, str] = {
 }
 
 FUNDAMENTALS_DIR = Path("fundamentals_history") / "sp500_data"
+
+
+def resolve_fundamentals_dir(root: Path, fundamentals_dir: str | Path | None) -> Path:
+    """Resolve the folder holding ``<SYMBOL>_<statement>.json`` files.
+
+    ``fundamentals_dir`` may be an absolute path, a path relative to the project
+    root, or a bare folder name under ``fundamentals_history/``.  ``None`` uses
+    the default ``fundamentals_history/sp500_data``.
+    """
+    if fundamentals_dir is None:
+        return root / FUNDAMENTALS_DIR
+    p = Path(fundamentals_dir)
+    if p.is_absolute():
+        return p
+    if (root / p).exists():
+        return root / p
+    return root / "fundamentals_history" / p
+
+
 MACRO_DAILY_CSV = Path("cache") / "macro_daily_1999.csv"
 FRED_DIR = Path("fred")
 OUTPUT_DIR = Path("outputs") / "regime_analysis"
@@ -216,7 +235,8 @@ def _accumulate(reports: Iterable[dict], fields: dict[str, str], flows: dict[str
                 bucket[canon] = bucket.get(canon, 0.0) + val
 
 
-def load_corporate_panel(root: Path, symbols: list[str] | None = None) -> pd.DataFrame:
+def load_corporate_panel(root: Path, symbols: list[str] | None = None,
+                         fundamentals_dir: str | Path | None = None) -> pd.DataFrame:
     """Aggregate every company's statements into one corporate-sector panel.
 
     Dollar amounts are summed across the universe within each calendar quarter,
@@ -224,7 +244,7 @@ def load_corporate_panel(root: Path, symbols: list[str] | None = None) -> pd.Dat
     giant company -- exactly the lens Dalio uses when he talks about the debt of
     "the economy" rather than a single borrower.
     """
-    fdir = root / FUNDAMENTALS_DIR
+    fdir = resolve_fundamentals_dir(root, fundamentals_dir)
     if symbols is None:
         symbols = sorted(
             p.name[: -len("_balance_sheet.json")]
@@ -346,14 +366,15 @@ def load_corporate_panel(root: Path, symbols: list[str] | None = None) -> pd.Dat
 # --------------------------------------------------------------------------- #
 # 3. Composite index from the companies' own monthly prices + optional ^GSPC.
 # --------------------------------------------------------------------------- #
-def build_composite_index(root: Path, symbols: list[str] | None = None) -> pd.Series:
+def build_composite_index(root: Path, symbols: list[str] | None = None,
+                          fundamentals_dir: str | Path | None = None) -> pd.Series:
     """Cap-weighted composite of the universe's own monthly adjusted closes.
 
     Weights use latest shares outstanding (a fixed-weight approximation -- the
     dataset has no historical share counts), so this is a broad-market proxy,
     not a rebalanced index.  We normalise to 100 at the first common month.
     """
-    fdir = root / FUNDAMENTALS_DIR
+    fdir = resolve_fundamentals_dir(root, fundamentals_dir)
     if symbols is None:
         symbols = sorted(
             p.name[: -len("_time_series_monthly.json")]
@@ -1002,11 +1023,12 @@ class Analysis:
     leadlag_sum: pd.DataFrame
 
 
-def run_analysis(root: Path, use_yfinance: bool = True) -> Analysis:
+def run_analysis(root: Path, use_yfinance: bool = True,
+                 fundamentals_dir: str | Path | None = None) -> Analysis:
     macro = load_macro_panel(root)
-    corp = load_corporate_panel(root)
+    corp = load_corporate_panel(root, fundamentals_dir=fundamentals_dir)
     corp_m = corporate_monthly(corp, macro.index)
-    composite = build_composite_index(root)
+    composite = build_composite_index(root, fundamentals_dir=fundamentals_dir)
     gspc = fetch_gspc() if use_yfinance else pd.Series(dtype="float64")
 
     quad = dalio_quadrant(macro)
@@ -1036,8 +1058,9 @@ def run_analysis(root: Path, use_yfinance: bool = True) -> Analysis:
                     fwd12, model, leadlag, leadlag_sum)
 
 
-def build_report(root: Path, use_yfinance: bool = True) -> Path:
-    an = run_analysis(root, use_yfinance=use_yfinance)
+def build_report(root: Path, use_yfinance: bool = True,
+                 fundamentals_dir: str | Path | None = None) -> Path:
+    an = run_analysis(root, use_yfinance=use_yfinance, fundamentals_dir=fundamentals_dir)
     m, corp = an.macro, an.corp
 
     charts = {
@@ -1250,12 +1273,17 @@ def main() -> None:
     parser.add_argument("--no-yfinance", action="store_true",
                         help="Skip the ^GSPC download (offline mode).")
     parser.add_argument("--project-root", default=None)
+    parser.add_argument("--fundamentals-dir", default=None,
+                        help="Folder of <SYMBOL>_<statement>.json files (name under "
+                             "fundamentals_history/, or a path). Default: sp500_data. "
+                             "Use investme_sp500_data for the full 7,000-symbol set.")
     args = parser.parse_args()
 
     root = resolve_project_root(args.project_root)
     import matplotlib
     matplotlib.use("Agg")
-    out = build_report(root, use_yfinance=not args.no_yfinance)
+    out = build_report(root, use_yfinance=not args.no_yfinance,
+                       fundamentals_dir=args.fundamentals_dir)
     print(f"Wrote regime analysis report to {out}")
 
 
