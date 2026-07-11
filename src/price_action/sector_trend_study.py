@@ -174,6 +174,18 @@ def build_sector_indices(root: Path, fundamentals_dir: str | Path | None,
         raise ValueError("No sector-tagged price series found.")
 
     prices = pd.DataFrame(price_cols).sort_index()
+
+    # Drop reverse-split artifacts.  Point-in-time caps are built from adjusted
+    # prices x current share counts; symbols that reverse-split repeatedly have
+    # astronomically inflated *historical* adjusted prices (a shell trading at
+    # $2 today can imply a $500bn cap in 2005) and would dominate the weights.
+    # A >100x net collapse from first-year price to latest price over the whole
+    # history is almost always such an artifact (~8% of the universe).
+    first_px = prices.apply(lambda col: col.dropna().iloc[:6].median())
+    last_px = prices.ffill().iloc[-1]
+    collapse = first_px / last_px
+    prices = prices.loc[:, collapse.le(100) | collapse.isna()]
+
     rets = prices.pct_change(fill_method=None).clip(*return_clip)
 
     # Point-in-time cap weights: static share counts x price at each month,
@@ -188,6 +200,18 @@ def build_sector_indices(root: Path, fundamentals_dir: str | Path | None,
         cap_pit[col] = row_median.where(prices[col].ffill().notna())
     cap_lag = cap_pit.shift(1)
 
+    def _capped_weights(caps: pd.DataFrame, valid: pd.DataFrame,
+                        max_w: float) -> pd.DataFrame:
+        """Cap-weight with a per-name ceiling (clip + renormalise, iterated)."""
+        w = caps.where(valid)
+        w = w.div(w.sum(axis=1), axis=0)
+        for _ in range(8):
+            if not w.gt(max_w).to_numpy().any():
+                break
+            w = w.clip(upper=max_w)
+            w = w.div(w.sum(axis=1), axis=0)
+        return w
+
     sectors = sorted(set(sec_of.values()))
     index_cols: dict[str, pd.Series] = {}
     member_counts = {}
@@ -198,16 +222,14 @@ def build_sector_indices(root: Path, fundamentals_dir: str | Path | None,
         sub = rets[members]
         valid = sub.notna()
         breadth = valid.sum(axis=1)
-        w = cap_lag[members].where(valid)
-        w = w.div(w.sum(axis=1), axis=0)
+        w = _capped_weights(cap_lag[members], valid, max_w=0.25)
         sector_ret = (sub * w).sum(axis=1, min_count=1).where(breadth >= max(4, min_members // 2))
         index_cols[sector] = sector_ret
         member_counts[sector] = len(members)
 
     # Broad index = cap-weighted across all tagged names.
     valid = rets.notna()
-    w = cap_lag.where(valid)
-    w = w.div(w.sum(axis=1), axis=0)
+    w = _capped_weights(cap_lag, valid, max_w=0.10)
     broad = (rets * w).sum(axis=1, min_count=1).where(valid.sum(axis=1) >= 50)
     index_cols["Broad market"] = broad
     member_counts["Broad market"] = int(valid.iloc[-1].sum())
@@ -1039,8 +1061,10 @@ def build_report(root: Path, fundamentals_dir: str | Path | None = "investme_sp5
       Relative/behavioural results (whipsaw rates, deviation, drawdown control) are far more robust.</li>
       <li><b>Point-in-time cap weights.</b> Sector indices weight month t's returns by market cap at
       t−1 (price at t−1 × latest share counts — no historical share data), so no future prices leak
-      into the weights. Symbols without share data get the cross-sectional median cap. Still broad
-      proxies, not investable indices.</li>
+      into the weights. Reverse-split artifacts (&gt;100× net price collapse over the sample, ~8% of
+      symbols) are excluded, per-name weights are capped at 25% (sector) / 10% (broad), and symbols
+      without share data get the cross-sectional median cap. Still broad proxies, not investable
+      indices.</li>
       <li><b>Costs modelled.</b> Idle cash earns rf; trades cost 10 bps; shorts pay 100 bps/yr borrow;
       leverage pays rf + 50 bps financing. Real leveraged-ETF path decay (daily reset) is <i>not</i>
       modelled — monthly rebalancing understates the drag of daily 3× products.</li>
