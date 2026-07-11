@@ -456,23 +456,33 @@ def _perf(returns: pd.Series) -> dict:
     }
 
 
-def backtest_strategies(indices: pd.DataFrame, health: pd.Series,
-                        fast: int, slow: int) -> Backtest:
-    """Compare buy&hold vs cross long-only vs cross L/S vs health-sized L/S.
+def risk_free_monthly(macro: pd.DataFrame, index: pd.DatetimeIndex) -> pd.Series:
+    """Monthly cash/risk-free rate proxy from the 2-year yield."""
+    rf = macro["us_2y"].reindex(index).ffill() / 100.0 / 12.0
+    return rf.fillna(0.0)
 
-    Positions are formed from signals known at month t and earn the return from
-    t to t+1 (one-month lag), so there is no look-ahead.
+
+def backtest_strategies(indices: pd.DataFrame, health: pd.Series,
+                        fast: int, slow: int, macro: pd.DataFrame | None = None,
+                        fee_bps: float = 10.0, short_borrow_bps: float = 100.0
+                        ) -> Backtest:
+    """Compare buy&hold vs cross long-only vs L/S vs health-sized books.
+
+    Fair accounting: idle cash earns the risk-free rate, trades cost ``fee_bps``
+    per unit turnover, and short exposure pays a ``short_borrow_bps`` annual fee.
+    Positions use a one-month signal lag (no look-ahead).
     """
     sectors = [c for c in indices.columns if c != "Broad market"]
     px = indices[sectors]
     rets = px.pct_change(fill_method=None)
+    rf = (risk_free_monthly(macro, px.index) if macro is not None
+          else pd.Series(0.0, index=px.index))
 
     ma_f = px.rolling(fast, min_periods=fast).mean()
     ma_s = px.rolling(slow, min_periods=slow).mean()
     regime = np.sign(ma_f - ma_s)                    # +1 uptrend, -1 downtrend
     h = (health / 100.0).reindex(px.index).clip(0, 1)
 
-    # Position matrices (lagged one month when applied to returns).
     pos_long_only = regime.clip(lower=0)
     pos_ls = regime
     long_leg = regime.clip(lower=0).mul(h, axis=0)                 # 0..1 when healthy
@@ -485,11 +495,17 @@ def backtest_strategies(indices: pd.DataFrame, health: pd.Series,
         + regime.clip(upper=0).mul((h < 0.35).astype(float) * (1 - h), axis=0)
     )
 
-    def portfolio(pos: pd.DataFrame) -> pd.Series:
+    fee = fee_bps / 1e4
+    borrow_m = short_borrow_bps / 1e4 / 12.0
+
+    def portfolio(pos: pd.DataFrame) -> tuple[pd.Series, float]:
         active = pos.shift(1)
-        contrib = active * rets
-        # Equal-risk average across sectors that have a position that month.
-        return contrib.mean(axis=1)
+        gross = active.abs().mean(axis=1)            # avg gross exposure (0..1+)
+        idle = (1.0 - gross).clip(lower=0)           # cash sleeve earns rf
+        short_expo = active.clip(upper=0).abs().mean(axis=1)
+        turnover = active.diff().abs().mean(axis=1).fillna(0)
+        r = (active * rets).mean(axis=1) + idle * rf - turnover * fee - short_expo * borrow_m
+        return r, float(turnover.mean())
 
     bh = rets.mean(axis=1)                            # equal-weight buy & hold
     strat_pos = {
@@ -499,14 +515,118 @@ def backtest_strategies(indices: pd.DataFrame, health: pd.Series,
         "Health-scaled long-biased": pos_health_long,
     }
     equity = {"Buy & hold (equal sector)": (1 + bh.fillna(0)).cumprod()}
-    metrics = {"Buy & hold (equal sector)": _perf(bh)}
+    metrics = {"Buy & hold (equal sector)": {**_perf(bh), "turnover/mo": 0.0}}
     for label, pos in strat_pos.items():
-        r = portfolio(pos)
+        r, turn = portfolio(pos)
         equity[label] = (1 + r.fillna(0)).cumprod()
-        metrics[label] = _perf(r)
+        metrics[label] = {**_perf(r), "turnover/mo": round(turn, 2)}
     exposure = pos_health_long.shift(1).mean(axis=1)
     return Backtest(equity=pd.DataFrame(equity), metrics=pd.DataFrame(metrics).T,
                     exposure=exposure)
+
+
+# --------------------------------------------------------------------------- #
+# 5b. Which sectors feel macro-regime shifts the most.
+# --------------------------------------------------------------------------- #
+@dataclass
+class RegimeSensitivity:
+    fwd_by_regime: dict          # horizon -> DataFrame [sector x regime] mean fwd %
+    sensitivity: pd.DataFrame    # per-sector spread / dispersion / downside
+    regime: pd.Series            # monthly macro regime label
+    best_regime: str
+    worst_regime: str
+
+
+def sector_regime_sensitivity(indices: pd.DataFrame, macro: pd.DataFrame,
+                              horizons=(3, 6, 12)) -> RegimeSensitivity:
+    """Forward 3/6/12m sector returns conditioned on the macro (GMM) regime.
+
+    Uses the macro/financial-conditions latent regimes from ``regime_analysis``
+    (no sector prices in the features, so there is no circularity), then ranks
+    sectors by how much their forward returns swing across regimes.
+    """
+    from .regime_analysis import fit_regime_model
+    broad = indices["Broad market"]
+    fwd12_broad = broad.shift(-12) / broad - 1.0
+    model = fit_regime_model(macro, fwd12_broad)
+    regime = model.labels.reindex(indices.index).ffill(limit=1)
+
+    sectors = [c for c in indices.columns if c != "Broad market"]
+    fwd_by_regime = {}
+    for h in horizons:
+        rows = {}
+        for s in sectors:
+            px = indices[s]
+            fwd = (px.shift(-h) / px - 1.0) * 100.0
+            rows[s] = fwd.groupby(regime).mean()
+        fwd_by_regime[h] = pd.DataFrame(rows).T
+
+    f12 = fwd_by_regime[12]
+    regime_order = f12.mean(axis=0).sort_values()
+    worst, best = regime_order.index[0], regime_order.index[-1]
+    sens = pd.DataFrame({
+        "best_regime_fwd12_%": f12[best].round(1),
+        "worst_regime_fwd12_%": f12[worst].round(1),
+        "swing_%": (f12[best] - f12[worst]).round(1),
+        "dispersion_%": f12.std(axis=1).round(1),
+    }).sort_values("swing_%", ascending=False)
+    return RegimeSensitivity(fwd_by_regime, sens, regime, best, worst)
+
+
+# --------------------------------------------------------------------------- #
+# 5c. Leverage / hedging with carry cost, timed by regime health.
+# --------------------------------------------------------------------------- #
+@dataclass
+class LeverageBacktest:
+    equity: pd.DataFrame
+    metrics: pd.DataFrame
+    leverage_path: pd.Series
+
+
+def leverage_schedule(health: pd.Series) -> pd.Series:
+    """Map the 0-100 health score to signed market exposure (leverage/hedge)."""
+    h = health
+    E = pd.Series(1.0, index=h.index)
+    E[h >= 60] = 2.0
+    E[h >= 75] = 3.0
+    E[(h < 45) & (h >= 30)] = 0.5
+    E[h < 30] = -1.0                     # hedge: short the market
+    E[(h >= 45) & (h < 60)] = 1.0
+    return E
+
+
+def leverage_backtest(broad_index: pd.Series, health: pd.Series, macro: pd.DataFrame,
+                      fin_spread_bps: float = 50.0, short_borrow_bps: float = 100.0,
+                      fee_bps: float = 10.0) -> LeverageBacktest:
+    """Leveraged / hedged broad-market books with realistic carry.
+
+    Borrowed capital pays rf + ``fin_spread_bps``; short exposure pays a stock
+    borrow fee; every change in exposure costs ``fee_bps``.  One-month signal lag.
+    """
+    r = broad_index.pct_change(fill_method=None)
+    rf = risk_free_monthly(macro, broad_index.index)
+    fin = fin_spread_bps / 1e4 / 12.0
+    borrow = short_borrow_bps / 1e4 / 12.0
+    fee = fee_bps / 1e4
+
+    def run(E: pd.Series) -> pd.Series:
+        E = E.reindex(r.index)
+        idle = 1.0 - E
+        cash_rate = rf + (idle < 0).astype(float) * fin   # borrowing costs extra
+        turnover = E.diff().abs().fillna(0)
+        short_fee = E.clip(upper=0).abs() * borrow
+        return E * r + idle * cash_rate - turnover * fee - short_fee
+
+    E_timed = leverage_schedule(health.reindex(r.index)).shift(1)
+    books = {
+        "1x buy & hold": run(pd.Series(1.0, index=r.index)),
+        "Static 2x (carry-adj)": run(pd.Series(2.0, index=r.index)),
+        "Static 3x (carry-adj)": run(pd.Series(3.0, index=r.index)),
+        "Regime-timed 1–3x + hedge": run(E_timed),
+    }
+    equity = pd.DataFrame({k: (1 + v.fillna(0)).cumprod() for k, v in books.items()})
+    metrics = pd.DataFrame({k: _perf(v) for k, v in books.items()}).T
+    return LeverageBacktest(equity=equity, metrics=metrics, leverage_path=E_timed)
 
 
 # --------------------------------------------------------------------------- #
@@ -674,6 +794,67 @@ def chart_sector_fundamentals(fund) -> str:
     return _fig_to_b64(fig)
 
 
+def chart_regime_sensitivity(rs: RegimeSensitivity) -> str:
+    from matplotlib.gridspec import GridSpec
+    f12 = rs.fwd_by_regime[12]
+    order = rs.sensitivity.index.tolist()
+    f12 = f12.reindex(order)
+    # Order regime columns by their cross-sector average (risk-off -> risk-on).
+    col_order = f12.mean(axis=0).sort_values().index
+    f12 = f12[col_order]
+    # Rank prefix (1 = worst regime … N = best) keeps columns unique and ordered.
+    short_cols = [f"{i+1}. {c[:18]}" for i, c in enumerate(f12.columns)]
+
+    fig = _new_fig((13, 5.4))
+    gs = GridSpec(1, 2, width_ratios=[2.1, 1], wspace=0.32, figure=fig)
+    ax = fig.add_subplot(gs[0]); _style(ax); ax.grid(False)
+    im = ax.imshow(f12.to_numpy(), aspect="auto", cmap="RdYlGn", vmin=-15, vmax=30)
+    ax.set_xticks(range(len(short_cols)), labels=short_cols, rotation=30, ha="right", fontsize=7)
+    ax.set_yticks(range(len(order)), labels=order, fontsize=8)
+    for i in range(len(order)):
+        for j in range(f12.shape[1]):
+            v = f12.iloc[i, j]
+            if pd.notna(v):
+                ax.text(j, i, f"{v:.0f}", ha="center", va="center", fontsize=6.5, color=TEXT_COLOR)
+    ax.set_title("Forward 12m sector return by macro regime (sorted by sensitivity)",
+                 fontsize=11.5, loc="left")
+
+    ax2 = fig.add_subplot(gs[1]); _style(ax2)
+    sw = rs.sensitivity["swing_%"].reindex(order)[::-1]
+    ax2.barh(range(len(sw)), sw.values, color="#0f4c5c")
+    ax2.set_yticks(range(len(sw)), labels=sw.index, fontsize=7)
+    ax2.set_xlabel("Best−worst regime swing (pp)")
+    ax2.set_title("Regime sensitivity", fontsize=10.5, loc="left")
+    return _fig_to_b64(fig)
+
+
+def chart_leverage(lb: LeverageBacktest) -> str:
+    from matplotlib.gridspec import GridSpec
+    fig = _new_fig((12, 6.6))
+    gs = GridSpec(3, 1, height_ratios=[3, 1.2, 1], hspace=0.18, figure=fig)
+    palette = {"1x buy & hold": "#9b8f77", "Static 2x (carry-adj)": "#c9772b",
+               "Static 3x (carry-adj)": "#9a4a35", "Regime-timed 1–3x + hedge": "#0f4c5c"}
+    ax = fig.add_subplot(gs[0]); _style(ax)
+    for c in lb.equity.columns:
+        ax.plot(lb.equity.index, lb.equity[c].clip(lower=1e-3),
+                lw=1.6 if "Regime" in c else 1.1, color=palette.get(c, "#333"), label=c)
+    ax.set_yscale("log"); ax.set_ylabel("Growth of $1 (log)")
+    ax.set_title("Leverage & hedging with carry cost", fontsize=12, loc="left")
+    ax.legend(fontsize=7.5, loc="upper left")
+    axd = fig.add_subplot(gs[1], sharex=ax); _style(axd)
+    for c in lb.equity.columns:
+        e = lb.equity[c]
+        axd.plot(e.index, (e / e.cummax() - 1) * 100, lw=0.9, color=palette.get(c, "#333"))
+    axd.set_ylabel("DD %", fontsize=8)
+    axl = fig.add_subplot(gs[2], sharex=ax); _style(axl)
+    lev = lb.leverage_path.dropna()
+    axl.fill_between(lev.index, 0, lev.values, where=(lev.values >= 0), color=_GOLD, alpha=0.5, step="mid")
+    axl.fill_between(lev.index, 0, lev.values, where=(lev.values < 0), color=_DEATH, alpha=0.6, step="mid")
+    axl.axhline(0, color=MUTED_TEXT_COLOR, lw=0.6)
+    axl.set_ylabel("Exposure\n(× / hedge)", fontsize=7)
+    return _fig_to_b64(fig)
+
+
 # --------------------------------------------------------------------------- #
 # 7. Report assembly.
 # --------------------------------------------------------------------------- #
@@ -685,8 +866,10 @@ def build_report(root: Path, fundamentals_dir: str | Path | None = "investme_sp5
     macro = load_macro_panel(root)
     cs = analyse_crosses(indices, fast, slow)
     health_df = market_health(macro, indices, slow)
-    bt = backtest_strategies(indices, health_df["health"], fast, slow)
+    bt = backtest_strategies(indices, health_df["health"], fast, slow, macro=macro)
     fund = load_sector_fundamentals(root, fundamentals_dir, refresh=refresh)
+    rs = sector_regime_sensitivity(indices, macro)
+    lb = leverage_backtest(indices["Broad market"], health_df["health"], macro)
 
     charts = {
         "grid": chart_sector_grid(indices, cs.events, fast, slow),
@@ -694,9 +877,11 @@ def build_report(root: Path, fundamentals_dir: str | Path | None = "investme_sp5
         "deviation": chart_deviation(cs.deviation),
         "forward": chart_cross_forward(cs.per_sector),
         "fund": chart_sector_fundamentals(fund),
+        "sensitivity": chart_regime_sensitivity(rs),
         "health": chart_health_timeline(health_df, indices),
         "equity": chart_equity(bt),
         "exposure": chart_exposure(bt, health_df),
+        "leverage": chart_leverage(lb),
     }
 
     cur_health = float(health_df["health"].dropna().iloc[-1])
@@ -714,6 +899,8 @@ def build_report(root: Path, fundamentals_dir: str | Path | None = "investme_sp5
         "Best risk-adjusted strategy": best_sharpe,
         "Cleanest-trending sector": f"{cleanest} ({cs.per_sector.loc[cleanest,'whipsaw_rate_%']:.0f}% fakes)",
         "Choppiest sector": f"{choppiest} ({cs.per_sector.loc[choppiest,'whipsaw_rate_%']:.0f}% fakes)",
+        "Most macro-regime-sensitive": f"{rs.sensitivity.index[0]} ({rs.sensitivity['swing_%'].iloc[0]:.0f}pp swing)",
+        "Least regime-sensitive": rs.sensitivity.index[-1],
     }
     now_html = "".join(
         f'<div class="kv"><span class="k">{H.escape(k)}</span>'
@@ -764,15 +951,27 @@ def build_report(root: Path, fundamentals_dir: str | Path | None = "investme_sp5
       {_img(charts['fund'], 'Sector fundamental scorecard')}
       {_table(fund)}</section>""")
 
-    p.append(f"""<section><h2>6 · Market health for position sizing</h2>
+    p.append(f"""<section><h2>6 · Which sectors feel macro-regime shifts most</h2>
+      <p>Forward 12-month sector returns conditioned on the <b>macro regime</b> (the latent
+      financial-conditions regimes from the Dalio model — no sector prices in the features, so no
+      circularity). The right-hand bars rank sectors by their best-minus-worst-regime swing: high-beta
+      cyclicals (<b>{rs.sensitivity.index[0]}, {rs.sensitivity.index[1]}</b>) swing most between regimes;
+      defensives (<b>{rs.sensitivity.index[-1]}</b>) least. These are the sectors to lever into on a
+      favourable regime shift and to hedge first on an adverse one.</p>
+      {_img(charts['sensitivity'], 'Forward sector returns by macro regime')}
+      {_table(rs.sensitivity)}</section>""")
+
+    p.append(f"""<section><h2>7 · Market health for position sizing</h2>
       <p>The health score blends trend breadth (share of sectors above their {slow}m MA) with financial
       conditions (NFCI, high-yield spreads, VIX, the yield curve) and broad momentum, all as causal
       rolling z-scores. Above 50 = risk-on (size longs up); below 50 = defensive (scale down, allow shorts).
       It reads <b>{cur_health:.0f}</b> today.</p>
       {_img(charts['health'], 'Market health vs the broad market')}</section>""")
 
-    p.append(f"""<section><h2>7 · The strategy: cross + health-sized sizing</h2>
-      <p>Five books, monthly rebalanced, one-month signal lag (no look-ahead), equal risk across sectors:</p>
+    p.append(f"""<section><h2>8 · The strategy: cross + health-sized sizing</h2>
+      <p>Five books, monthly rebalanced, one-month signal lag (no look-ahead), equal risk across sectors.
+      <b>Fair accounting:</b> idle cash earns the risk-free rate, trades cost {10} bps of turnover, and
+      shorts pay a {100} bps/yr borrow fee.</p>
       <ul class="method">
         <li><b>Buy &amp; hold</b> — always long every sector.</li>
         <li><b>Cross long-only</b> — long a sector only while its {fast}m&gt;{slow}m (golden regime).</li>
@@ -789,6 +988,21 @@ def build_report(root: Path, fundamentals_dir: str | Path | None = "investme_sp5
       short when the market is genuinely weak, and de-risks longs into stress. Both directions are
       available, but the data says: be long-biased and let market health govern how much.</p></section>""")
 
+    lev_metrics = lb.metrics
+    p.append(f"""<section><h2>9 · Leverage &amp; hedging with carry cost</h2>
+      <p>The real payoff of a regime filter is that it lets you <b>use leverage without getting wiped out</b>.
+      Four books on the broad market, one-month lag, with realistic carry: borrowed capital pays the
+      risk-free rate + {50} bps, shorts pay a {100} bps/yr borrow fee, and each exposure change costs {10} bps.
+      The regime-timed book runs the exposure ladder <b>3× when health ≥ 75, 2× ≥ 60, 1× ≥ 45, ½× ≥ 30,
+      and −1× (hedge short) below 30</b>.</p>
+      {_img(charts['leverage'], 'Leverage and hedging equity curves with carry')}
+      {_table(lev_metrics)}
+      <p class="note">Static 3× is a <b>ruin machine</b> — its drawdown ({lev_metrics.loc['Static 3x (carry-adj)','maxDD_%']:.0f}%)
+      guarantees a blow-up in 2008/2020 even though its raw return looks huge. The <b>regime-timed 1–3×
+      book</b> targets the same upside but cuts exposure (and flips to a hedge) when health rolls over, so
+      its drawdown stays survivable — which is the only way leverage compounds. Carry is a real drag
+      (≈{50/100:.1f}–{ (50+100)/100:.1f}% a year when levered/short) and is already deducted here.</p></section>""")
+
     p.append(f"""<section class="method"><h2>Method &amp; caveats</h2><ul>
       <li><b>Monthly data.</b> The dataset has no per-symbol daily prices, so the 50/200-day cross is
       implemented as a {fast}m/{slow}m monthly cross (Faber-style). Change with <code>--fast/--slow</code>.</li>
@@ -796,8 +1010,9 @@ def build_report(root: Path, fundamentals_dir: str | Path | None = "investme_sp5
       Relative/behavioural results (whipsaw rates, deviation, drawdown control) are far more robust.</li>
       <li><b>Static cap weights.</b> Sector indices use latest shares (no historical share counts), so
       they are broad proxies, not investable indices.</li>
-      <li><b>No costs.</b> Turnover is real (monthly rebalancing + crossover flips); transaction costs and
-      shorting borrow are not modelled and would reduce the long/short books most.</li>
+      <li><b>Costs modelled.</b> Idle cash earns rf; trades cost 10 bps; shorts pay 100 bps/yr borrow;
+      leverage pays rf + 50 bps financing. Real leveraged-ETF path decay (daily reset) is <i>not</i>
+      modelled — monthly rebalancing understates the drag of daily 3× products.</li>
     </ul></section>""")
 
     doc = (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"/>"
@@ -814,6 +1029,8 @@ def build_report(root: Path, fundamentals_dir: str | Path | None = "investme_sp5
     cs.events.to_csv(out_dir / "cross_events.csv", index=False)
     bt.metrics.to_csv(out_dir / "strategy_metrics.csv")
     health_df.to_csv(out_dir / "market_health.csv")
+    rs.sensitivity.to_csv(out_dir / "sector_regime_sensitivity.csv")
+    lb.metrics.to_csv(out_dir / "leverage_metrics.csv")
     return out_path
 
 
