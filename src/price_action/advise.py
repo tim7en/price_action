@@ -208,14 +208,20 @@ def action_for(ts: TrendState) -> str:
 # 3. Live market-health score (ETF breadth + macro), same recipe as the study.
 # --------------------------------------------------------------------------- #
 def compute_health(macro: pd.DataFrame, prices: pd.DataFrame) -> pd.DataFrame:
+    # Per-column dropna before rolling: the union index mixes crypto (7-day)
+    # and ETF (5-day) calendars, and NaN weekend rows would starve
+    # min_periods=200 for every ETF from the first crypto date onward.
     etfs = [v for v in SECTOR_ETFS.values() if v in prices.columns]
-    ma_s = prices[etfs].rolling(SLOW_D, min_periods=SLOW_D).mean()
-    above = (prices[etfs] > ma_s).astype(float).where(ma_s.notna())
-    breadth = above.resample("ME").last().mean(axis=1).astype(float)
+    above_cols = {}
+    for etf in etfs:
+        px = prices[etf].dropna()
+        ma = px.rolling(SLOW_D, min_periods=SLOW_D).mean()
+        above_cols[etf] = (px > ma).astype(float).where(ma.notna())
+    breadth = pd.DataFrame(above_cols).resample("ME").last().mean(axis=1).astype(float)
 
     idx = breadth.dropna().index
     m = macro.reindex(idx).ffill(limit=2)
-    spy_m = prices[BROAD_ETF].resample("ME").last().reindex(idx)
+    spy_m = prices[BROAD_ETF].dropna().resample("ME").last().reindex(idx)
     mom = spy_m / spy_m.shift(12) - 1.0
 
     parts = pd.DataFrame(index=idx)
@@ -356,8 +362,14 @@ def build_sheet(root: Path, offline: bool = False) -> str:
         add(f"| {sym.replace('USDT','')} | {ts.state} | {ts.since:%Y-%m-%d} "
             f"| {ts.dist_slow_pct:+.1f}% | {cap*100:.0f}% | **{action_for(ts)}** |")
     add("")
-    add(f"- Crypto sleeve: deploy **{crypto_expo*100:.0f}%** of the sleeve across "
-        f"UP assets (per-asset caps above), remainder to stables yield / PAXG.")
+    if crypto_up:
+        add(f"- Crypto sleeve: deploy **{crypto_expo*100:.0f}%** of the sleeve across "
+            f"UP assets ({', '.join(s.replace('USDT','') for s in crypto_up)}; "
+            f"per-asset caps above), remainder to stables yield / PAXG.")
+    else:
+        add(f"- Crypto sleeve: health allows {crypto_expo*100:.0f}%, but **no crypto "
+            f"asset is in an uptrend** → the trend gate keeps the whole sleeve in "
+            f"stables yield / PAXG until a golden cross.")
     add("")
 
     add("## Caveats (printed on purpose)")
