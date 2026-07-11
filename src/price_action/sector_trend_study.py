@@ -176,12 +176,17 @@ def build_sector_indices(root: Path, fundamentals_dir: str | Path | None,
     prices = pd.DataFrame(price_cols).sort_index()
     rets = prices.pct_change(fill_method=None).clip(*return_clip)
 
-    # Static cap weights: latest shares * latest price (median fallback).
-    latest_px = prices.ffill().iloc[-1]
+    # Point-in-time cap weights: static share counts x price at each month,
+    # lagged one month so the weight applied to month t's return uses only
+    # information available at t-1.  (Share counts are the latest snapshot --
+    # no historical share data -- but the dominant look-ahead was the price.)
     shares = pd.Series(shares_of).reindex(prices.columns)
-    mktcap = (shares * latest_px)
-    mktcap = mktcap.where(mktcap > 0)
-    mktcap = mktcap.fillna(mktcap.median())
+    shares = shares.where(shares > 0)
+    cap_pit = prices.ffill().mul(shares, axis=1)
+    row_median = cap_pit.median(axis=1)
+    for col in prices.columns[shares.isna().to_numpy()]:
+        cap_pit[col] = row_median.where(prices[col].ffill().notna())
+    cap_lag = cap_pit.shift(1)
 
     sectors = sorted(set(sec_of.values()))
     index_cols: dict[str, pd.Series] = {}
@@ -193,7 +198,7 @@ def build_sector_indices(root: Path, fundamentals_dir: str | Path | None,
         sub = rets[members]
         valid = sub.notna()
         breadth = valid.sum(axis=1)
-        w = valid.mul(mktcap[members], axis=1)
+        w = cap_lag[members].where(valid)
         w = w.div(w.sum(axis=1), axis=0)
         sector_ret = (sub * w).sum(axis=1, min_count=1).where(breadth >= max(4, min_members // 2))
         index_cols[sector] = sector_ret
@@ -201,7 +206,7 @@ def build_sector_indices(root: Path, fundamentals_dir: str | Path | None,
 
     # Broad index = cap-weighted across all tagged names.
     valid = rets.notna()
-    w = valid.mul(mktcap, axis=1)
+    w = cap_lag.where(valid)
     w = w.div(w.sum(axis=1), axis=0)
     broad = (rets * w).sum(axis=1, min_count=1).where(valid.sum(axis=1) >= 50)
     index_cols["Broad market"] = broad
@@ -620,12 +625,27 @@ def leverage_backtest(broad_index: pd.Series, health: pd.Series, macro: pd.DataF
     E_timed = leverage_schedule(health.reindex(r.index)).shift(1)
     books = {
         "1x buy & hold": run(pd.Series(1.0, index=r.index)),
-        "Static 2x (carry-adj)": run(pd.Series(2.0, index=r.index)),
         "Static 3x (carry-adj)": run(pd.Series(3.0, index=r.index)),
+        "Static 5x (carry-adj)": run(pd.Series(5.0, index=r.index)),
         "Regime-timed 1–3x + hedge": run(E_timed),
     }
-    equity = pd.DataFrame({k: (1 + v.fillna(0)).cumprod() for k, v in books.items()})
-    metrics = pd.DataFrame({k: _perf(v) for k, v in books.items()}).T
+
+    def _equity_with_ruin(v: pd.Series) -> pd.Series:
+        """Compound returns; once a month loses >=100%, the account is dead."""
+        growth = 1.0 + v.fillna(0)
+        dead = growth.le(0).cummax()
+        eq = growth.clip(lower=0).cumprod()
+        return eq.where(~dead, 0.0)
+
+    equity = pd.DataFrame({k: _equity_with_ruin(v) for k, v in books.items()})
+    metrics = {}
+    for k, v in books.items():
+        m = _perf(v)
+        if (1.0 + v.fillna(0)).le(0).any():          # wiped out at least once
+            m["CAGR_%"] = -100.0
+            m["maxDD_%"] = -100.0
+        metrics[k] = m
+    metrics = pd.DataFrame(metrics).T
     return LeverageBacktest(equity=equity, metrics=metrics, leverage_path=E_timed)
 
 
@@ -832,8 +852,8 @@ def chart_leverage(lb: LeverageBacktest) -> str:
     from matplotlib.gridspec import GridSpec
     fig = _new_fig((12, 6.6))
     gs = GridSpec(3, 1, height_ratios=[3, 1.2, 1], hspace=0.18, figure=fig)
-    palette = {"1x buy & hold": "#9b8f77", "Static 2x (carry-adj)": "#c9772b",
-               "Static 3x (carry-adj)": "#9a4a35", "Regime-timed 1–3x + hedge": "#0f4c5c"}
+    palette = {"1x buy & hold": "#9b8f77", "Static 3x (carry-adj)": "#c9772b",
+               "Static 5x (carry-adj)": "#9a4a35", "Regime-timed 1–3x + hedge": "#0f4c5c"}
     ax = fig.add_subplot(gs[0]); _style(ax)
     for c in lb.equity.columns:
         ax.plot(lb.equity.index, lb.equity[c].clip(lower=1e-3),
@@ -989,27 +1009,38 @@ def build_report(root: Path, fundamentals_dir: str | Path | None = "investme_sp5
       available, but the data says: be long-biased and let market health govern how much.</p></section>""")
 
     lev_metrics = lb.metrics
+    ruined_5x = bool(lev_metrics.loc["Static 5x (carry-adj)", "CAGR_%"] <= -100)
+    five_x_note = ("the 5× book <b>hits a &gt;100% monthly loss and the account goes to zero</b> — "
+                   "permanent ruin, no recovery possible"
+                   if ruined_5x else
+                   f"the 5× book survives only by the accident of monthly rebalancing "
+                   f"(maxDD {lev_metrics.loc['Static 5x (carry-adj)','maxDD_%']:.0f}%); any daily-margined "
+                   f"5× product would have been liquidated inside the worst months")
     p.append(f"""<section><h2>9 · Leverage &amp; hedging with carry cost</h2>
       <p>The real payoff of a regime filter is that it lets you <b>use leverage without getting wiped out</b>.
-      Four books on the broad market, one-month lag, with realistic carry: borrowed capital pays the
-      risk-free rate + {50} bps, shorts pay a {100} bps/yr borrow fee, and each exposure change costs {10} bps.
-      The regime-timed book runs the exposure ladder <b>3× when health ≥ 75, 2× ≥ 60, 1× ≥ 45, ½× ≥ 30,
-      and −1× (hedge short) below 30</b>.</p>
+      Four books on the broad market — static 1×/3×/5× and a regime-timed ladder — one-month lag, with
+      realistic carry: borrowed capital pays the risk-free rate + {50} bps, shorts pay a {100} bps/yr borrow
+      fee, and each exposure change costs {10} bps. The regime-timed book runs <b>3× when health ≥ 75,
+      2× ≥ 60, 1× ≥ 45, ½× ≥ 30, and −1× (hedge short) below 30</b>.</p>
       {_img(charts['leverage'], 'Leverage and hedging equity curves with carry')}
       {_table(lev_metrics)}
-      <p class="note">Static 3× is a <b>ruin machine</b> — its drawdown ({lev_metrics.loc['Static 3x (carry-adj)','maxDD_%']:.0f}%)
-      guarantees a blow-up in 2008/2020 even though its raw return looks huge. The <b>regime-timed 1–3×
-      book</b> targets the same upside but cuts exposure (and flips to a hedge) when health rolls over, so
+      <p class="note">Static high leverage is a <b>ruin machine</b>: the 3× book draws down
+      {lev_metrics.loc['Static 3x (carry-adj)','maxDD_%']:.0f}%, and {five_x_note}. The <b>regime-timed 1–3×
+      book</b> targets the levered upside but cuts exposure (and flips to a hedge) when health rolls over, so
       its drawdown stays survivable — which is the only way leverage compounds. Carry is a real drag
-      (≈{50/100:.1f}–{ (50+100)/100:.1f}% a year when levered/short) and is already deducted here.</p></section>""")
+      (≈{50/100:.1f}–{ (50+100)/100:.1f}% a year when levered/short) and is already deducted here. Monthly
+      rebalancing is generous to the static books: intra-month margin calls and daily-reset decay are not
+      modelled, so real 3×/5× products are strictly worse than shown.</p></section>""")
 
     p.append(f"""<section class="method"><h2>Method &amp; caveats</h2><ul>
       <li><b>Monthly data.</b> The dataset has no per-symbol daily prices, so the 50/200-day cross is
       implemented as a {fast}m/{slow}m monthly cross (Faber-style). Change with <code>--fast/--slow</code>.</li>
       <li><b>Survivorship.</b> Only currently-present symbols exist, inflating levels and buy-&amp;-hold.
       Relative/behavioural results (whipsaw rates, deviation, drawdown control) are far more robust.</li>
-      <li><b>Static cap weights.</b> Sector indices use latest shares (no historical share counts), so
-      they are broad proxies, not investable indices.</li>
+      <li><b>Point-in-time cap weights.</b> Sector indices weight month t's returns by market cap at
+      t−1 (price at t−1 × latest share counts — no historical share data), so no future prices leak
+      into the weights. Symbols without share data get the cross-sectional median cap. Still broad
+      proxies, not investable indices.</li>
       <li><b>Costs modelled.</b> Idle cash earns rf; trades cost 10 bps; shorts pay 100 bps/yr borrow;
       leverage pays rf + 50 bps financing. Real leveraged-ETF path decay (daily reset) is <i>not</i>
       modelled — monthly rebalancing understates the drag of daily 3× products.</li>
