@@ -29,7 +29,7 @@ price-action-news-sentiment = "price_action.news_sentiment_research:main"
 price-action-spy-vix-fear-greed = "price_action.spy_vix_fear_greed_research:main"
 price-action-spy-regime-risk-management = "price_action.spy_regime_risk_management:main"
 price-action-spy-drawdown-regime = "price_action.spy_drawdown_regime_research:main"
+price-action-sector-dalio-regime = "price_action.sector_dalio_regime_model:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]
-
