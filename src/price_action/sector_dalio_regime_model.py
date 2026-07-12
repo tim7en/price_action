@@ -947,11 +947,11 @@ def chart_fake_breakouts(trend_quality: pd.DataFrame) -> str:
     ax.set_yticks(y, labels=view.index, fontsize=8)
     ax.set_xlabel("Fake breakout / whipsaw rate (% of crosses)", color=INK)
     ax.set_title("Where sector breakouts fail most often", loc="left", color=INK)
-    for i, row in enumerate(view.itertuples()):
+    for i, (_, row) in enumerate(view.iterrows()):
         ax.text(
-            float(row._asdict()["fake_breakout_rate_%"]) + 1.0,
+            float(row["fake_breakout_rate_%"]) + 1.0,
             i,
-            f"{row._asdict()['crosses_per_decade']:.1f} crosses/decade",
+            f"{float(row['crosses_per_decade']):.1f} crosses/decade",
             va="center",
             fontsize=7,
             color=INK_MUTED,

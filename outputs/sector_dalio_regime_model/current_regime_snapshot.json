@@ -1,0 +1,36 @@
+{
+  "as_of": "2025-09-30",
+  "current_gmm_regime": "Inflationary \u00b7 Inverted curve / late-cycle",
+  "current_dalio_quadrant": "Reflation (growth up, inflation up)",
+  "market_health": 79.66623992660172,
+  "sector_breadth": 1.0,
+  "favored_sectors": [
+    "Technology",
+    "Financials",
+    "Consumer Cyclical"
+  ],
+  "avoid_sectors": [
+    "Health Care",
+    "Materials",
+    "Consumer Defensive"
+  ],
+  "most_fake_breakouts": [
+    "Health Care",
+    "Consumer Defensive",
+    "Real Estate"
+  ],
+  "cleanest_trending": [
+    "Communication Svcs",
+    "Industrials",
+    "Technology"
+  ],
+  "regime_forecast_12m": {
+    "Inflationary \u00b7 Inverted curve / late-cycle": 0.6162692463488768,
+    "Expansion": 0.10389561919695482,
+    "Inverted curve / late-cycle": 0.10373403705538427
+  },
+  "generated_at": "2026-07-12T17:00:16.437274+00:00",
+  "holdout_start": "2025-01-01",
+  "label_horizon_months": 6,
+  "top_n": 3
+}
