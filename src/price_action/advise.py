@@ -43,7 +43,7 @@ import pandas as pd
 
 from .data import resolve_project_root
 from .regime_analysis import fit_regime_model, load_macro_panel
-from .sector_trend_study import _roll_z, leverage_schedule
+from .sector_trend_study import _roll_z
 
 PRICE_CACHE = Path("cache") / "advise"
 OUTPUT_DIR = Path("outputs") / "advice"
@@ -73,7 +73,17 @@ HYSTERESIS_BAND = 0.02   # playbook: MA-spread must clear +/-2% to flip state
 FRESH_BARS = 5           # a cross within the last 5 trading days is actionable
 
 # Playbook crypto-sleeve ladder: health -> share of the risk sleeve deployed.
-CRYPTO_LADDER = [(70, 1.0), (55, 1.0), (40, 0.6), (25, 0.25), (-1, 0.10)]
+# De-risk only (the walk-forward regime test failed the lever-up rows).
+CRYPTO_LADDER = [(55, 1.0), (40, 0.6), (25, 0.25), (-1, 0.10)]
+
+
+def derisk_exposure(health: float) -> float:
+    """Equity exposure, de-risk-only: 1x >=45, 1/2x 30-45, cash below 30."""
+    if health >= 45:
+        return 1.0
+    if health >= 30:
+        return 0.5
+    return 0.0
 
 
 # --------------------------------------------------------------------------- #
@@ -281,7 +291,7 @@ def build_sheet(root: Path, offline: bool = False) -> str:
     h_series = health_df["health"].dropna()
     health = float(h_series.iloc[-1])
     health_asof = h_series.index[-1]
-    equity_ladder = float(leverage_schedule(pd.Series([health])).iloc[0])
+    equity_ladder = derisk_exposure(health)
     crypto_expo = crypto_sleeve_exposure(health)
     whipsaw = _load_whipsaw(root)
 
@@ -311,8 +321,9 @@ def build_sheet(root: Path, offline: bool = False) -> str:
     add("- Components (z, + is supportive): " +
         ", ".join(f"{k} {comp[k]:+.1f}" for k in
                   ["breadth", "nfci", "hy", "vix", "curve", "momentum"]))
-    add(f"- Equity-study ladder ⇒ **{equity_ladder:g}× broad-market exposure** "
-        f"(3× ≥75 · 2× ≥60 · 1× ≥45 · ½× ≥30 · hedge <30)")
+    add(f"- De-risk ladder ⇒ **{equity_ladder:g}× broad-market exposure** "
+        f"(1× ≥45 · ½× 30–45 · cash <30 — de-risk only; lever-up rows removed "
+        f"after the walk-forward regime test failed them)")
     add(f"- Playbook crypto sleeve ⇒ **{crypto_expo*100:.0f}% of the risk sleeve deployed**")
     add("")
 
@@ -373,8 +384,11 @@ def build_sheet(root: Path, offline: bool = False) -> str:
     add("")
 
     add("## Caveats (printed on purpose)")
+    add("- Health is a **de-risk-only** governor: the walk-forward regime test "
+        "(outputs/regime_walkforward/) found *negative* timing IC for levering up, "
+        "so the ladder scales down in stress and never above 1×.")
     add("- Ladder thresholds & health weights are in-sample calibrations from the "
-        "equity study (honest edge over 1×: ~+1.4% CAGR, −12pp maxDD — an upper bound).")
+        "equity study; treat any edge as an upper bound.")
     add("- Trend/ladder logic is validated on equities only; crypto rows are an "
         "extrapolation. 5× anything failed the backtest permanently (−100%).")
     add("- Regime & health freshness is bounded by the FRED store (see warnings).")

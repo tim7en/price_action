@@ -31,6 +31,12 @@ It deliberately keeps only the conclusions that survived the leakage review of
   (hand-fit in-sample). Here they are re-used only as *shapes*, deliberately
   de-tuned and made more conservative.
 - "Regime-timed 3×" upside. In crypto vol, 3× is never on the menu.
+- **Levering up on good regimes — at all.** A walk-forward test (July 2026,
+  Wilshire 2010–26, `outputs/regime_walkforward/`) found both the GMM regime
+  signal and the health ladder had *negative* timing IC in V-recovery markets:
+  the 2–3× rows failed when fit causally. Health is therefore a
+  **de-risk-only governor** in this playbook: it scales exposure *down* in
+  stress and never above 100%.
 
 ---
 
@@ -90,12 +96,12 @@ reasons, then leave them alone.
 ## 3 · Sizing ladder (the leverage schedule, de-tuned for crypto vol)
 
 Gross exposure of the risk sleeves, applied ONLY to assets whose own trend
-state is `UP`:
+state is `UP`. **De-risk only: health scales exposure down, never above 100%**
+(the lever-up rows were removed after the walk-forward test failed them):
 
 | Health H | Risk-sleeve exposure | Notes |
 |---|---|---|
-| ≥ 70 | 100% + optional 1.25× on BTC/ETH only (perp overlay) | Leverage cap is 1.25×, not 3×. BTC at 1.25× ≈ S&P at 3× in vol terms |
-| 55–70 | 100%, no leverage | Base case |
+| ≥ 55 | 100%, never leveraged | Base case — trend states do the selecting, health does not add risk |
 | 40–55 | 60% risk / 40% cash+PAXG | De-risk *early* — this is where the study's governor earned its keep |
 | 25–40 | 25% risk / 75% cash+PAXG | Survive mode |
 | < 25 | 0–10% risk; optional BTC perp short ≤ 25% NAV | Shorts exist ONLY here (the "h < 0.35" lesson, made stricter) |
@@ -115,11 +121,10 @@ asymmetry is cheap insurance against health-score whipsaw.
 - Spot fees ~7.5–10 bps/side (BNB discount on). Weekly cadence + hysteresis
   keeps turnover near the study's ~0.1×/month; at that rate fees cost
   ~0.5%/yr. Fine. If your turnover is 3× that, your signal is too fast.
-- **Perp funding is the carry:** long overlay in bull markets historically pays
-  5–15%/yr — treat it exactly like the study's financing spread. If 30d avg
-  funding annualizes above ~15%, the 1.25× overlay is OFF regardless of H.
-- Short hedge usually *earns* funding in stress — a tailwind the study's
-  borrow-fee model didn't have, but never a reason to short above the H floor.
+- **Perp funding matters only for the hedge short** now that the leverage
+  overlay is gone. The hedge usually *earns* funding in stress — a tailwind
+  the study's borrow-fee model didn't have, but never a reason to short above
+  the H floor.
 - Stablecoin yield is the rf leg. Idle cash earning 3–5% was a real
   contributor in the study's fair accounting; leave no idle USDT unstaked
   (subject to your counterparty comfort — see risks).
@@ -130,7 +135,9 @@ asymmetry is cheap insurance against health-score whipsaw.
 
 1. **Kill switch:** portfolio DD > 20% from high-water mark → cut to the
    25–40 ladder row minimum, stay there until H > 55 for 2 weeks.
-2. Never leveraged while H < 70. Never any leverage + short simultaneously.
+2. No leverage, at any health level — the walk-forward test failed the
+   lever-up case. Shorts only per the ladder floor, never alongside full
+   long exposure.
 3. Per-asset caps from the table in §1, enforced at rebalance.
 4. Perps for hedge/overlay only — position notional, margin ring-fenced,
    isolated margin, no cross.
@@ -146,7 +153,7 @@ asymmetry is cheap insurance against health-score whipsaw.
 2. Compute H (breadth, momentum, funding, stablecoin dominance, VIX/HY, DXY).
 3. Read the ladder row; apply the 2-week rule for upgrades.
 4. Vol-scale weights; check caps; check kill switch.
-5. Check 30d avg funding → overlay on/off.
+5. If the hedge short is on, check 30d avg funding.
 6. Place orders Monday; log H, states, exposure, and *why* — the log is what
    lets you audit yourself out of discretionary drift.
 
