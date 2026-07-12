@@ -96,7 +96,16 @@ PANEL_SPEC = {
     "policy_uncertainty": ("Policy uncertainty", -1),
     "cape": ("Valuation: CAPE", -1),
     "mktcap_to_gdp": ("Valuation: mktcap/GDP", -1),
+    # Forward-looking block (dot plot handled separately -- no z history).
+    "fed_path_2y": ("Fwd: Fed path priced (2y − FF)", -1),
+    "breakeven_10y": ("Fwd: 10y breakeven inflation", -1),
+    "infl_5y5y_fwd": ("Fwd: 5y5y forward inflation", -1),
+    "infl_exp_1y": ("Fwd: Michigan 1y infl. expectations", -1),
+    "claims_yoy": ("Fwd: Initial claims YoY (leading)", -1),
+    "permits_yoy": ("Fwd: Building permits YoY (leading)", +1),
 }
+FORWARD_COLS = ["fed_path_2y", "breakeven_10y", "infl_5y5y_fwd",
+                "infl_exp_1y", "claims_yoy", "permits_yoy"]
 
 SPARK_COLS = ["gold", "dxy", "vix", "hy_spread", "nfci", "t10y3m",
               "core_cpi_yoy", "indpro_yoy", "cape"]
@@ -109,6 +118,31 @@ SPARK_LABELS = {"gold": "Gold ($/oz)", "dxy": "Dollar index", "vix": "VIX",
 # --------------------------------------------------------------------------- #
 # 1. Dalio quadrant.
 # --------------------------------------------------------------------------- #
+def dot_plot_reading(root: Path) -> dict | None:
+    """Current Fed dot-plot stance from FRED's SEP median series.
+
+    FEDTARMD observations are dated by *projection target* (future year-ends),
+    so only the current vintage is meaningful -- a level reading, not a z-able
+    history.  Restrictiveness = median for the nearest future year-end minus
+    the longer-run median.
+    """
+    from .regime_analysis import _read_fred
+    med = _read_fred(root, "FEDTARMD")
+    lr = _read_fred(root, "FEDTARMDLR")
+    if med.empty or lr.empty:
+        return None
+    future = med[med.index >= pd.Timestamp.now()]
+    if future.empty:
+        return None
+    next_ye = float(future.iloc[0])
+    longer_run = float(lr.iloc[-1])
+    gap = next_ye - longer_run
+    stance = ("restrictive" if gap > 0.25 else
+              ("accommodative" if gap < -0.25 else "≈ neutral"))
+    return {"next_ye": next_ye, "next_ye_date": future.index[0],
+            "longer_run": longer_run, "gap": gap, "stance": stance}
+
+
 def quadrant_series(macro: pd.DataFrame) -> pd.DataFrame:
     infl = macro["core_cpi_yoy"].fillna(macro["cpi_yoy"])
     g = macro["indpro_yoy"] - macro["indpro_yoy"].shift(6)
@@ -135,7 +169,8 @@ def quadrant_history(quads: pd.DataFrame, price: pd.Series) -> pd.DataFrame:
     return pd.DataFrame(rows).T
 
 
-def chart_quadrant(quads: pd.DataFrame, months: int = 36) -> str:
+def chart_quadrant(quads: pd.DataFrame, months: int = 36,
+                   expected: tuple[float, float] | None = None) -> str:
     recent = quads.tail(months)
     fig = _vintage_fig((9.5, 7.6)); ax = fig.add_subplot(111); _vintage_ax(ax)
     lim_x = max(4.0, recent["growth_impulse"].abs().max() * 1.25)
@@ -160,6 +195,11 @@ def chart_quadrant(quads: pd.DataFrame, months: int = 36) -> str:
                edgecolors=INK, linewidths=1.0, marker="o")
     ax.annotate(f"  now ({recent.index[-1]:%Y-%m})", xy=(xs[-1], ys[-1]),
                 fontsize=9, color=INK_VERMILION, fontfamily="serif", fontweight="bold")
+    if expected is not None and np.all(np.isfinite(expected)):
+        ax.scatter([expected[0]], [expected[1]], s=120, facecolors="none",
+                   edgecolors=INK_GREEN, linewidths=1.7, marker="D", zorder=5)
+        ax.annotate("  market-implied direction\n  (Δ6m curve, Δ6m 5y5y infl.)",
+                    xy=expected, fontsize=7.5, color=INK_GREEN, fontfamily="serif")
     for k in (11, 23):
         if len(xs) > k:
             ax.annotate(f"{recent.index[-1 - k]:%Y-%m}", xy=(xs[-1 - k], ys[-1 - k]),
@@ -330,7 +370,8 @@ def chart_board(board: pd.DataFrame) -> str:
 # 4. The verdict.
 # --------------------------------------------------------------------------- #
 def overall_verdict(health: float, osc_now: float, quadrant: str,
-                    regime_name: str) -> tuple[str, pd.DataFrame]:
+                    regime_name: str, fwd_z: float | None = None
+                    ) -> tuple[str, pd.DataFrame]:
     votes = {}
     votes["Market health"] = (1 if health >= 55 else (0 if health >= 45 else -1),
                               f"{health:.0f}/100")
@@ -341,6 +382,10 @@ def overall_verdict(health: float, osc_now: float, quadrant: str,
     r_vote = -1 if ("stress" in low or "contraction" in low) else (
         1 if ("expansion" in low or "easy" in low) else 0)
     votes["GMM macro regime"] = (r_vote, regime_name)
+    if fwd_z is not None and np.isfinite(fwd_z):
+        votes["Forward expectations"] = (
+            1 if fwd_z > 0.3 else (-1 if fwd_z < -0.3 else 0),
+            f"avg fwd z {fwd_z:+.2f}")
     total = sum(v for v, _ in votes.values())
     call = "RISK-ON" if total >= 2 else ("RISK-OFF" if total <= -2 else "NEUTRAL")
     table = pd.DataFrame(
@@ -373,14 +418,26 @@ def build_report(root: Path,
     regime_probs = (model.forecast["3m"].sort_values(ascending=False) * 100).head(3)
 
     board = sector_board(root, indices, fundamentals_dir)
-    call, votes = overall_verdict(health, osc_now, q_now, str(model.current))
+
+    fwd_labels = [PANEL_SPEC[c][0] for c in FORWARD_COLS]
+    fwd_rows = panel.reindex([l for l in fwd_labels if l in panel.index])
+    fwd_z = (float(fwd_rows["supportive_z"].astype(float).mean())
+             if not fwd_rows.empty else None)
+    dots = dot_plot_reading(root)
+
+    def _d6m(col: str) -> float:
+        s = macro[col].dropna() if col in macro.columns else pd.Series(dtype=float)
+        return float(s.iloc[-1] - s.iloc[-7]) if len(s) > 7 else np.nan
+    expected_pt = (_d6m("t10y3m"), _d6m("infl_5y5y_fwd"))
+
+    call, votes = overall_verdict(health, osc_now, q_now, str(model.current), fwd_z)
 
     cape_now = float(macro["cape"].dropna().iloc[-1])
     cape_pct = float((macro["cape"].dropna() <= cape_now).mean() * 100)
     mc_gdp = float(macro["mktcap_to_gdp"].dropna().iloc[-1])
 
     charts = {
-        "quadrant": chart_quadrant(quads),
+        "quadrant": chart_quadrant(quads, expected=expected_pt),
         "panel": chart_panel(panel),
         "sparks": chart_sparks(macro),
         "board": chart_board(board),
@@ -409,6 +466,9 @@ def build_report(root: Path,
       <div class="kv"><span class="k">Market health</span><span class="v">{health:.0f} / 100</span></div>
       <div class="kv"><span class="k">Momentum oscillator</span><span class="v">{osc_now:+.2f}</span></div>
       <div class="kv"><span class="k">Valuation context</span><span class="v">CAPE {cape_now:.0f} ({cape_pct:.0f}th pct since '99) · mktcap/GDP {mc_gdp:.0f}%</span></div>
+      <div class="kv"><span class="k">Fed dot plot</span><span class="v">{
+        f"median {dots['next_ye']:.1f}% for {dots['next_ye_date']:%Y}, longer-run {dots['longer_run']:.1f}% → {dots['stance']} ({dots['gap']:+.2f}pp)"
+        if dots else "not fetched — run refresh_macro.py"}</span></div>
       <div class="kv"><span class="k">Sectors favoured / avoid</span><span class="v">{", ".join(fav) or "—"} / {", ".join(avoid) or "—"}</span></div>
       </div>
       {_table(votes)}
@@ -453,6 +513,11 @@ def build_report(root: Path,
       <li><b>Sector indices</b> are point-in-time cap-weighted but survivorship-biased;
       fundamentals are a current snapshot (no history).</li>
       <li><b>The verdict maps to the de-risk ladder only</b> — risk-on ⇒ 1× at most.</li>
+      <li><b>Forward-looking block:</b> the dot plot (FEDTARMD) is a current-vintage level
+      reading — FRED does not expose what the Fed projected historically, so it gets no z-score
+      and no backtest; the market-implied gauges (2y−FF, breakevens, claims, permits) carry the
+      forward vote instead. GMM regime features are unchanged (adding forward inputs would
+      invalidate the walk-forward verdict).</li>
       </ul></section>""")
 
     doc = (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"/>"

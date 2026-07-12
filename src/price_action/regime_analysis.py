@@ -180,6 +180,18 @@ def load_macro_panel(root: Path) -> pd.DataFrame:
     indpro = _read_fred(root, "INDPRO").resample("ME").last()
     frame["indpro_yoy"] = (indpro / indpro.shift(12) - 1.0).mul(100).reindex(frame.index)
 
+    # Forward-looking block: market-implied Fed path, inflation expectations,
+    # and leading indicators (columns empty until refresh_macro fetches them).
+    frame["fed_funds"] = _fred_monthly("DFF")
+    frame["fed_path_2y"] = frame["us_2y"] - frame["fed_funds"]
+    frame["breakeven_10y"] = _fred_monthly("T10YIE")
+    frame["infl_5y5y_fwd"] = _fred_monthly("T5YIFR")
+    frame["infl_exp_1y"] = _fred_monthly("MICH")
+    claims = _read_fred(root, "ICSA").rolling(4, min_periods=4).mean().resample("ME").last()
+    frame["claims_yoy"] = (claims / claims.shift(12) - 1.0).mul(100).reindex(frame.index)
+    permits = _read_fred(root, "PERMIT").resample("ME").last()
+    frame["permits_yoy"] = (permits / permits.shift(12) - 1.0).mul(100).reindex(frame.index)
+
     return frame
 
 

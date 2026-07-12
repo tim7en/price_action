@@ -23,6 +23,7 @@ Run with::
 from __future__ import annotations
 
 import json
+import time
 from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
@@ -64,14 +65,27 @@ COLUMN_ORDER = [
 START = "1999-01-01"
 MULTPL_URL = "https://www.multpl.com/shiller-pe/table/by-month"
 
+# Forward-looking series (created on first refresh if absent): Fed dot-plot
+# medians, effective fed funds, TIPS breakevens, and leading indicators.
+EXTRA_FRED_SERIES = ["DFF", "T10YIE", "T5YIFR", "MICH", "ICSA", "PERMIT",
+                     "FEDTARMD", "FEDTARMDLR"]
 
-def _get(url: str, timeout: int = 45) -> bytes:
+
+def _get(url: str, timeout: int = 90, attempts: int = 3) -> bytes:
     # urllib, not curl: the sandbox/CDN path rejects curl's TLS handshake for
     # fred.stlouisfed.org (HTTP/2 INTERNAL_ERROR) while urlopen succeeds.
+    # FRED throttles bursts, so retry with backoff and pace callers.
     from urllib.request import Request, urlopen
-    req = Request(url, headers={"User-Agent": "Mozilla/5.0", "Accept": "*/*"})
-    with urlopen(req, timeout=timeout) as resp:
-        return resp.read()
+    last: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            req = Request(url, headers={"User-Agent": "Mozilla/5.0", "Accept": "*/*"})
+            with urlopen(req, timeout=timeout) as resp:
+                return resp.read()
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+            time.sleep(4.0 * (attempt + 1))
+    raise RuntimeError(f"GET failed after {attempts} attempts: {url}") from last
 
 
 def fetch_fred_series(series_id: str) -> pd.Series:
@@ -89,11 +103,28 @@ def fetch_fred_series(series_id: str) -> pd.Series:
 
 
 def fetch_yahoo_series(symbol: str) -> pd.Series:
-    from .update_data import fetch_yahoo_chart
-    end = (pd.Timestamp.utcnow() + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
-    frame = fetch_yahoo_chart(symbol, START, end)
-    s = pd.Series(frame["close"].to_numpy(),
-                  index=pd.DatetimeIndex(frame["date"]).normalize(), name=symbol)
+    # Direct chart call (not fetch_yahoo_chart): indices like ^FTW5000 have no
+    # adjclose, which fetch_yahoo_chart's dropna would discard entirely.
+    from urllib.parse import quote, urlencode
+    params = urlencode({
+        "period1": int(pd.Timestamp(START, tz="UTC").timestamp()),
+        "period2": int((pd.Timestamp.utcnow() + pd.Timedelta(days=1)).timestamp()),
+        "interval": "1d", "includePrePost": "false",
+    })
+    url = f"https://query2.finance.yahoo.com/v8/finance/chart/{quote(symbol)}?{params}"
+    payload = json.loads(_get(url))
+    result = ((payload.get("chart") or {}).get("result") or [None])[0]
+    if not result:
+        raise RuntimeError(f"Yahoo returned no data for {symbol}")
+    ts = result.get("timestamp") or []
+    close = ((result.get("indicators") or {}).get("quote") or [{}])[0].get("close") or []
+    adj = (((result.get("indicators") or {}).get("adjclose") or [{}])[0].get("adjclose")
+           or [None] * len(ts))
+    vals = [a if a is not None else c for a, c in zip(adj, close)]
+    idx = pd.to_datetime(ts, unit="s", utc=True).tz_convert(None).normalize()
+    s = pd.Series(vals, index=idx, name=symbol, dtype=float).dropna()
+    if s.empty:
+        raise RuntimeError(f"Yahoo returned only nulls for {symbol}")
     return s[~s.index.duplicated(keep="last")].sort_index()
 
 
@@ -109,15 +140,18 @@ def fetch_multpl_cape() -> pd.Series:
     return s[s.index >= START]
 
 
-def refresh_fred_dir(root: Path) -> tuple[list[str], list[str]]:
+def refresh_fred_dir(root: Path, only: list[str] | None = None) -> tuple[list[str], list[str]]:
     done, failed = [], []
-    for path in sorted((root / "fred").glob("*.csv")):
-        name = path.stem
-        if name == "UMCSENT_RELEASE_AWARE":     # ALFRED cache, own updater
-            continue
+    existing = {p.stem for p in (root / "fred").glob("*.csv")}
+    names = sorted((existing | set(EXTRA_FRED_SERIES)) - {"UMCSENT_RELEASE_AWARE"})
+    if only is not None:
+        names = [n for n in names if n in only]
+    for name in names:
         try:
+            time.sleep(1.5)                      # pace FRED, it throttles bursts
             s = fetch_fred_series(name)
-            s.rename_axis("observation_date").reset_index().to_csv(path, index=False)
+            s.rename_axis("observation_date").reset_index().to_csv(
+                root / "fred" / f"{name}.csv", index=False)
             done.append(f"{name} → {s.index[-1]:%Y-%m-%d}")
         except Exception as exc:  # noqa: BLE001
             failed.append(f"{name}: {exc}")
@@ -136,6 +170,7 @@ def rebuild_macro_daily(root: Path) -> tuple[list[str], list[str]]:
             failed.append(f"{col} ({sym}): {exc}")
     for col, sid in FRED_COLS.items():
         try:
+            time.sleep(1.5)                      # pace FRED, it throttles bursts
             cols[col] = fetch_fred_series(sid)
             done.append(f"{col} ({sid}) → {cols[col].index[-1]:%Y-%m-%d}")
         except Exception as exc:  # noqa: BLE001
