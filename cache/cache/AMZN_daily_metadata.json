@@ -1,13 +1,13 @@
 {
-  "downloaded_at_utc": "2026-05-11T15:20:50.364087+00:00",
+  "downloaded_at_utc": "2026-07-12T05:27:10.840496+00:00",
   "ticker": "AMZN",
   "source": "Yahoo Finance chart API",
   "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/AMZN",
   "start": "2000-01-01",
-  "end": "2026-05-11",
-  "rows": 6608,
+  "end": "2026-07-12",
+  "rows": 6650,
   "first_date": "2000-01-31",
-  "last_date": "2026-05-08",
+  "last_date": "2026-07-10",
   "feature_windows": {
     "sma": 20,
     "atr": 14
