@@ -365,6 +365,36 @@ def load_lagged_fundamental_features(root: Path, index: pd.DatetimeIndex) -> pd.
     return pd.concat(rows, ignore_index=True)
 
 
+def load_sector_etf_indices(root: Path) -> pd.DataFrame:
+    frames: dict[str, pd.Series] = {}
+    latest_trade_dates: list[pd.Timestamp] = []
+    for sector, symbol in SECTOR_ETF_MAP.items():
+        path = root / "cache" / "advise" / f"{symbol}_daily.csv"
+        if not path.exists():
+            continue
+        daily = pd.read_csv(path, parse_dates=["date"])
+        if daily.empty or "close" not in daily.columns:
+            continue
+        daily = daily.dropna(subset=["date", "close"]).sort_values("date")
+        latest_trade_dates.append(pd.Timestamp(daily["date"].max()))
+        close = pd.Series(pd.to_numeric(daily["close"], errors="coerce").to_numpy(), index=pd.to_datetime(daily["date"]))
+        monthly = close.resample("ME").last().dropna()
+        if len(monthly) >= 24:
+            frames[sector] = monthly / monthly.dropna().iloc[0] * 100.0
+
+    if len(frames) < 6:
+        return pd.DataFrame()
+    indices = pd.DataFrame(frames).sort_index()
+    broad_returns = indices.pct_change(fill_method=None).mean(axis=1, skipna=True)
+    indices["Broad market"] = (1.0 + broad_returns.fillna(0.0)).cumprod() * 100.0
+    indices = indices.where(indices.notna().cumsum() > 0)
+    indices.index.name = "date"
+    if latest_trade_dates:
+        indices.attrs["latest_trade_date"] = max(latest_trade_dates).strftime("%Y-%m-%d")
+    indices.attrs["source"] = "sector_etf_cache"
+    return indices
+
+
 def _last_cross_state(events: pd.DataFrame, sector: str, index: pd.DatetimeIndex, price: pd.Series) -> pd.DataFrame:
     rows = pd.DataFrame(index=index)
     rows["last_cross_type"] = "none"
@@ -472,22 +502,17 @@ def build_trend_quality(indices: pd.DataFrame, cross_stats: pd.DataFrame, fast: 
     return out.sort_values("trend_quality_score", ascending=False)
 
 
-def build_sector_regime_panel(
+def build_price_feature_panel(
     *,
-    root: Path,
-    fundamentals_dir: str | Path | None,
+    indices: pd.DataFrame,
+    macro_features: pd.DataFrame,
+    cross_events: pd.DataFrame,
+    fundamentals: pd.DataFrame,
     fast: int,
     slow: int,
-    refresh_sector_cache: bool,
-    label_horizon: int,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, MacroBundle]:
-    indices, _members = build_sector_indices(root, fundamentals_dir, refresh=refresh_sector_cache)
+    include_forward_targets: bool,
+) -> pd.DataFrame:
     sectors = [c for c in indices.columns if c != "Broad market"]
-    macro_bundle = build_macro_bundle(root, indices.index, indices, slow)
-    cross_stats = analyse_crosses(indices, fast, slow)
-    trend_quality = build_trend_quality(indices, cross_stats.per_sector, fast, slow)
-    fundamentals = load_lagged_fundamental_features(root, indices.index)
-
     broad = indices["Broad market"]
     broad_ret = broad.pct_change(fill_method=None)
     broad_fwd = {h: broad.shift(-h) / broad - 1.0 for h in (1, 3, 6, 12)}
@@ -498,7 +523,7 @@ def build_sector_regime_panel(
         ret = px.pct_change(fill_method=None)
         ma_fast = px.rolling(fast, min_periods=fast).mean()
         ma_slow = px.rolling(slow, min_periods=slow).mean()
-        cross_state = _last_cross_state(cross_stats.events, sector, indices.index, px)
+        cross_state = _last_cross_state(cross_events, sector, indices.index, px)
 
         frame = pd.DataFrame(index=indices.index)
         frame["date"] = indices.index
@@ -527,21 +552,46 @@ def build_sector_regime_panel(
         frame["corr_36m"] = ret.rolling(36, min_periods=18).corr(broad_ret)
         frame = frame.join(cross_state)
 
-        for h in (1, 3, 6, 12):
-            frame[f"fwd_{h}m"] = px.shift(-h) / px - 1.0
-            frame[f"fwd_{h}m_broad"] = broad_fwd[h]
-            frame[f"fwd_{h}m_excess"] = frame[f"fwd_{h}m"] - frame[f"fwd_{h}m_broad"]
+        if include_forward_targets:
+            for h in (1, 3, 6, 12):
+                frame[f"fwd_{h}m"] = px.shift(-h) / px - 1.0
+                frame[f"fwd_{h}m_broad"] = broad_fwd[h]
+                frame[f"fwd_{h}m_excess"] = frame[f"fwd_{h}m"] - frame[f"fwd_{h}m_broad"]
 
         rows.append(frame.reset_index(drop=True))
 
     panel = pd.concat(rows, ignore_index=True)
-    panel = panel.merge(
-        macro_bundle.features.reset_index(names="date"),
-        on="date",
-        how="left",
-    )
+    panel = panel.merge(macro_features.reset_index(names="date"), on="date", how="left")
     if not fundamentals.empty:
         panel = panel.merge(fundamentals, on=["date", "sector"], how="left")
+    return panel.sort_values(["date", "sector"]).reset_index(drop=True)
+
+
+def build_sector_regime_panel(
+    *,
+    root: Path,
+    fundamentals_dir: str | Path | None,
+    fast: int,
+    slow: int,
+    refresh_sector_cache: bool,
+    label_horizon: int,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, MacroBundle]:
+    indices, _members = build_sector_indices(root, fundamentals_dir, refresh=refresh_sector_cache)
+    sectors = [c for c in indices.columns if c != "Broad market"]
+    macro_bundle = build_macro_bundle(root, indices.index, indices, slow)
+    cross_stats = analyse_crosses(indices, fast, slow)
+    trend_quality = build_trend_quality(indices, cross_stats.per_sector, fast, slow)
+    fundamentals = load_lagged_fundamental_features(root, indices.index)
+
+    panel = build_price_feature_panel(
+        indices=indices,
+        macro_features=macro_bundle.features,
+        cross_events=cross_stats.events,
+        fundamentals=fundamentals,
+        fast=fast,
+        slow=slow,
+        include_forward_targets=True,
+    )
 
     count_by_date = panel.groupby("date")["fwd_6m_excess"].transform("count")
     panel["leader_rank_pct"] = panel.groupby("date")["fwd_6m_excess"].rank(pct=True)
@@ -550,6 +600,27 @@ def build_sector_regime_panel(
     )
     panel["target_leader"] = panel["target_leader"].astype("float64")
     return panel.sort_values(["date", "sector"]).reset_index(drop=True), trend_quality, cross_stats.events, macro_bundle
+
+
+def build_live_etf_overlay_panel(root: Path, fast: int, slow: int) -> tuple[pd.DataFrame, MacroBundle | None, str | None]:
+    indices = load_sector_etf_indices(root)
+    if indices.empty:
+        return pd.DataFrame(), None, None
+    macro_bundle = build_macro_bundle(root, indices.index, indices, slow)
+    cross_stats = analyse_crosses(indices, fast, slow)
+    fundamentals = load_lagged_fundamental_features(root, indices.index)
+    panel = build_price_feature_panel(
+        indices=indices,
+        macro_features=macro_bundle.features,
+        cross_events=cross_stats.events,
+        fundamentals=fundamentals,
+        fast=fast,
+        slow=slow,
+        include_forward_targets=False,
+    )
+    panel["live_source"] = "sector_etf_cache"
+    latest_trade_date = indices.attrs.get("latest_trade_date")
+    return panel, macro_bundle, str(latest_trade_date) if latest_trade_date else None
 
 
 def _build_design_matrix(panel: pd.DataFrame, min_coverage: float) -> tuple[pd.DataFrame, list[str]]:
@@ -711,6 +782,7 @@ def _topn_forward_summary(frame: pd.DataFrame, label: str, top_n: int) -> dict[s
 def run_walk_forward_model(
     panel: pd.DataFrame,
     *,
+    live_panel: pd.DataFrame | None = None,
     holdout_start: str,
     train_years: int,
     label_horizon: int,
@@ -718,10 +790,14 @@ def run_walk_forward_model(
     min_feature_coverage: float,
     random_state: int = 42,
 ) -> ModelResult:
-    design, feature_columns = _build_design_matrix(panel, min_feature_coverage)
+    live_panel = live_panel if live_panel is not None else pd.DataFrame()
+    combined = pd.concat([panel, live_panel], ignore_index=True, sort=False) if not live_panel.empty else panel.copy()
+    design_all, _all_feature_columns = _build_design_matrix(combined, min_coverage=0.0)
     model_mask = panel["target_leader"].notna() & panel["fwd_6m_excess"].notna()
     model_frame = panel.loc[model_mask].copy()
-    model_x = design.loc[model_frame.index, feature_columns]
+    coverage = design_all.loc[model_frame.index].notna().mean()
+    feature_columns = coverage[coverage >= min_feature_coverage].index.tolist()
+    model_x = design_all.loc[model_frame.index, feature_columns]
     holdout_ts = pd.Timestamp(holdout_start)
 
     predictions: list[pd.DataFrame] = []
@@ -755,7 +831,7 @@ def run_walk_forward_model(
             ],
         ].copy()
         pred["fold"] = str(year)
-        pred = pred.join(_predict_with_models(fitted, design.loc[test_idx, feature_columns]))
+        pred = pred.join(_predict_with_models(fitted, design_all.loc[test_idx, feature_columns]))
         predictions.append(pred)
 
     validation_predictions = pd.concat(predictions, ignore_index=True) if predictions else pd.DataFrame()
@@ -787,7 +863,7 @@ def run_walk_forward_model(
             ].copy()
             holdout_predictions["fold"] = "holdout"
             holdout_predictions = holdout_predictions.join(
-                _predict_with_models(fitted_holdout, design.loc[holdout_idx, feature_columns])
+                _predict_with_models(fitted_holdout, design_all.loc[holdout_idx, feature_columns])
             )
 
     train_all_idx = model_frame.index[model_frame["target_leader"].notna()]
@@ -795,8 +871,13 @@ def run_walk_forward_model(
     if final_models is None:
         raise ValueError("Unable to fit final model stack: target has one class.")
 
-    latest_date = pd.Timestamp(panel["date"].max())
-    live_idx = panel.index[panel["date"] == latest_date]
+    live_source = live_panel if not live_panel.empty else panel
+    live_offset = len(panel) if not live_panel.empty else 0
+    latest_date = pd.Timestamp(live_source["date"].max())
+    if not live_panel.empty:
+        live_idx = live_offset + live_panel.index[live_panel["date"] == latest_date]
+    else:
+        live_idx = panel.index[panel["date"] == latest_date]
     live_meta_cols = [
         "date",
         "sector",
@@ -819,8 +900,8 @@ def run_walk_forward_model(
         "cap_weighted_surprise_pct_lag1",
         "beat_rate_lag1",
     ]
-    live_rankings = panel.loc[live_idx, [c for c in live_meta_cols if c in panel.columns]].copy()
-    live_rankings = live_rankings.join(_predict_with_models(final_models, design.loc[live_idx, feature_columns]))
+    live_rankings = combined.loc[live_idx, [c for c in live_meta_cols if c in combined.columns]].copy()
+    live_rankings = live_rankings.join(_predict_with_models(final_models, design_all.loc[live_idx, feature_columns]))
 
     extra = final_models["extra_trees"].named_steps["model"]
     importance = pd.DataFrame(
@@ -1076,8 +1157,13 @@ def _build_current_snapshot(
     live_rankings: pd.DataFrame,
     trend_quality: pd.DataFrame,
     macro_bundle: MacroBundle,
+    *,
+    history_through: str | None = None,
+    live_price_through: str | None = None,
+    live_source: str | None = None,
 ) -> dict[str, Any]:
     latest = pd.Timestamp(panel["date"].max())
+    as_of = live_price_through or latest.strftime("%Y-%m-%d")
     latest_panel = panel.loc[panel["date"] == latest]
     best = live_rankings.head(3)
     avoid = live_rankings.tail(3).sort_values("final_score")
@@ -1085,7 +1171,8 @@ def _build_current_snapshot(
     trending = trend_quality.sort_values("trend_quality_score", ascending=False).head(3)
     forecast = macro_bundle.regime_forecast_12m.head(3)
     return {
-        "as_of": latest.strftime("%Y-%m-%d"),
+        "as_of": as_of,
+        "signal_month": latest.strftime("%Y-%m"),
         "current_gmm_regime": str(latest_panel["gmm_regime"].dropna().iloc[0]) if latest_panel["gmm_regime"].notna().any() else "Unknown",
         "current_dalio_quadrant": str(latest_panel["dalio_quadrant"].dropna().iloc[0]) if latest_panel["dalio_quadrant"].notna().any() else "Unknown",
         "market_health": _safe_float(latest_panel["market_health"].dropna().iloc[0]) if latest_panel["market_health"].notna().any() else None,
@@ -1095,6 +1182,9 @@ def _build_current_snapshot(
         "most_fake_breakouts": fake.index.tolist(),
         "cleanest_trending": trending.index.tolist(),
         "regime_forecast_12m": {str(k): float(v) for k, v in forecast.items()},
+        "history_through": history_through,
+        "live_price_through": live_price_through,
+        "live_source": live_source,
     }
 
 
@@ -1217,6 +1307,10 @@ def build_html_report(result: ResearchResult, top_n: int) -> str:
 
     now_rows = {
         "As of": snapshot["as_of"],
+        "Signal month": snapshot.get("signal_month") or snapshot["as_of"][:7],
+        "Live price source": snapshot.get("live_source") or "stock sector panel",
+        "Live prices through": snapshot.get("live_price_through") or snapshot["as_of"],
+        "Historical panel through": snapshot.get("history_through") or snapshot["as_of"],
         "Macro regime": snapshot["current_gmm_regime"],
         "Dalio quadrant": snapshot["current_dalio_quadrant"],
         "Market health": _fmt_num(snapshot["market_health"], 1),
@@ -1266,7 +1360,7 @@ def build_html_report(result: ResearchResult, top_n: int) -> str:
   <header>
     <h1>Sector Regime Research</h1>
     <p class="subtitle">Dalio-style growth, inflation, liquidity, credit, volatility, commodities, forward macro and lagged sector fundamentals joined into a walk-forward sector leadership classifier.</p>
-    <p class="meta">Target: top-tercile next-6-month sector excess return versus the broad sector basket. Validation is expanding walk-forward with a {DEFAULT_LABEL_HORIZON}-month label embargo. Sector indices are built from the available current universe, so absolute long-run index levels remain survivorship-biased; the research emphasis is cross-sector behavior, fake breakouts, trend persistence and regime-conditioned leadership.</p>
+    <p class="meta">Target: top-tercile next-6-month sector excess return versus the broad sector basket. Validation is expanding walk-forward with a {DEFAULT_LABEL_HORIZON}-month label embargo. Sector indices are built from the available current universe, so absolute long-run index levels remain survivorship-biased; the research emphasis is cross-sector behavior, fake breakouts, trend persistence and regime-conditioned leadership. The live row uses sector ETF prices when they are newer than the stock-built sector panel.</p>
   </header>
 
   <section>
@@ -1362,9 +1456,28 @@ def build_research(
     )
     print(f"      panel rows={len(panel):,}, sectors={panel['sector'].nunique()}, months={panel['date'].nunique()}")
 
+    print("[1b/7] Building current sector ETF live overlay...")
+    live_overlay, live_macro_bundle, live_price_through = build_live_etf_overlay_panel(root, fast, slow)
+    if not live_overlay.empty and live_overlay["date"].max() > panel["date"].max():
+        live_macro = live_macro_bundle or macro_bundle
+        live_source = "sector_etf_cache"
+        print(
+            "      live overlay rows="
+            f"{len(live_overlay):,}, months={live_overlay['date'].nunique()}, "
+            f"latest_month={pd.Timestamp(live_overlay['date'].max()).strftime('%Y-%m')}, "
+            f"prices_through={live_price_through}"
+        )
+    else:
+        live_overlay = pd.DataFrame()
+        live_macro = macro_bundle
+        live_source = "stock_sector_panel"
+        live_price_through = panel["date"].max().strftime("%Y-%m-%d")
+        print("      no newer ETF overlay available; using stock sector panel for live row")
+
     print("[2/7] Running walk-forward sector leadership model...")
     model = run_walk_forward_model(
         panel,
+        live_panel=live_overlay,
         holdout_start=holdout_start,
         train_years=train_years,
         label_horizon=label_horizon,
@@ -1377,7 +1490,16 @@ def build_research(
     regime_payoff = build_regime_payoff(panel)
     live_rankings = enrich_live_rankings(model.live_rankings, trend_quality, regime_payoff)
     model.live_rankings = live_rankings
-    snapshot = _build_current_snapshot(panel, live_rankings, trend_quality, macro_bundle)
+    snapshot_panel = live_overlay if not live_overlay.empty else panel
+    snapshot = _build_current_snapshot(
+        snapshot_panel,
+        live_rankings,
+        trend_quality,
+        live_macro,
+        history_through=panel["date"].max().strftime("%Y-%m-%d"),
+        live_price_through=live_price_through,
+        live_source=live_source,
+    )
 
     print("[4/7] Writing CSV/JSON research outputs...")
     panel.to_csv(out_dir / "sector_regime_panel.csv", index=False)
@@ -1411,7 +1533,7 @@ def build_research(
         fake_breakouts=trend_quality.sort_values("fake_breakout_rate_%", ascending=False),
         regime_payoff=regime_payoff,
         model=model,
-        macro_bundle=macro_bundle,
+        macro_bundle=live_macro,
         current_snapshot=snapshot,
         output_dir=out_dir,
     )
