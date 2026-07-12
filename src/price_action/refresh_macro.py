@@ -370,6 +370,25 @@ def fetch_multpl_cape() -> pd.Series:
     return s[s.index >= START]
 
 
+def _merge_existing_fred_series(path: Path, name: str, fresh: pd.Series) -> pd.Series:
+    """Preserve long local history when FRED's current API exposes a shorter slice."""
+    if not path.exists():
+        return fresh.sort_index()
+    try:
+        frame = pd.read_csv(path)
+        date_col, value_col = frame.columns[0], frame.columns[1]
+        existing = pd.Series(
+            pd.to_numeric(frame[value_col], errors="coerce").to_numpy(),
+            index=pd.to_datetime(frame[date_col], errors="coerce"),
+            name=name,
+        ).dropna()
+    except Exception:  # noqa: BLE001
+        return fresh.sort_index()
+    merged = pd.concat([existing, fresh.rename(name)]).sort_index()
+    merged = merged[~merged.index.duplicated(keep="last")]
+    return merged
+
+
 def refresh_fred_dir(
     root: Path,
     only: list[str] | None = None,
@@ -399,9 +418,10 @@ def refresh_fred_dir(
                     progress.warn(item, item_index=i + offset)
             continue
         for name in chunk:
-            s = series_map[name]
+            path = root / "fred" / f"{name}.csv"
+            s = _merge_existing_fred_series(path, name, series_map[name])
             s.rename_axis("observation_date").reset_index().to_csv(
-                root / "fred" / f"{name}.csv", index=False)
+                path, index=False)
             item = f"{name} → {s.index[-1]:%Y-%m-%d}"
             done.append(item)
             if progress is not None:
@@ -512,6 +532,12 @@ def rebuild_macro_daily(
     frame.index.name = "date"
 
     out = root / "cache" / "macro_daily_1999.csv"
+    if out.exists():
+        old = pd.read_csv(out, parse_dates=["date"]).set_index("date").sort_index()
+        old = old[[c for c in COLUMN_ORDER if c in old.columns]]
+        frame = frame.combine_first(old).sort_index()
+        frame = frame[COLUMN_ORDER]
+        frame.index.name = "date"
     frame.to_csv(out)
 
     meta_path = root / "cache" / "macro_daily_1999_metadata.json"

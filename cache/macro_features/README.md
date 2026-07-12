@@ -1,6 +1,6 @@
 # Macro Feature Store
 
-Generated at: 2026-07-12T16:43:54.441248+00:00
+Generated at: 2026-07-12T16:46:59.556054+00:00
 
 Each feature is stored as its own CSV under `series/`, with a matching JSON summary under `summaries/`.
 Freshness checks are written to `series_health.csv`.
@@ -9,7 +9,7 @@ Freshness checks are written to `series_health.csv`.
 | --- | --- | --- | --- | --- | ---: | --- |
 | dxy_close | Yahoo Finance chart API | 1999-01-01 | 2026-07-10 | daily | 0.692 | fresh |
 | gold_usd_per_oz | Yahoo Finance chart API | 2000-08-30 | 2026-07-10 | daily | 0.645 | fresh |
-| wilshire_total_market_index | Yahoo Finance chart API | 2026-07-10 | 2026-07-10 | unknown | 0.000 | fresh |
+| wilshire_total_market_index | Yahoo Finance chart API | 1999-01-04 | 2026-07-10 | daily | 0.681 | fresh |
 | shiller_cape_ratio | Multpl | 1999-01-01 | 2026-07-10 | monthly | 0.033 | fresh |
 | us_2y_yield | FRED | 1999-01-04 | 2026-07-09 | daily | 0.685 | fresh |
 | us_10y_yield | FRED | 1999-01-04 | 2026-07-09 | daily | 0.685 | fresh |
@@ -17,8 +17,8 @@ Freshness checks are written to `series_health.csv`.
 | wti_usd_per_bbl | FRED | 1999-01-04 | 2026-07-06 | daily | 0.686 | fresh |
 | us_nominal_gdp_saar_bil | FRED | 1999-01-01 | 2026-01-01 | quarterly | 0.011 | stale |
 | cpi_all_items_index | FRED | 1999-01-01 | 2026-05-01 | monthly | 0.033 | stale |
-| cpi_mom_pct | FRED | 1999-02-01 | 2026-05-01 | monthly | 0.033 | stale |
-| cpi_yoy_pct | FRED | 2000-01-01 | 2026-05-01 | monthly | 0.031 | stale |
+| cpi_mom_pct | FRED | 1999-01-01 | 2026-05-01 | monthly | 0.033 | stale |
+| cpi_yoy_pct | FRED | 1999-01-01 | 2026-05-01 | monthly | 0.033 | stale |
 | unemployment_rate_pct | FRED | 1999-01-01 | 2026-06-01 | monthly | 0.033 | fresh |
 | market_cap_to_gdp_pct | FRED | 1999-01-01 | 2020-01-01 | annual_or_irregular | 0.002 | stale |
 | xlu_close | unknown | 1999-01-04 | 2026-07-10 | daily | 0.688 | fresh |
@@ -27,7 +27,7 @@ Freshness checks are written to `series_health.csv`.
 | efa_close | unknown | 2001-08-27 | 2026-07-10 | daily | 0.622 | fresh |
 | copper_usd_per_lb | unknown | 2000-08-30 | 2026-07-10 | daily | 0.646 | fresh |
 | vix3m_level | Yahoo Finance chart API / derived pre-launch backfill | 2006-07-17 | 2026-07-10 | daily | 0.503 | fresh |
-| high_yield_spread | FRED | 2023-07-11 | 2026-07-09 | daily | 0.078 | fresh |
+| high_yield_spread | FRED | 1999-03-10 | 2026-07-09 | daily | 0.710 | fresh |
 | CPIENGSL | FRED | 1999-01-01 | 2026-05-01 | monthly | 0.033 | stale |
 | CPILFESL | FRED | 1999-01-01 | 2026-05-01 | monthly | 0.033 | stale |
 | CUSR0000SAH1 | FRED | 1999-01-01 | 2026-05-01 | monthly | 0.033 | stale |
@@ -60,3 +60,5 @@ Freshness checks are written to `series_health.csv`.
 | epu_zscore_252d | derived_from_fred | 1999-09-09 | 2026-07-09 | daily | 0.975 | fresh |
 | epu_spike_flag | derived_from_fred | 1999-09-09 | 2026-07-09 | daily | 0.975 | fresh |
 | consumer_sentiment_level | FRED | 1999-01-01 | 2026-05-01 | monthly | 0.033 | stale |
+| market_cap_to_gdp_proxy_pct | derived | 1999-01-01 | 2028-01-01 | daily | 1.000 | fresh |
+| market_cap_to_gdp_pct_patched | derived_plus_official | 1999-01-01 | 2028-01-01 | daily | 1.000 | fresh |
