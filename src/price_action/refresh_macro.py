@@ -473,7 +473,7 @@ def rebuild_macro_daily(
             gap_days = wil.index.to_series().diff().dt.days
             if (gap_days > 7).any():
                 vti = fetch_yahoo_series("VTI")
-                daily_grid = pd.date_range(wil.index.min(), max(wil.index.max(), vti.index.max()), freq="B")
+                daily_grid = wil.index.union(vti.index)
                 vti_aligned = vti.reindex(daily_grid).ffill(limit=5)
                 ratio = (wil.reindex(daily_grid) / vti_aligned).ffill()
                 patched = wil.reindex(daily_grid)
