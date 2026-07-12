@@ -3,17 +3,17 @@
   "signal_month": "2026-07",
   "current_gmm_regime": "Inflationary \u00b7 Inverted curve / late-cycle",
   "current_dalio_quadrant": "Indeterminate",
-  "market_health": 78.21473320379505,
+  "market_health": 77.93515987199608,
   "sector_breadth": 0.8181818181818182,
   "favored_sectors": [
-    "Technology",
     "Energy",
-    "Financials"
+    "Technology",
+    "Materials"
   ],
   "avoid_sectors": [
     "Health Care",
-    "Consumer Defensive",
-    "Consumer Cyclical"
+    "Communication Svcs",
+    "Industrials"
   ],
   "most_fake_breakouts": [
     "Health Care",
@@ -26,14 +26,14 @@
     "Technology"
   ],
   "regime_forecast_12m": {
-    "Inflationary \u00b7 Inverted curve / late-cycle": 0.6162692463488768,
-    "Expansion": 0.10389561919695482,
-    "Inverted curve / late-cycle": 0.10373403705538427
+    "Inflationary \u00b7 Inverted curve / late-cycle": 0.6048869701700932,
+    "Risk-off / stress": 0.13270499297417077,
+    "Inverted curve / late-cycle": 0.1113747260258571
   },
   "history_through": "2025-09-30",
   "live_price_through": "2026-07-10",
   "live_source": "sector_etf_cache",
-  "generated_at": "2026-07-12T19:01:26.575404+00:00",
+  "generated_at": "2026-07-12T19:26:05.821792+00:00",
   "holdout_start": "2025-01-01",
   "label_horizon_months": 6,
   "top_n": 3,
