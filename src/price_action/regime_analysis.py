@@ -120,7 +120,7 @@ def _read_fred(root: Path, name: str) -> pd.Series:
     """Read a two-column FRED CSV into a float Series indexed by date."""
     path = root / FRED_DIR / f"{name}.csv"
     if not path.exists():
-        return pd.Series(dtype="float64", name=name)
+        return pd.Series(index=pd.DatetimeIndex([], name="date"), dtype="float64", name=name)
     frame = pd.read_csv(path)
     date_col, value_col = frame.columns[0], frame.columns[1]
     series = pd.Series(

@@ -30,6 +30,7 @@ from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 
 import numpy as np
@@ -109,6 +110,16 @@ def _read_dotenv_value(name: str) -> str | None:
 def _fred_api_key() -> str | None:
     value = os.environ.get("FRED_API_KEY") or _read_dotenv_value("FRED_API_KEY")
     return value.strip() if value and value.strip() else None
+
+
+def _redact_url(url: str) -> str:
+    if "api_key=" not in url:
+        return url
+    head, tail = url.split("api_key=", 1)
+    if "&" in tail:
+        _, rest = tail.split("&", 1)
+        return f"{head}api_key=<redacted>&{rest}"
+    return f"{head}api_key=<redacted>"
 
 
 class ProgressTracker:
@@ -228,10 +239,15 @@ def _get(url: str, timeout: int = 90, attempts: int = 3) -> bytes:
             req = Request(url, headers={"User-Agent": "Mozilla/5.0", "Accept": "*/*"})
             with urlopen(req, timeout=timeout) as resp:
                 return resp.read()
+        except HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            last = RuntimeError(f"HTTP {exc.code}: {body[:500]}")
+            if exc.code in {400, 401, 403, 404}:
+                break
         except Exception as exc:  # noqa: BLE001
             last = exc
             time.sleep(4.0 * (attempt + 1))
-    raise RuntimeError(f"GET failed after {attempts} attempts: {url}") from last
+    raise RuntimeError(f"GET failed after {attempts} attempts: {_redact_url(url)}") from last
 
 
 def _parse_fred_frame(frame: pd.DataFrame) -> dict[str, pd.Series]:
@@ -246,10 +262,52 @@ def _parse_fred_frame(frame: pd.DataFrame) -> dict[str, pd.Series]:
     return out
 
 
+def fetch_fred_api_series(series_id: str, api_key: str) -> pd.Series:
+    params = {
+        "series_id": series_id,
+        "api_key": api_key,
+        "file_type": "json",
+        "observation_start": START,
+        "limit": 100_000,
+    }
+    raw = _get(f"{FRED_API_URL}?{urlencode(params)}", timeout=60, attempts=3)
+    payload = json.loads(raw.decode("utf-8"))
+    if "error_code" in payload:
+        raise RuntimeError(f"FRED API error for {series_id}: {payload.get('error_message')}")
+
+    rows = payload.get("observations") or []
+    values: dict[pd.Timestamp, float] = {}
+    for row in rows:
+        value = row.get("value")
+        if value in (None, "."):
+            continue
+        try:
+            values[pd.Timestamp(row["date"])] = float(value)
+        except (KeyError, TypeError, ValueError):
+            continue
+
+    series = pd.Series(values, name=series_id, dtype="float64").sort_index()
+    if series.empty:
+        raise RuntimeError(f"FRED API returned no numeric observations for {series_id}")
+    return series
+
+
+def fetch_fred_api_batch(series_ids: list[str], api_key: str) -> dict[str, pd.Series]:
+    out: dict[str, pd.Series] = {}
+    for series_id in series_ids:
+        out[series_id] = fetch_fred_api_series(series_id, api_key=api_key)
+        time.sleep(0.2)
+    return out
+
+
 def fetch_fred_batch(series_ids: list[str]) -> dict[str, pd.Series]:
     """One request for many series: multi-id fredgraph returns a ZIP of CSVs
     (one per frequency group).  Sequential single requests get tarpitted by
     FRED's CDN, so batching is load-bearing here, not an optimisation."""
+    api_key = _fred_api_key()
+    if api_key:
+        return fetch_fred_api_batch(series_ids, api_key=api_key)
+
     import io
     import zipfile
     raw = _get("https://fred.stlouisfed.org/graph/fredgraph.csv?id="
