@@ -8,6 +8,69 @@ import pandas as pd
 
 MACRO_FEATURES_DIR = Path("cache") / "macro_features"
 
+# Economic releases are stamped at their observation date in the cache, not at
+# the date the public first saw them. Shift each series forward by a
+# conservative publication delay so a backtest row only sees released data.
+# Market-price series (yields, VIX, DXY, gold, ...) are known at the close and
+# carry no entry here. Keys cover both raw FRED ids and derived feature names.
+MACRO_PUBLICATION_LAG_DAYS: dict[str, int] = {
+    # Monthly prints stamped at month start, released the following month.
+    "cpi_all_items_index": 45,
+    "cpi_mom_pct": 45,
+    "cpi_yoy_pct": 45,
+    "core_cpi_yoy_pct": 45,
+    "energy_cpi_yoy_pct": 45,
+    "shelter_cpi_yoy_pct": 45,
+    "CPILFESL": 45,
+    "CPIENGSL": 45,
+    "CUSR0000SAH1": 45,
+    "unemployment_rate_pct": 35,
+    "UNRATE": 35,
+    "industrial_production_yoy_pct": 45,
+    "manufacturing_output_yoy_pct": 45,
+    "INDPRO": 45,
+    "IPMAN": 45,
+    "PERMIT": 48,
+    "market_cap_to_gdp_pct": 95,
+    # Survey levels stamped at the reference month start; final prints land
+    # near month end. The ALFRED release-aware sentiment series needs no lag.
+    "UMCSENT": 30,
+    "MICH": 30,
+    "consumer_sentiment_level": 30,
+    # Weekly series stamped at week end, released a few days later.
+    "NFCI": 5,
+    "ICSA": 5,
+    # Daily indices computed after the close and published the next morning.
+    "BAMLH0A0HYM2": 1,
+    "high_yield_spread": 1,
+    "USEPUINDXD": 1,
+    "epu_level": 1,
+    "epu_5d_change": 1,
+    "epu_20d_change": 1,
+    "epu_zscore_252d": 1,
+    "epu_spike_flag": 1,
+    "DFF": 1,
+}
+
+
+def apply_publication_lags(
+    frame: pd.DataFrame,
+    lag_days: Mapping[str, int] | None = None,
+) -> pd.DataFrame:
+    """Shift observation-stamped series so values appear only after release."""
+    lags = MACRO_PUBLICATION_LAG_DAYS if lag_days is None else lag_days
+    adjusted: dict[str, pd.Series] = {}
+    for column in frame.columns:
+        series = frame[column].dropna()
+        lag = int(lags.get(column, 0))
+        if lag:
+            series = series.copy()
+            series.index = series.index + pd.Timedelta(days=lag)
+        adjusted[column] = series
+    out = pd.DataFrame(adjusted)
+    out.index.name = frame.index.name
+    return out.sort_index()
+
 
 def resolve_project_root(project_root: str | Path | None = None) -> Path:
     if project_root is not None:
@@ -110,6 +173,7 @@ def load_macro_context(project_root: str | Path | None = None) -> pd.DataFrame:
 def build_market_frame(symbol: str, project_root: str | Path | None = None) -> pd.DataFrame:
     asset_frame = load_asset_daily(symbol, project_root=project_root)
     macro_frame = load_macro_context(project_root=project_root)
+    macro_frame = apply_publication_lags(macro_frame)
 
     aligned_macro = macro_frame.reindex(asset_frame.index).ffill()
     market_frame = asset_frame.join(aligned_macro, how="left")

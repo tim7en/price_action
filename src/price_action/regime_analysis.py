@@ -149,47 +149,66 @@ def load_macro_panel(root: Path) -> pd.DataFrame:
     frame = pd.DataFrame(index=monthly.index)
     frame["equity_index"] = monthly["wilshire_total_market_index"]
     frame["cape"] = monthly["shiller_cape_ratio"]
-    frame["mktcap_to_gdp"] = monthly["market_cap_to_gdp_pct"]
+    # Official market-cap-to-GDP (Z.1 based) is published roughly a quarter
+    # after the observation date.
+    frame["mktcap_to_gdp"] = monthly["market_cap_to_gdp_pct"].shift(3)
     frame["us_2y"] = monthly["us_2y_yield"]
     frame["us_10y"] = monthly["us_10y_yield"]
     frame["yield_curve_10y2y"] = monthly["us_10y_yield"] - monthly["us_2y_yield"]
-    frame["cpi_yoy"] = monthly["cpi_yoy_pct"]
-    frame["unemployment"] = monthly["unemployment_rate_pct"]
+    # CPI and the unemployment rate are stamped at their observation month but
+    # released during the following month; shift one month so each month-end
+    # row only carries prints that were public by then.
+    frame["cpi_yoy"] = monthly["cpi_yoy_pct"].shift(1)
+    frame["unemployment"] = monthly["unemployment_rate_pct"].shift(1)
     frame["dxy"] = monthly["dxy_close"]
     frame["gold"] = monthly["gold_usd_per_oz"]
     frame["copper"] = monthly["copper_usd_per_lb"]
     frame["vix3m"] = monthly.get("vix3m_level")
 
     # FRED financial-conditions / policy series (weekly or daily) -> month end.
-    def _fred_monthly(name: str) -> pd.Series:
+    # ``lag_days`` shifts observation-stamped series by their publication delay
+    # so month-end rows only see released values (market prices need no lag).
+    def _fred_monthly(name: str, lag_days: int = 0) -> pd.Series:
         s = _read_fred(root, name)
         if s.empty:
             return pd.Series(index=frame.index, dtype="float64")
+        if lag_days:
+            s.index = s.index + pd.Timedelta(days=lag_days)
         return s.resample("ME").last().reindex(frame.index).ffill(limit=2)
 
-    frame["nfci"] = _fred_monthly("NFCI")
+    frame["nfci"] = _fred_monthly("NFCI", lag_days=5)
     frame["t10y3m"] = _fred_monthly("T10Y3M")
-    frame["hy_spread"] = _fred_monthly("BAMLH0A0HYM2")
-    frame["policy_uncertainty"] = _fred_monthly("USEPUINDXD")
+    frame["hy_spread"] = _fred_monthly("BAMLH0A0HYM2", lag_days=1)
+    frame["policy_uncertainty"] = _fred_monthly("USEPUINDXD", lag_days=1)
     frame["vix"] = _fred_monthly("VIXCLS")
-    frame["consumer_sentiment"] = _fred_monthly("UMCSENT")
+    frame["consumer_sentiment"] = _fred_monthly("UMCSENT", lag_days=30)
 
-    # Core CPI YoY and industrial-production YoY, derived from FRED index levels.
-    core = _read_fred(root, "CPILFESL").resample("ME").last()
+    # Core CPI YoY and industrial-production YoY, derived from FRED index
+    # levels. Both are stamped at the observation month but released around
+    # the middle of the following month.
+    core = _read_fred(root, "CPILFESL")
+    core.index = core.index + pd.Timedelta(days=45)
+    core = core.resample("ME").last()
     frame["core_cpi_yoy"] = (core / core.shift(12) - 1.0).mul(100).reindex(frame.index)
-    indpro = _read_fred(root, "INDPRO").resample("ME").last()
+    indpro = _read_fred(root, "INDPRO")
+    indpro.index = indpro.index + pd.Timedelta(days=45)
+    indpro = indpro.resample("ME").last()
     frame["indpro_yoy"] = (indpro / indpro.shift(12) - 1.0).mul(100).reindex(frame.index)
 
     # Forward-looking block: market-implied Fed path, inflation expectations,
     # and leading indicators (columns empty until refresh_macro fetches them).
-    frame["fed_funds"] = _fred_monthly("DFF")
+    frame["fed_funds"] = _fred_monthly("DFF", lag_days=1)
     frame["fed_path_2y"] = frame["us_2y"] - frame["fed_funds"]
     frame["breakeven_10y"] = _fred_monthly("T10YIE")
     frame["infl_5y5y_fwd"] = _fred_monthly("T5YIFR")
-    frame["infl_exp_1y"] = _fred_monthly("MICH")
-    claims = _read_fred(root, "ICSA").rolling(4, min_periods=4).mean().resample("ME").last()
+    frame["infl_exp_1y"] = _fred_monthly("MICH", lag_days=30)
+    claims = _read_fred(root, "ICSA").rolling(4, min_periods=4).mean()
+    claims.index = claims.index + pd.Timedelta(days=5)
+    claims = claims.resample("ME").last()
     frame["claims_yoy"] = (claims / claims.shift(12) - 1.0).mul(100).reindex(frame.index)
-    permits = _read_fred(root, "PERMIT").resample("ME").last()
+    permits = _read_fred(root, "PERMIT")
+    permits.index = permits.index + pd.Timedelta(days=48)
+    permits = permits.resample("ME").last()
     frame["permits_yoy"] = (permits / permits.shift(12) - 1.0).mul(100).reindex(frame.index)
 
     return frame

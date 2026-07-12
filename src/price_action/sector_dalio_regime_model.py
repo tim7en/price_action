@@ -516,6 +516,19 @@ def _daily_cross_events_for_sector(
         directional_move = (segment / p0 - 1.0) * direction
         max_favorable = float(directional_move.max()) if not directional_move.empty else np.nan
         duration_days = int(max(end_pos - pos, 0))
+        # The final cross has no closing event yet: its duration and favorable
+        # excursion are right-censored, so the whipsaw verdict is only known
+        # once both thresholds have been definitively cleared. Otherwise the
+        # newest cross would always count as a fake breakout.
+        is_final = i + 1 >= len(cross_dates)
+        resolved = (not is_final) or (
+            duration_days > whipsaw_days and max_favorable >= breakout_threshold
+        )
+        whipsaw = (
+            float((duration_days <= whipsaw_days) or (max_favorable < breakout_threshold))
+            if resolved
+            else np.nan
+        )
         row: dict[str, Any] = {
             "sector": sector,
             "symbol": SECTOR_ETF_MAP.get(sector),
@@ -528,7 +541,8 @@ def _daily_cross_events_for_sector(
             "macro_date": _completed_macro_month(dt),
             "duration_trading_days": duration_days,
             "max_favorable": max_favorable,
-            "whipsaw": bool((duration_days <= whipsaw_days) or (max_favorable < breakout_threshold)),
+            "whipsaw": whipsaw,
+            "whipsaw_censored": bool(not resolved),
         }
         for horizon in DAILY_FORWARD_HORIZONS:
             if pos + horizon < len(price):
@@ -937,7 +951,10 @@ def build_live_etf_overlay_panel(root: Path, fast: int, slow: int) -> tuple[pd.D
 
 
 def _build_design_matrix(panel: pd.DataFrame, min_coverage: float) -> tuple[pd.DataFrame, list[str]]:
-    categorical = [c for c in ["sector", "dalio_quadrant", "gmm_regime", "last_cross_type"] if c in panel.columns]
+    # gmm_regime is deliberately NOT a predictive feature: the mixture is fit
+    # on the full history, so its labels would leak future information into
+    # the walk-forward folds. It stays in the panel as descriptive metadata.
+    categorical = [c for c in ["sector", "dalio_quadrant", "last_cross_type"] if c in panel.columns]
     numeric = []
     for col in panel.columns:
         if col in categorical or col in TARGET_COLUMNS or col in {"date", "sector_index"}:

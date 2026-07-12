@@ -20,6 +20,7 @@ def build_panel_dataset(
     label_horizon: int,
     cost_bps: float,
     project_root: str | Path | None = None,
+    feature_lag: int = 1,
 ) -> tuple[pd.DataFrame, list[str]]:
     symbol_frames: list[pd.DataFrame] = []
     feature_sets: list[set[str]] = []
@@ -30,6 +31,7 @@ def build_panel_dataset(
             market_frame=market_frame,
             label_horizon=label_horizon,
             cost_bps=cost_bps,
+            feature_lag=feature_lag,
         )
         if dataset.empty:
             continue
@@ -155,12 +157,14 @@ def run_panel_experiment(
     holdout_start: str | None = None,
     signal_threshold: float = 0.55,
     random_state: int = 42,
+    feature_lag: int = 1,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     panel, feature_columns = build_panel_dataset(
         symbols=symbols,
         label_horizon=label_horizon,
         cost_bps=cost_bps,
         project_root=project_root,
+        feature_lag=feature_lag,
     )
 
     x = panel[feature_columns]
@@ -187,7 +191,14 @@ def run_panel_experiment(
         if y_train.nunique() < 2:
             continue
 
-        gate_model = fit_gate_model(x_train=x_train, y_train=y_train, random_state=random_state)
+        # The inner gate split works on rows and each trading day holds up to
+        # one row per symbol, so scale the embargo to cover the label horizon.
+        gate_model = fit_gate_model(
+            x_train=x_train,
+            y_train=y_train,
+            random_state=random_state,
+            embargo_size=label_horizon * max(len(symbols), 1),
+        )
         probability_frame = pd.DataFrame(index=x_test.index)
         for name, model in build_base_models(random_state=random_state).items():
             fitted = clone(model)
@@ -248,6 +259,7 @@ def run_panel_experiment(
     summary["rows"] = int(len(predictions))
     summary["label_horizon"] = label_horizon
     summary["cost_bps"] = cost_bps
+    summary["feature_lag"] = feature_lag
     summary["validation_mode"] = "calendar"
     summary["train_years"] = train_years
     summary["validation_years"] = validation_years
@@ -296,6 +308,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--embargo-size", type=int, default=5, help="Rows to skip between train and test.")
     parser.add_argument("--holdout-start", default="2025-01-01", help="Optional final holdout start date in YYYY-MM-DD.")
     parser.add_argument("--signal-threshold", type=float, default=0.55, help="Minimum probability to take a trade.")
+    parser.add_argument("--feature-lag", type=int, default=1, help="Bars to lag all features before modeling.")
     return parser
 
 
@@ -311,6 +324,7 @@ def main() -> None:
         embargo_size=args.embargo_size,
         holdout_start=args.holdout_start,
         signal_threshold=args.signal_threshold,
+        feature_lag=args.feature_lag,
     )
     panel_name = "default_panel" if symbols == DEFAULT_PANEL_SYMBOLS else "custom_panel"
     predictions_path, summary_path = save_panel_outputs(predictions=predictions, summary=summary, panel_name=panel_name)

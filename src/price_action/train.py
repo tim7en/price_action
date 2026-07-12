@@ -67,10 +67,23 @@ def calendar_walk_forward_splits(
         raise ValueError("embargo_size and purge_size must be non-negative.")
 
     sorted_index = pd.DatetimeIndex(index).sort_values()
+    unique_dates = pd.DatetimeIndex(sorted_index.unique())
     years = sorted(sorted_index.year.unique())
     first_validation_year = years[0] + train_years
     holdout_timestamp = pd.Timestamp(holdout_start) if holdout_start else None
-    gap_delta = pd.Timedelta(days=embargo_size + purge_size)
+    gap_size = embargo_size + purge_size
+
+    def _train_cutoff(boundary: pd.Timestamp) -> pd.Timestamp | None:
+        # The gap is measured in trading days (index entries), matching row
+        # mode, so a 5-bar label horizon needs embargo_size >= 5 to avoid
+        # training labels that overlap the validation window.
+        boundary_pos = unique_dates.searchsorted(boundary)
+        cutoff_pos = boundary_pos - gap_size
+        if cutoff_pos <= 0:
+            return None
+        if cutoff_pos >= len(unique_dates):
+            return boundary
+        return unique_dates[cutoff_pos]
 
     splits: list[tuple[np.ndarray, np.ndarray, str]] = []
     for year in years:
@@ -83,7 +96,9 @@ def calendar_walk_forward_splits(
 
         validation_end = validation_start + pd.DateOffset(years=validation_years)
         train_start = sorted_index.min() if expanding_train else validation_start - pd.DateOffset(years=train_years)
-        train_end = validation_start - gap_delta
+        train_end = _train_cutoff(validation_start)
+        if train_end is None:
+            continue
 
         train_idx = np.flatnonzero((sorted_index >= train_start) & (sorted_index < train_end))
         test_idx = np.flatnonzero((sorted_index >= validation_start) & (sorted_index < validation_end))
@@ -94,10 +109,12 @@ def calendar_walk_forward_splits(
 
     holdout_split: tuple[np.ndarray, np.ndarray, str] | None = None
     if holdout_timestamp is not None:
-        train_idx = np.flatnonzero(sorted_index < (holdout_timestamp - gap_delta))
-        test_idx = np.flatnonzero(sorted_index >= holdout_timestamp)
-        if len(train_idx) and len(test_idx):
-            holdout_split = (train_idx, test_idx, "holdout")
+        holdout_train_end = _train_cutoff(holdout_timestamp)
+        if holdout_train_end is not None:
+            train_idx = np.flatnonzero(sorted_index < holdout_train_end)
+            test_idx = np.flatnonzero(sorted_index >= holdout_timestamp)
+            if len(train_idx) and len(test_idx):
+                holdout_split = (train_idx, test_idx, "holdout")
 
     return splits, holdout_split
 
@@ -181,13 +198,14 @@ def fit_gate_model(
     x_train: pd.DataFrame,
     y_train: pd.Series,
     random_state: int,
+    embargo_size: int = 5,
 ) -> Pipeline | None:
     inner_splits = expanding_walk_forward_splits(
         n_obs=len(x_train),
         min_train_size=max(80, len(x_train) // 2),
         test_size=max(20, len(x_train) // 6),
         step_size=max(20, len(x_train) // 6),
-        embargo_size=0,
+        embargo_size=embargo_size,
     )
 
     if len(inner_splits) < 2:
@@ -268,7 +286,7 @@ def run_walk_forward_experiment(
     validation_years: int = 1,
     holdout_start: str | None = None,
     expanding_train: bool = True,
-    feature_lag: int = 0,
+    feature_lag: int = 1,
     use_gate_model: bool = True,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     market_frame = build_market_frame(symbol=symbol, project_root=project_root)
@@ -335,7 +353,12 @@ def run_walk_forward_experiment(
 
         gate_model = None
         if use_gate_model:
-            gate_model = fit_gate_model(x_train=x_train, y_train=y_train, random_state=random_state)
+            gate_model = fit_gate_model(
+                x_train=x_train,
+                y_train=y_train,
+                random_state=random_state,
+                embargo_size=label_horizon,
+            )
         probability_frame = pd.DataFrame(index=x_test.index)
 
         for name, model in build_base_models(random_state=random_state).items():
@@ -520,7 +543,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--step-size", type=int, default=40, help="Rows to advance after each fold.")
     parser.add_argument("--embargo-size", type=int, default=5, help="Rows to skip between train and test.")
     parser.add_argument("--purge-size", type=int, default=0, help="Additional rows or days to purge before each test window.")
-    parser.add_argument("--feature-lag", type=int, default=0, help="Bars to lag all features before modeling.")
+    parser.add_argument("--feature-lag", type=int, default=1, help="Bars to lag all features before modeling.")
     parser.add_argument("--signal-threshold", type=float, default=0.55, help="Minimum probability to take a trade.")
     parser.add_argument(
         "--validation-mode",

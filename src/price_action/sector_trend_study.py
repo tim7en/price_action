@@ -290,7 +290,18 @@ def _sector_crosses(name: str, price: pd.Series, fast: int, slow: int,
         move = (seg / p0 - 1.0) * direction
         max_favorable = float(move.max()) if len(move) else 0.0
         # Fake breakout: reverses within whipsaw window OR never travels threshold.
-        whipsaw = (duration <= whipsaw_months) or (max_favorable < breakout_threshold)
+        # The final cross is right-censored: it only gets a verdict once both
+        # thresholds are definitively cleared; until then it stays NaN so young
+        # crosses don't inflate the whipsaw rate.
+        is_final = i + 1 >= len(cross_dates)
+        resolved = (not is_final) or (
+            duration > whipsaw_months and max_favorable >= breakout_threshold
+        )
+        whipsaw = (
+            float((duration <= whipsaw_months) or (max_favorable < breakout_threshold))
+            if resolved
+            else np.nan
+        )
         fwd = {}
         for h in (3, 6, 12):
             tgt = dt.to_period("M").to_timestamp("M") + pd.offsets.MonthEnd(h)
@@ -337,13 +348,13 @@ def analyse_crosses(indices: pd.DataFrame, fast: int, slow: int,
         if e.empty:
             continue
         n = len(e)
-        whip = int(e["whipsaw"].sum())
+        resolved_whipsaw = e["whipsaw"].dropna()
         golden = e[e["type"] == "golden"]
         death = e[e["type"] == "death"]
         rows[name] = {
             "crosses": n,
             "per_decade": round(n / span_years * 10, 1) if span_years else np.nan,
-            "whipsaw_rate_%": round(100 * whip / n, 0) if n else np.nan,
+            "whipsaw_rate_%": round(100 * float(resolved_whipsaw.mean()), 0) if len(resolved_whipsaw) else np.nan,
             "median_hold_m": int(e["duration_m"].median()),
             "golden_fwd12_%": round(100 * golden["fwd_12m"].mean(), 1) if len(golden) else np.nan,
             "death_fwd12_%": round(100 * death["fwd_12m"].mean(), 1) if len(death) else np.nan,
