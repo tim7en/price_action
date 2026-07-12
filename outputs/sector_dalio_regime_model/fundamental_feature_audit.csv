@@ -1,0 +1,12 @@
+feature,family,training_status,in_model,importance,reason
+cap_weighted_surprise_pct_lag1,earnings_surprise,allowed,True,0.005229523279432829,Prior-quarter cap-weighted EPS surprise.
+cap_weighted_surprise_pct_lag1_change,earnings_surprise,allowed,True,0.006498462565329182,Change in prior-quarter cap-weighted EPS surprise versus the quarter before it.
+beat_rate_lag1,earnings_quality,allowed,True,0.01889198189158108,Prior-quarter share of reporting companies that beat estimates.
+beat_rate_lag1_change,earnings_quality,allowed,True,0.005168274323048743,Change in prior-quarter beat rate versus the quarter before it.
+cap_weighted_quarterly_eps_yoy_pct_lag1,earnings_growth,allowed,True,0.0076773911988695836,Prior-quarter cap-weighted YoY EPS growth.
+cap_weighted_quarterly_eps_yoy_pct_lag1_change,earnings_growth,allowed,True,0.006371613437493382,Change in prior-quarter cap-weighted YoY EPS growth versus the quarter before it.
+symbol_count_lag1,coverage_metadata,excluded,False,,Coverage/composition count; not an economic signal.
+market_cap_share,market_structure,excluded,False,,"Sector size/composition proxy; useful diagnostic, not earnings fundamental."
+market_cap_proxy_total_qoq_pct,market_structure,excluded,False,,Current-market-cap-scaled proxy; can encode composition and price effects.
+turnover_proxy,market_structure,excluded,False,,Liquidity/turnover proxy; not earnings fundamental.
+dollar_volume_total_qoq_pct,market_structure,excluded,False,,Trading-volume proxy; not earnings fundamental.

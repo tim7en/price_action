@@ -1,111 +1,107 @@
 feature,importance,family
-sector_Health Care,0.10202134010690639,sector_control
-sector_Technology,0.03542175488035587,sector_control
-sector_Real Estate,0.022947992981756895,sector_control
-sector_Industrials,0.022175596158576366,sector_control
-sector_Financials,0.021809692301933692,sector_control
-sector_Consumer Cyclical,0.01910481185169811,sector_control
-"dalio_quadrant_Stagflation (growth down, inflation up)",0.018021381362927986,regime_or_state_control
-beat_rate_lag1,0.017580839778218265,fundamental
-above_slow_ma,0.016781377846955218,price_trend
-corr_36m,0.016758996247732118,price_trend
-gold,0.015541023566861207,macro_nowcast
-relative_volatility_12m,0.01432433537159125,price_trend
-copper_gold_ratio_z,0.014139043071420405,macro_nowcast
-relative_oscillator,0.014129837681395379,price_trend
-"dalio_quadrant_Deflation (growth down, inflation down)",0.014005840585053398,regime_or_state_control
-beta_36m,0.013438856541947583,price_trend
-market_cap_share,0.013380175816154779,market_structure
-relative_return_6m,0.013083304610081887,price_trend
-yield_curve_10y2y,0.01302550996681757,macro_nowcast
-months_since_cross,0.012935838977817308,price_trend
-copper_z,0.012738412011420404,macro_nowcast
-volatility_12m,0.012625883514361932,price_trend
-sector_Materials,0.012479948564735787,sector_control
-gmm_regime_Expansion,0.012264245978293018,regime_or_state_control
-t10y3m,0.012231257528059999,other
-move_since_last_cross,0.01201082019400701,price_trend
-drawdown_36m,0.011857235641306888,price_trend
-copper_gold_ratio,0.011543337836679622,macro_nowcast
-dxy_z,0.011333301202719612,macro_nowcast
-yield_curve_10y2y_z,0.011131147659120247,macro_nowcast
-gmm_regime_Inflationary · Inverted curve / late-cycle,0.010983340476164245,regime_or_state_control
-sector_Energy,0.010781096008007229,sector_control
-wti_z,0.01078076744583364,macro_nowcast
-last_cross_type_golden,0.01069657413596077,regime_or_state_control
-relative_return_12m,0.010513203699580696,price_trend
-t10y3m_z,0.010194405660161207,other
-dxy,0.009931241436522848,macro_nowcast
-young_cross_risk,0.009917763431987255,price_trend
-cape_z,0.009631911804615907,macro_nowcast
-cape,0.009593037959309988,macro_nowcast
-wti,0.00930208196566663,macro_nowcast
-last_cross_type_death,0.00907784109739612,regime_or_state_control
-"dalio_quadrant_Reflation (growth up, inflation up)",0.008819071297806848,regime_or_state_control
-gmm_regime_Risk-off / stress · Contraction,0.00878279139442684,regime_or_state_control
-gold_z,0.008651565442083935,macro_nowcast
-sector_Consumer Defensive,0.008535767607976296,sector_control
-copper,0.008225099977921691,macro_nowcast
-gmm_regime_Inverted curve / late-cycle,0.008062431744730448,regime_or_state_control
-fast_slow_gap,0.007857338079470222,other
-cap_weighted_quarterly_eps_yoy_pct_lag1,0.007821596258042926,fundamental
-slow_ma_gap,0.00772486595801361,price_trend
-sector_return_12m,0.0076649776069017145,sector_control
-"dalio_quadrant_Goldilocks (growth up, inflation down)",0.007155825904455837,regime_or_state_control
-core_cpi_yoy_z,0.007110807315672979,macro_nowcast
-hy_spread,0.007050699767168974,macro_nowcast
-sector_return_6m,0.006913404971289961,sector_control
-breakeven_10y,0.006724550570250066,forward_macro
-inflation_signal,0.006719500914558729,other
-sector_Utilities,0.00667961008561617,sector_control
-last_cross_type_none,0.006548872865182886,regime_or_state_control
-cap_weighted_surprise_pct_lag1,0.006538025056970607,fundamental
-infl_exp_1y_z,0.0064563069084825,forward_macro
-core_cpi_yoy,0.006419727349671996,macro_nowcast
-cap_weighted_quarterly_eps_yoy_pct_lag1_change,0.006334777800244938,fundamental
-sector_breadth,0.006079778885745848,sector_control
-infl_5y5y_fwd,0.005860009509766215,forward_macro
-cap_weighted_surprise_pct_lag1_change,0.005786307327717527,fundamental
-vix3m,0.005724419151423883,macro_nowcast
-sector_Communication Svcs,0.005715525343215283,sector_control
-hy_spread_z,0.0054960290375058425,macro_nowcast
-infl_5y5y_fwd_z,0.00546988596997889,forward_macro
-permits_yoy_z,0.005443155864671729,forward_macro
-sector_oscillator,0.005420784890480418,sector_control
-wti_ret_6m,0.005401595742976325,macro_nowcast
-vix_z,0.005354575424967671,macro_nowcast
-nfci_z,0.005330423533678532,macro_nowcast
-drawdown_12m,0.005017793598037932,price_trend
-beat_rate_lag1_change,0.004929173619430515,fundamental
-vix,0.004906086133571331,macro_nowcast
-relative_return_3m,0.0048825992209947,price_trend
-indpro_yoy,0.004801670259309501,macro_nowcast
-indpro_yoy_z,0.0047302333064470565,macro_nowcast
-infl_exp_1y,0.004693243959898462,forward_macro
-nfci,0.00439620225234406,macro_nowcast
-fed_path_2y_z,0.004208187001624155,forward_macro
-breakeven_10y_z,0.00412158837534519,forward_macro
-market_health,0.004101286733817948,other
-dxy_ret_6m,0.003984442669128145,macro_nowcast
-claims_yoy_z,0.003954033790862506,forward_macro
-fed_path_2y,0.0039353645343634626,forward_macro
-copper_ret_6m,0.003628880576752729,macro_nowcast
-permits_yoy,0.003592310202068904,forward_macro
-gmm_regime_Expansion · Inverted curve / late-cycle,0.0034520867374022413,regime_or_state_control
-growth_signal,0.0028523486421850154,other
-sector_return_3m,0.0025907229326207586,sector_control
-claims_yoy,0.0025015371443121628,forward_macro
-vix_curve_ratio,0.0021649101583141542,macro_nowcast
-relative_return_1m,0.0020617056771777666,price_trend
-gold_ret_6m,0.0019434316330603977,macro_nowcast
-dalio_quadrant_Indeterminate,0.0017785797005785851,regime_or_state_control
-sector_return_1m,0.001746988257671071,sector_control
-market_cap_proxy_total_qoq_pct,0.0017381319256702529,market_structure
-gmm_regime_Risk-off / stress · Tight conditions · Contraction,0.0017291020709454708,regime_or_state_control
-dollar_volume_total_qoq_pct,0.001609333660564974,market_structure
-vix_curve_spread,0.001163533195653342,macro_nowcast
-turnover_proxy,0.0006579815126660813,market_structure
+sector_Health Care,0.10554064762631732,sector_control
+sector_Technology,0.040702889334433064,sector_control
+sector_Industrials,0.025767809242661147,sector_control
+sector_Real Estate,0.023255105587898114,sector_control
+sector_Financials,0.0211275201163637,sector_control
+sector_Consumer Cyclical,0.019959834343709276,sector_control
+"dalio_quadrant_Stagflation (growth down, inflation up)",0.019727187929154597,regime_or_state_control
+beat_rate_lag1,0.01889198189158108,fundamental
+corr_36m,0.016534179096629423,price_trend
+above_slow_ma,0.01596815661372751,price_trend
+copper_z,0.015454019921637797,macro_nowcast
+"dalio_quadrant_Deflation (growth down, inflation down)",0.013907071097398322,regime_or_state_control
+move_since_last_cross,0.013762847582233907,price_trend
+yield_curve_10y2y_z,0.013712620780892068,macro_nowcast
+relative_volatility_12m,0.013685737775074697,price_trend
+relative_oscillator,0.013315083594914977,price_trend
+copper_gold_ratio_z,0.013183302846782085,macro_nowcast
+beta_36m,0.013157723376577937,price_trend
+yield_curve_10y2y,0.012361576569242078,macro_nowcast
+months_since_cross,0.012341465231303798,price_trend
+sector_Energy,0.012250986215901762,sector_control
+young_cross_risk,0.012225156477798635,price_trend
+drawdown_36m,0.012010919934872086,price_trend
+volatility_12m,0.011993797928351804,price_trend
+dxy_z,0.011924810869406787,macro_nowcast
+gold,0.011748492802906954,macro_nowcast
+t10y3m,0.011609821453366136,other
+copper_gold_ratio,0.01155928469054789,macro_nowcast
+wti_z,0.011252673471950301,macro_nowcast
+sector_Materials,0.011124642635395058,sector_control
+dxy,0.010655785078291912,macro_nowcast
+last_cross_type_golden,0.010137408620403025,regime_or_state_control
+cape_z,0.010078666830148453,macro_nowcast
+gold_z,0.010005689639488797,macro_nowcast
+gmm_regime_Expansion,0.009981126401002745,regime_or_state_control
+gmm_regime_Inflationary · Inverted curve / late-cycle,0.009902097600389181,regime_or_state_control
+t10y3m_z,0.00967079879460359,other
+relative_return_12m,0.009442485779141524,price_trend
+breakeven_10y,0.009335135787904132,forward_macro
+gmm_regime_Risk-off / stress · Contraction,0.009105118134750146,regime_or_state_control
+last_cross_type_death,0.009084991114371704,regime_or_state_control
+core_cpi_yoy_z,0.009037898206283963,macro_nowcast
+copper,0.008989721633682777,macro_nowcast
+wti,0.008944306940586812,macro_nowcast
+relative_return_6m,0.0087999243046967,price_trend
+cape,0.008752831504423679,macro_nowcast
+inflation_signal,0.008422322359178648,other
+sector_Consumer Defensive,0.008204832152389006,sector_control
+"dalio_quadrant_Reflation (growth up, inflation up)",0.008103276742817783,regime_or_state_control
+sector_return_12m,0.008059152161240866,sector_control
+cap_weighted_quarterly_eps_yoy_pct_lag1,0.0076773911988695836,fundamental
+infl_exp_1y_z,0.007645622639542636,forward_macro
+slow_ma_gap,0.00743297107979676,price_trend
+gmm_regime_Inverted curve / late-cycle,0.007289586908131425,regime_or_state_control
+fast_slow_gap,0.00701265328563696,other
+hy_spread_z,0.0070031612780899885,macro_nowcast
+sector_oscillator,0.0067560771546200556,sector_control
+sector_Communication Svcs,0.006648248313470109,sector_control
+cap_weighted_surprise_pct_lag1_change,0.006498462565329182,fundamental
+cap_weighted_quarterly_eps_yoy_pct_lag1_change,0.006371613437493382,fundamental
+core_cpi_yoy,0.006307870646032453,macro_nowcast
+infl_5y5y_fwd_z,0.006210157599130263,forward_macro
+"dalio_quadrant_Goldilocks (growth up, inflation down)",0.00619749085753875,regime_or_state_control
+vix3m,0.006119038089126738,macro_nowcast
+hy_spread,0.006076636660753712,macro_nowcast
+indpro_yoy,0.005967035300894803,macro_nowcast
+sector_Utilities,0.0059251894891447845,sector_control
+market_health,0.005880047478538279,other
+infl_5y5y_fwd,0.005870835693465019,forward_macro
+sector_breadth,0.00579909735851121,sector_control
+vix_z,0.005727045889108285,macro_nowcast
+relative_return_3m,0.005635946195417414,price_trend
+indpro_yoy_z,0.005600856385229677,macro_nowcast
+fed_path_2y_z,0.005360012145375682,forward_macro
+sector_return_6m,0.005317134738219786,sector_control
+cap_weighted_surprise_pct_lag1,0.005229523279432829,fundamental
+beat_rate_lag1_change,0.005168274323048743,fundamental
+wti_ret_6m,0.005120767663465966,macro_nowcast
+drawdown_12m,0.004987259200101867,price_trend
+copper_ret_6m,0.004976539521077496,macro_nowcast
+last_cross_type_none,0.004869968704404386,regime_or_state_control
+permits_yoy_z,0.004819993791247015,forward_macro
+breakeven_10y_z,0.004785684071367881,forward_macro
+nfci_z,0.004556315381362826,macro_nowcast
+infl_exp_1y,0.004475217362060007,forward_macro
+fed_path_2y,0.004168964130472002,forward_macro
+claims_yoy_z,0.004102121533729223,forward_macro
+permits_yoy,0.003995707406975742,forward_macro
+nfci,0.003909071371962711,macro_nowcast
+dxy_ret_6m,0.0038664407006854373,macro_nowcast
+vix,0.003834323206277248,macro_nowcast
+gold_ret_6m,0.003299715463961101,macro_nowcast
+sector_return_3m,0.003227183532189212,sector_control
+growth_signal,0.003002732521390712,other
+vix_curve_ratio,0.002633594959857666,macro_nowcast
+gmm_regime_Expansion · Inverted curve / late-cycle,0.002336234465832929,regime_or_state_control
+gmm_regime_Risk-off / stress · Tight conditions · Contraction,0.0017260203245242913,regime_or_state_control
+dalio_quadrant_Indeterminate,0.0017083797022481178,regime_or_state_control
+claims_yoy,0.0016390130993113095,forward_macro
+relative_return_1m,0.0016211007341307428,price_trend
+sector_return_1m,0.0014232962673354208,sector_control
+vix_curve_spread,0.0014154580692542472,macro_nowcast
+gmm_regime_nan,0.0,regime_or_state_control
 dalio_quadrant_nan,0.0,regime_or_state_control
 sector_nan,0.0,sector_control
-gmm_regime_nan,0.0,regime_or_state_control
 last_cross_type_nan,0.0,regime_or_state_control

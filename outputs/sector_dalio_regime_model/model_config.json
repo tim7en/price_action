@@ -29,13 +29,32 @@
   "label_horizon_months": 6,
   "holdout_start": "2025-01-01",
   "min_feature_coverage": 0.65,
+  "earnings_fundamental_features": [
+    "cap_weighted_surprise_pct_lag1",
+    "cap_weighted_surprise_pct_lag1_change",
+    "beat_rate_lag1",
+    "beat_rate_lag1_change",
+    "cap_weighted_quarterly_eps_yoy_pct_lag1",
+    "cap_weighted_quarterly_eps_yoy_pct_lag1_change"
+  ],
+  "structure_diagnostic_features": [
+    "market_cap_share",
+    "turnover_proxy",
+    "market_cap_proxy_total_qoq_pct",
+    "dollar_volume_total_qoq_pct"
+  ],
   "excluded_predictive_feature_parts": [
     "symbol_count",
     "constituent_count",
     "coverage_count",
     "monthly_observations",
     "observation_count",
-    "_n_members"
+    "_n_members",
+    "market_cap_proxy",
+    "market_cap_share",
+    "turnover",
+    "dollar_volume",
+    "volume_total"
   ],
-  "note": "Coverage/count metadata is excluded from predictive features; it can be used for diagnostics only."
+  "note": "Coverage/count metadata and market-structure proxies are excluded from predictive features; they can be used for diagnostics only."
 }

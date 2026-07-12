@@ -78,18 +78,23 @@ SECTOR_ETF_MAP = {
     "Utilities": "XLU",
 }
 
-FUNDAMENTAL_FEATURES = [
+EARNINGS_FUNDAMENTAL_FEATURES = [
     "cap_weighted_surprise_pct_lag1",
     "cap_weighted_surprise_pct_lag1_change",
     "beat_rate_lag1",
     "beat_rate_lag1_change",
     "cap_weighted_quarterly_eps_yoy_pct_lag1",
     "cap_weighted_quarterly_eps_yoy_pct_lag1_change",
+]
+
+STRUCTURE_DIAGNOSTIC_FEATURES = [
     "market_cap_share",
     "turnover_proxy",
     "market_cap_proxy_total_qoq_pct",
     "dollar_volume_total_qoq_pct",
 ]
+
+SECTOR_FACTOR_PANEL_FEATURES = EARNINGS_FUNDAMENTAL_FEATURES + STRUCTURE_DIAGNOSTIC_FEATURES
 
 EXCLUDED_PREDICTIVE_FEATURE_PARTS = (
     "symbol_count",
@@ -98,6 +103,11 @@ EXCLUDED_PREDICTIVE_FEATURE_PARTS = (
     "monthly_observations",
     "observation_count",
     "_n_members",
+    "market_cap_proxy",
+    "market_cap_share",
+    "turnover",
+    "dollar_volume",
+    "volume_total",
 )
 
 TARGET_COLUMNS = {
@@ -391,7 +401,7 @@ def load_lagged_fundamental_features(root: Path, index: pd.DatetimeIndex) -> pd.
     raw["sector"] = raw["sector"].map(lambda s: FUNDAMENTAL_SECTOR_MAP.get(str(s).upper(), str(s)))
     raw["quarter_end_date"] = pd.to_datetime(raw["quarter_end_date"], errors="coerce")
     raw["quarter_end_date"] = _month_end(pd.DatetimeIndex(raw["quarter_end_date"]))
-    keep = ["sector", "quarter_end_date"] + [c for c in FUNDAMENTAL_FEATURES if c in raw.columns]
+    keep = ["sector", "quarter_end_date"] + [c for c in SECTOR_FACTOR_PANEL_FEATURES if c in raw.columns]
     raw = raw[keep].dropna(subset=["sector", "quarter_end_date"]).sort_values(["sector", "quarter_end_date"])
 
     rows: list[pd.DataFrame] = []
@@ -1390,6 +1400,36 @@ def build_feature_family_summary(feature_importance: pd.DataFrame) -> pd.DataFra
     return summary
 
 
+def build_fundamental_feature_audit(feature_importance: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    audited = [
+        ("cap_weighted_surprise_pct_lag1", "earnings_surprise", "allowed", "Prior-quarter cap-weighted EPS surprise."),
+        ("cap_weighted_surprise_pct_lag1_change", "earnings_surprise", "allowed", "Change in prior-quarter cap-weighted EPS surprise versus the quarter before it."),
+        ("beat_rate_lag1", "earnings_quality", "allowed", "Prior-quarter share of reporting companies that beat estimates."),
+        ("beat_rate_lag1_change", "earnings_quality", "allowed", "Change in prior-quarter beat rate versus the quarter before it."),
+        ("cap_weighted_quarterly_eps_yoy_pct_lag1", "earnings_growth", "allowed", "Prior-quarter cap-weighted YoY EPS growth."),
+        ("cap_weighted_quarterly_eps_yoy_pct_lag1_change", "earnings_growth", "allowed", "Change in prior-quarter cap-weighted YoY EPS growth versus the quarter before it."),
+        ("symbol_count_lag1", "coverage_metadata", "excluded", "Coverage/composition count; not an economic signal."),
+        ("market_cap_share", "market_structure", "excluded", "Sector size/composition proxy; useful diagnostic, not earnings fundamental."),
+        ("market_cap_proxy_total_qoq_pct", "market_structure", "excluded", "Current-market-cap-scaled proxy; can encode composition and price effects."),
+        ("turnover_proxy", "market_structure", "excluded", "Liquidity/turnover proxy; not earnings fundamental."),
+        ("dollar_volume_total_qoq_pct", "market_structure", "excluded", "Trading-volume proxy; not earnings fundamental."),
+    ]
+    importance = feature_importance.set_index("feature")["importance"] if not feature_importance.empty else pd.Series(dtype=float)
+    for feature, family, status, reason in audited:
+        rows.append(
+            {
+                "feature": feature,
+                "family": family,
+                "training_status": status,
+                "in_model": bool(feature in importance.index),
+                "importance": float(importance.get(feature, np.nan)) if feature in importance.index else np.nan,
+                "reason": reason,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def _topn_signal_series(predictions: pd.DataFrame, top_n: int) -> pd.DataFrame:
     if predictions.empty:
         return pd.DataFrame()
@@ -1846,6 +1886,7 @@ def build_html_report(result: ResearchResult, top_n: int) -> str:
     cross_regime_table = result.daily_cross_regime_summary.copy()
     cross_lead_table = result.daily_cross_lead_summary.copy()
     family_summary = build_feature_family_summary(result.model.feature_importance)
+    fundamental_audit = build_fundamental_feature_audit(result.model.feature_importance)
 
     return f"""<!doctype html>
 <html lang="en">
@@ -1932,9 +1973,10 @@ def build_html_report(result: ResearchResult, top_n: int) -> str:
 
   <section>
     <h2>Model Inputs</h2>
-    <p>ExtraTrees importance from the final model stack shows which features carried the most splitting power. Coverage/count metadata such as symbol counts are excluded from the predictive feature space; sector dummies are retained as sector controls, not interpreted as fundamentals.</p>
+    <p>ExtraTrees importance from the final model stack shows which features carried the most splitting power. Coverage/count metadata and market-structure proxies such as symbol counts, market-cap share, turnover, and dollar-volume are excluded from the predictive feature space; sector dummies are retained as sector controls, not interpreted as fundamentals.</p>
     {_img(charts["imp"], "Top feature importance")}
     {_table(family_summary, float_fmt="{:.4f}")}
+    {_table(fundamental_audit.set_index("feature"), float_fmt="{:.4f}")}
     {_table(result.model.feature_importance.set_index("feature").head(35), float_fmt="{:.4f}")}
   </section>
 
@@ -2058,6 +2100,7 @@ def build_research(
     model.metrics.to_csv(out_dir / "model_metrics.csv")
     model.feature_importance.to_csv(out_dir / "feature_importance.csv", index=False)
     build_feature_family_summary(model.feature_importance).to_csv(out_dir / "feature_family_importance.csv")
+    build_fundamental_feature_audit(model.feature_importance).to_csv(out_dir / "fundamental_feature_audit.csv", index=False)
     model_config = {
         "target": "top-tercile next-6-month sector excess return",
         "ensemble": {
@@ -2089,8 +2132,10 @@ def build_research(
         "label_horizon_months": label_horizon,
         "holdout_start": holdout_start,
         "min_feature_coverage": min_feature_coverage,
+        "earnings_fundamental_features": EARNINGS_FUNDAMENTAL_FEATURES,
+        "structure_diagnostic_features": STRUCTURE_DIAGNOSTIC_FEATURES,
         "excluded_predictive_feature_parts": list(EXCLUDED_PREDICTIVE_FEATURE_PARTS),
-        "note": "Coverage/count metadata is excluded from predictive features; it can be used for diagnostics only.",
+        "note": "Coverage/count metadata and market-structure proxies are excluded from predictive features; they can be used for diagnostics only.",
     }
     (out_dir / "model_config.json").write_text(json.dumps(model_config, indent=2), encoding="utf-8")
     (out_dir / "current_regime_snapshot.json").write_text(
