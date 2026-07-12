@@ -462,38 +462,6 @@ def rebuild_macro_daily(
             if progress is not None:
                 progress.warn(item, item_index=item_index)
 
-    # Yahoo's ^FTW5000 feed has become sparse (whole months missing). Bridge
-    # any gaps longer than a week with VTI -- an ETF tracking the same total
-    # market -- scaled to the last Wilshire print before each gap (same proxy
-    # pattern as the CAPE fallback; flagged so nobody mistakes it for source
-    # data).
-    wil = cols.get("wilshire_total_market_index")
-    if wil is not None and not wil.empty:
-        try:
-            gap_days = wil.index.to_series().diff().dt.days
-            if (gap_days > 7).any():
-                vti = fetch_yahoo_series("VTI")
-                daily_grid = wil.index.union(vti.index)
-                vti_aligned = vti.reindex(daily_grid).ffill(limit=5)
-                ratio = (wil.reindex(daily_grid) / vti_aligned).ffill()
-                patched = wil.reindex(daily_grid)
-                proxy = (vti_aligned * ratio).round(2)
-                filled = patched.isna() & proxy.notna()
-                patched = patched.fillna(proxy).dropna()
-                cols["wilshire_total_market_index"] = patched
-                item = (
-                    f"wilshire_total_market_index: bridged {int(filled.sum())} "
-                    f"missing days with VTI-scaled proxy (Yahoo ^FTW5000 sparse)"
-                )
-                failed.append(item)
-                if progress is not None:
-                    progress.warn(item, item_index=item_index)
-        except Exception as exc:  # noqa: BLE001
-            item = f"wilshire VTI bridge skipped: {exc}"
-            failed.append(item)
-            if progress is not None:
-                progress.warn(item, item_index=item_index)
-
     if progress is not None:
         progress.fetching(
             f"FRED batch for daily store: {', '.join(FRED_COLS.values())}",
@@ -571,6 +539,35 @@ def rebuild_macro_daily(
         frame = frame.combine_first(old).sort_index()
         frame = frame[COLUMN_ORDER]
         frame.index.name = "date"
+
+    # Yahoo's ^FTW5000 feed has become sparse (it can return a single row).
+    # After merging with the stored history, bridge any remaining holes with
+    # VTI -- an ETF tracking the same total market -- scaled by the last
+    # observed Wilshire/VTI ratio (same proxy pattern as the CAPE fallback;
+    # flagged so nobody mistakes it for source data).
+    try:
+        wil = frame["wilshire_total_market_index"]
+        first_valid = wil.first_valid_index()
+        if first_valid is not None and wil.loc[first_valid:].isna().any():
+            vti = fetch_yahoo_series("VTI").reindex(frame.index)
+            ratio = (wil / vti).ffill()
+            proxy = (vti * ratio).round(2)
+            fill_mask = wil.isna() & proxy.notna()
+            if fill_mask.any():
+                frame.loc[fill_mask, "wilshire_total_market_index"] = proxy[fill_mask]
+                item = (
+                    f"wilshire_total_market_index: bridged {int(fill_mask.sum())} "
+                    f"missing days with VTI-scaled proxy (Yahoo ^FTW5000 sparse)"
+                )
+                failed.append(item)
+                if progress is not None:
+                    progress.warn(item, item_index=item_index)
+    except Exception as exc:  # noqa: BLE001
+        item = f"wilshire VTI bridge skipped: {exc}"
+        failed.append(item)
+        if progress is not None:
+            progress.warn(item, item_index=item_index)
+
     frame.to_csv(out)
 
     meta_path = root / "cache" / "macro_daily_1999_metadata.json"

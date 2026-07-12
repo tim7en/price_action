@@ -29,7 +29,7 @@ spot_vix,CBOE Volatility Index: VIX,FRED,https://fred.stlouisfed.org/series/VIXC
 us_10y_yield,10-Year Treasury Constant Maturity Rate,FRED,https://fred.stlouisfed.org/series/DGS10,percent,1999-01-04,2026-07-09,6883,10055,3172,0.6845350571854799,daily,4.54,3,10,False,fresh,[]
 us_2y_yield,2-Year Treasury Constant Maturity Rate,FRED,https://fred.stlouisfed.org/series/DGS2,percent,1999-01-04,2026-07-09,6883,10055,3172,0.6845350571854799,daily,4.16,3,10,False,fresh,[]
 us_30y_yield,30-Year Treasury Constant Maturity Rate,FRED,https://fred.stlouisfed.org/series/DGS30,percent,1999-01-04,2026-07-09,6883,10055,3172,0.6845350571854799,daily,5.05,3,10,False,fresh,[]
-wilshire_total_market_index,WILSHIRE_TOTAL_MARKET,Yahoo Finance chart API,https://query1.finance.yahoo.com/v8/finance/chart/%5EFTW5000,index level,1999-01-04,2026-07-10,6846,10055,3209,0.6808552958727001,daily,75794.6328125,2,10,False,fresh,[]
+wilshire_total_market_index,WILSHIRE_TOTAL_MARKET,Yahoo Finance chart API,https://query1.finance.yahoo.com/v8/finance/chart/%5EFTW5000,index level,1999-01-04,2026-07-10,6921,10055,3134,0.6883142715067131,daily,75794.6328125,2,10,False,fresh,[]
 wti_usd_per_bbl,"WTI Crude Oil Spot Price, Cushing, OK",FRED,https://fred.stlouisfed.org/series/DCOILWTICO,USD per barrel,1999-01-04,2026-07-06,6896,10055,3159,0.6858279462953755,daily,69.6,6,10,False,fresh,[]
 xlu_close,xlu_close,unknown,,,1999-01-04,2026-07-10,6921,10055,3134,0.6883142715067131,daily,45.40999984741211,2,10,False,fresh,[]
 xly_close,xly_close,unknown,,,1999-01-04,2026-07-10,6921,10055,3134,0.6883142715067131,daily,117.23999786376952,2,10,False,fresh,[]

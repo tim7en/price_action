@@ -1,6 +1,6 @@
 # Macro Feature Store
 
-Generated at: 2026-07-12T19:49:47.064734+00:00
+Generated at: 2026-07-12T19:53:18.053006+00:00
 
 Each feature is stored as its own CSV under `series/`, with a matching JSON summary under `summaries/`.
 Freshness checks are written to `series_health.csv`.
@@ -9,7 +9,7 @@ Freshness checks are written to `series_health.csv`.
 | --- | --- | --- | --- | --- | ---: | --- |
 | dxy_close | Yahoo Finance chart API | 1999-01-01 | 2026-07-10 | daily | 0.692 | fresh |
 | gold_usd_per_oz | Yahoo Finance chart API | 2000-08-30 | 2026-07-10 | daily | 0.645 | fresh |
-| wilshire_total_market_index | Yahoo Finance chart API | 1999-01-04 | 2026-07-10 | daily | 0.681 | fresh |
+| wilshire_total_market_index | Yahoo Finance chart API | 1999-01-04 | 2026-07-10 | daily | 0.688 | fresh |
 | shiller_cape_ratio | Multpl | 1999-01-01 | 2026-07-10 | monthly | 0.033 | fresh |
 | us_2y_yield | FRED | 1999-01-04 | 2026-07-09 | daily | 0.685 | fresh |
 | us_10y_yield | FRED | 1999-01-04 | 2026-07-09 | daily | 0.685 | fresh |
