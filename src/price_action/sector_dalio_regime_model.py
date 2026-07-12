@@ -61,6 +61,20 @@ FUNDAMENTAL_SECTOR_MAP = {
     "UTILITIES": "Utilities",
 }
 
+SECTOR_ETF_MAP = {
+    "Communication Svcs": "XLC",
+    "Consumer Cyclical": "XLY",
+    "Consumer Defensive": "XLP",
+    "Energy": "XLE",
+    "Financials": "XLF",
+    "Health Care": "XLV",
+    "Industrials": "XLI",
+    "Materials": "XLB",
+    "Real Estate": "XLRE",
+    "Technology": "XLK",
+    "Utilities": "XLU",
+}
+
 FUNDAMENTAL_FEATURES = [
     "symbol_count_lag1",
     "cap_weighted_surprise_pct_lag1",
