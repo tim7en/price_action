@@ -35,6 +35,9 @@ DEFAULT_TRAIN_YEARS = 8
 DEFAULT_LABEL_HORIZON = 6
 DEFAULT_TOP_N = 3
 DEFAULT_MIN_FEATURE_COVERAGE = 0.65
+DAILY_FAST = 50
+DAILY_SLOW = 200
+DAILY_FORWARD_HORIZONS = (21, 63, 126, 252)
 
 PAPER = "#f4ecd3"
 PAGE = "#eadcb8"
@@ -76,7 +79,6 @@ SECTOR_ETF_MAP = {
 }
 
 FUNDAMENTAL_FEATURES = [
-    "symbol_count_lag1",
     "cap_weighted_surprise_pct_lag1",
     "cap_weighted_surprise_pct_lag1_change",
     "beat_rate_lag1",
@@ -88,6 +90,15 @@ FUNDAMENTAL_FEATURES = [
     "market_cap_proxy_total_qoq_pct",
     "dollar_volume_total_qoq_pct",
 ]
+
+EXCLUDED_PREDICTIVE_FEATURE_PARTS = (
+    "symbol_count",
+    "constituent_count",
+    "coverage_count",
+    "monthly_observations",
+    "observation_count",
+    "_n_members",
+)
 
 TARGET_COLUMNS = {
     "target_leader",
@@ -130,6 +141,11 @@ class ResearchResult:
     trend_quality: pd.DataFrame
     fake_breakouts: pd.DataFrame
     regime_payoff: pd.DataFrame
+    daily_cross_events: pd.DataFrame
+    daily_cross_sector_summary: pd.DataFrame
+    daily_cross_regime_summary: pd.DataFrame
+    daily_cross_lead_summary: pd.DataFrame
+    sizing_advisor: pd.DataFrame
     model: ModelResult
     macro_bundle: MacroBundle
     current_snapshot: dict[str, Any]
@@ -151,6 +167,32 @@ def _normalised_rank(series: pd.Series, ascending: bool = True) -> pd.Series:
     if numeric.dropna().nunique() <= 1:
         return pd.Series(0.5, index=numeric.index, dtype="float64")
     return numeric.rank(pct=True, ascending=ascending).fillna(0.5)
+
+
+def _is_excluded_predictive_feature(name: str) -> bool:
+    key = str(name).lower()
+    return any(part in key for part in EXCLUDED_PREDICTIVE_FEATURE_PARTS)
+
+
+def _feature_family(name: str) -> str:
+    key = str(name).lower()
+    if _is_excluded_predictive_feature(key):
+        return "excluded_metadata"
+    if key.startswith("sector_"):
+        return "sector_control"
+    if key.startswith("dalio_quadrant") or key.startswith("gmm_regime") or key.startswith("last_cross_type"):
+        return "regime_or_state_control"
+    if any(part in key for part in ("surprise", "beat_rate", "eps_yoy", "earnings")):
+        return "fundamental"
+    if any(part in key for part in ("market_cap", "turnover", "dollar_volume")):
+        return "market_structure"
+    if any(part in key for part in ("nfci", "hy_spread", "vix", "curve", "cpi", "indpro", "dxy", "gold", "copper", "wti", "cape", "mktcap_to_gdp")):
+        return "macro_nowcast"
+    if any(part in key for part in ("fed_path", "breakeven", "infl_5y5y", "infl_exp", "claims", "permits")):
+        return "forward_macro"
+    if any(part in key for part in ("oscillator", "return", "drawdown", "volatility", "beta", "corr", "ma_gap", "slow_ma", "cross", "trend")):
+        return "price_trend"
+    return "other"
 
 
 def _safe_float(value: Any) -> float | None:
@@ -395,6 +437,267 @@ def load_sector_etf_indices(root: Path) -> pd.DataFrame:
     return indices
 
 
+def load_sector_etf_daily_prices(root: Path) -> pd.DataFrame:
+    frames: dict[str, pd.Series] = {}
+    latest_trade_dates: list[pd.Timestamp] = []
+    for sector, symbol in SECTOR_ETF_MAP.items():
+        path = root / "cache" / "advise" / f"{symbol}_daily.csv"
+        if not path.exists():
+            continue
+        daily = pd.read_csv(path, parse_dates=["date"])
+        if daily.empty or "close" not in daily.columns:
+            continue
+        daily = daily.dropna(subset=["date", "close"]).sort_values("date")
+        daily["date"] = pd.to_datetime(daily["date"]).dt.normalize()
+        close = pd.Series(pd.to_numeric(daily["close"], errors="coerce").to_numpy(), index=daily["date"])
+        close = close[~close.index.duplicated(keep="last")].dropna()
+        if len(close) >= DAILY_SLOW + 20:
+            frames[sector] = close
+            latest_trade_dates.append(pd.Timestamp(close.index.max()))
+
+    prices = pd.DataFrame(frames).sort_index()
+    prices.index.name = "date"
+    if latest_trade_dates:
+        prices.attrs["latest_trade_date"] = max(latest_trade_dates).strftime("%Y-%m-%d")
+    return prices
+
+
+def _completed_macro_month(date: pd.Timestamp) -> pd.Timestamp:
+    return (pd.Timestamp(date).normalize() - pd.offsets.MonthEnd(1)).to_period("M").to_timestamp("M")
+
+
+def _daily_cross_events_for_sector(
+    sector: str,
+    price: pd.Series,
+    *,
+    fast: int = DAILY_FAST,
+    slow: int = DAILY_SLOW,
+    whipsaw_days: int = 63,
+    breakout_threshold: float = 0.05,
+) -> list[dict[str, Any]]:
+    price = price.dropna().sort_index()
+    if len(price) < slow + 20:
+        return []
+    sma_fast = price.rolling(fast, min_periods=fast).mean()
+    sma_slow = price.rolling(slow, min_periods=slow).mean()
+    gap = sma_fast / sma_slow - 1.0
+    sign = np.sign(gap.dropna())
+    cross_dates: list[pd.Timestamp] = []
+    cross_types: list[str] = []
+    prev: float | None = None
+    for dt, value in sign.items():
+        if prev is not None and value != prev and value != 0:
+            cross_dates.append(pd.Timestamp(dt))
+            cross_types.append("golden" if value > 0 else "death")
+        if value != 0:
+            prev = float(value)
+
+    events: list[dict[str, Any]] = []
+    date_positions = {pd.Timestamp(dt): pos for pos, dt in enumerate(price.index)}
+    for i, (dt, event_type) in enumerate(zip(cross_dates, cross_types, strict=False)):
+        if dt not in date_positions:
+            continue
+        pos = date_positions[dt]
+        p0 = float(price.iloc[pos])
+        next_dt = cross_dates[i + 1] if i + 1 < len(cross_dates) else pd.Timestamp(price.index[-1])
+        end_pos = date_positions.get(next_dt, len(price) - 1)
+        segment = price.iloc[pos : end_pos + 1]
+        direction = 1.0 if event_type == "golden" else -1.0
+        directional_move = (segment / p0 - 1.0) * direction
+        max_favorable = float(directional_move.max()) if not directional_move.empty else np.nan
+        duration_days = int(max(end_pos - pos, 0))
+        row: dict[str, Any] = {
+            "sector": sector,
+            "symbol": SECTOR_ETF_MAP.get(sector),
+            "date": dt,
+            "type": event_type,
+            "price": p0,
+            "sma50": float(sma_fast.loc[dt]),
+            "sma200": float(sma_slow.loc[dt]),
+            "sma_gap": float(gap.loc[dt]),
+            "macro_date": _completed_macro_month(dt),
+            "duration_trading_days": duration_days,
+            "max_favorable": max_favorable,
+            "whipsaw": bool((duration_days <= whipsaw_days) or (max_favorable < breakout_threshold)),
+        }
+        for horizon in DAILY_FORWARD_HORIZONS:
+            if pos + horizon < len(price):
+                row[f"fwd_{horizon}d"] = float(price.iloc[pos + horizon] / p0 - 1.0)
+            else:
+                row[f"fwd_{horizon}d"] = np.nan
+        events.append(row)
+    return events
+
+
+def build_daily_50200_cross_study(
+    root: Path,
+    macro_bundle: MacroBundle,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    prices = load_sector_etf_daily_prices(root)
+    if prices.empty:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+    events = []
+    for sector in prices.columns:
+        events.extend(_daily_cross_events_for_sector(sector, prices[sector]))
+    event_frame = pd.DataFrame(events)
+    if event_frame.empty:
+        return event_frame, pd.DataFrame(), pd.DataFrame()
+
+    macro = macro_bundle.features.copy()
+    macro.index = pd.to_datetime(macro.index)
+    event_frame["date"] = pd.to_datetime(event_frame["date"])
+    event_frame["macro_date"] = pd.to_datetime(event_frame["macro_date"])
+    event_frame = event_frame.merge(
+        macro.reset_index(names="macro_date"),
+        on="macro_date",
+        how="left",
+    )
+
+    sector_rows: list[dict[str, Any]] = []
+    for sector, group in event_frame.groupby("sector"):
+        price = prices[sector].dropna()
+        years = max((price.index.max() - price.index.min()).days / 365.25, 0.25)
+        golden = group[group["type"] == "golden"]
+        death = group[group["type"] == "death"]
+        sector_rows.append(
+            {
+                "sector": sector,
+                "symbol": SECTOR_ETF_MAP.get(sector),
+                "first_price_date": price.index.min().strftime("%Y-%m-%d"),
+                "last_price_date": price.index.max().strftime("%Y-%m-%d"),
+                "events": int(len(group)),
+                "golden_crosses": int(len(golden)),
+                "death_crosses": int(len(death)),
+                "crosses_per_year": float(len(group) / years),
+                "median_days_between_crosses": float(group["duration_trading_days"].median()),
+                "whipsaw_rate_%": float(group["whipsaw"].mean() * 100.0),
+                "golden_fwd_63d_%": float(golden["fwd_63d"].mean() * 100.0) if not golden.empty else np.nan,
+                "golden_fwd_126d_%": float(golden["fwd_126d"].mean() * 100.0) if not golden.empty else np.nan,
+                "death_fwd_63d_%": float(death["fwd_63d"].mean() * 100.0) if not death.empty else np.nan,
+                "death_fwd_126d_%": float(death["fwd_126d"].mean() * 100.0) if not death.empty else np.nan,
+            }
+        )
+    sector_summary = pd.DataFrame(sector_rows).set_index("sector").sort_values("crosses_per_year", ascending=False)
+
+    regime_summary = build_daily_cross_regime_summary(event_frame)
+    return event_frame.sort_values(["date", "sector"]).reset_index(drop=True), sector_summary, regime_summary
+
+
+def build_daily_cross_regime_summary(events: pd.DataFrame) -> pd.DataFrame:
+    if events.empty:
+        return pd.DataFrame()
+    rows: list[dict[str, Any]] = []
+    for env_col, env_label in (("dalio_quadrant", "Dalio quadrant"), ("gmm_regime", "Statistical regime")):
+        if env_col not in events.columns:
+            continue
+        for (event_type, env), group in events.dropna(subset=[env_col]).groupby(["type", env_col]):
+            rows.append(
+                {
+                    "environment_family": env_label,
+                    "environment": str(env),
+                    "cross_type": str(event_type),
+                    "events": int(len(group)),
+                    "whipsaw_rate_%": float(group["whipsaw"].mean() * 100.0),
+                    "avg_fwd_63d_%": float(group["fwd_63d"].mean() * 100.0),
+                    "hit_fwd_63d_%": float((group["fwd_63d"] > 0.0).mean() * 100.0),
+                    "avg_fwd_126d_%": float(group["fwd_126d"].mean() * 100.0),
+                    "hit_fwd_126d_%": float((group["fwd_126d"] > 0.0).mean() * 100.0),
+                    "avg_market_health": float(group.get("market_health", pd.Series(dtype=float)).mean()),
+                    "avg_vix_z": float(group.get("vix_z", pd.Series(dtype=float)).mean()),
+                    "avg_hy_spread_z": float(group.get("hy_spread_z", pd.Series(dtype=float)).mean()),
+                    "avg_curve_z": float(group.get("t10y3m_z", pd.Series(dtype=float)).mean()),
+                }
+            )
+    summary = pd.DataFrame(rows)
+    if summary.empty:
+        return summary
+    return summary.sort_values(["environment_family", "cross_type", "events"], ascending=[True, True, False])
+
+
+def latest_daily_50200_state(root: Path) -> pd.DataFrame:
+    prices = load_sector_etf_daily_prices(root)
+    if prices.empty:
+        return pd.DataFrame()
+    rows: list[dict[str, Any]] = []
+    for sector in prices.columns:
+        price = prices[sector].dropna()
+        if len(price) < DAILY_SLOW:
+            continue
+        sma50 = price.rolling(DAILY_FAST, min_periods=DAILY_FAST).mean()
+        sma200 = price.rolling(DAILY_SLOW, min_periods=DAILY_SLOW).mean()
+        gap = sma50 / sma200 - 1.0
+        latest = price.index[-1]
+        state = "golden" if float(gap.iloc[-1]) >= 0 else "death"
+        rows.append(
+            {
+                "sector": sector,
+                "symbol": SECTOR_ETF_MAP.get(sector),
+                "daily_price_date": latest.strftime("%Y-%m-%d"),
+                "daily_50_200_state": state,
+                "daily_sma50": float(sma50.iloc[-1]),
+                "daily_sma200": float(sma200.iloc[-1]),
+                "daily_50_200_gap": float(gap.iloc[-1]),
+                "daily_price_vs_sma200": float(price.iloc[-1] / sma200.iloc[-1] - 1.0),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def build_daily_cross_lead_summary(monthly_panel: pd.DataFrame, daily_cross_events: pd.DataFrame) -> pd.DataFrame:
+    if monthly_panel.empty or daily_cross_events.empty:
+        return pd.DataFrame()
+    events = daily_cross_events[["sector", "date", "type"]].copy()
+    events["event_month"] = pd.to_datetime(events["date"]).dt.to_period("M").dt.to_timestamp("M")
+    events["signal_month"] = events["event_month"] - pd.offsets.MonthEnd(1)
+    event_counts = (
+        events.assign(any_cross=1)
+        .pivot_table(
+            index=["sector", "signal_month"],
+            columns="type",
+            values="any_cross",
+            aggfunc="sum",
+            fill_value=0,
+        )
+        .reset_index()
+    )
+    event_counts["next_any_cross"] = event_counts.get("death", 0) + event_counts.get("golden", 0)
+    event_counts["next_death_cross"] = event_counts.get("death", 0)
+    event_counts["next_golden_cross"] = event_counts.get("golden", 0)
+
+    frame = monthly_panel.copy()
+    frame["signal_month"] = pd.to_datetime(frame["date"]).dt.to_period("M").dt.to_timestamp("M")
+    frame = frame.merge(event_counts, on=["sector", "signal_month"], how="left")
+    for col in ["next_any_cross", "next_death_cross", "next_golden_cross"]:
+        frame[col] = pd.to_numeric(frame[col], errors="coerce").fillna(0.0).clip(upper=1.0)
+
+    rows: list[dict[str, Any]] = []
+    for env_col, env_label in (("dalio_quadrant", "Dalio quadrant"), ("gmm_regime", "Statistical regime")):
+        if env_col not in frame.columns:
+            continue
+        grouped = frame.dropna(subset=[env_col]).groupby(env_col)
+        for env, group in grouped:
+            rows.append(
+                {
+                    "environment_family": env_label,
+                    "environment": str(env),
+                    "sector_months": int(len(group)),
+                    "next_any_cross_rate_%": float(group["next_any_cross"].mean() * 100.0),
+                    "next_golden_cross_rate_%": float(group["next_golden_cross"].mean() * 100.0),
+                    "next_death_cross_rate_%": float(group["next_death_cross"].mean() * 100.0),
+                    "avg_market_health": float(group.get("market_health", pd.Series(dtype=float)).mean()),
+                    "avg_sector_breadth_%": float(group.get("sector_breadth", pd.Series(dtype=float)).mean() * 100.0),
+                    "avg_vix_z": float(group.get("vix_z", pd.Series(dtype=float)).mean()),
+                    "avg_hy_spread_z": float(group.get("hy_spread_z", pd.Series(dtype=float)).mean()),
+                    "avg_curve_z": float(group.get("t10y3m_z", pd.Series(dtype=float)).mean()),
+                }
+            )
+    summary = pd.DataFrame(rows)
+    if summary.empty:
+        return summary
+    return summary.sort_values(["environment_family", "next_any_cross_rate_%"], ascending=[True, False])
+
+
 def _last_cross_state(events: pd.DataFrame, sector: str, index: pd.DatetimeIndex, price: pd.Series) -> pd.DataFrame:
     rows = pd.DataFrame(index=index)
     rows["last_cross_type"] = "none"
@@ -628,6 +931,8 @@ def _build_design_matrix(panel: pd.DataFrame, min_coverage: float) -> tuple[pd.D
     numeric = []
     for col in panel.columns:
         if col in categorical or col in TARGET_COLUMNS or col in {"date", "sector_index"}:
+            continue
+        if _is_excluded_predictive_feature(col):
             continue
         if pd.api.types.is_numeric_dtype(panel[col]):
             numeric.append(col)
@@ -910,6 +1215,7 @@ def run_walk_forward_model(
             "importance": extra.feature_importances_,
         }
     ).sort_values("importance", ascending=False)
+    importance["family"] = importance["feature"].map(_feature_family)
 
     metric_rows = [_classification_metrics(validation_predictions, "validation")]
     if not holdout_predictions.empty:
@@ -986,6 +1292,102 @@ def enrich_live_rankings(
     out.loc[out.index < top_cut, "verdict"] = "Favored"
     out.loc[out.index >= len(out) - bottom_cut, "verdict"] = "Avoid"
     return out
+
+
+def build_sizing_advisor(live: pd.DataFrame, *, top_n: int = DEFAULT_TOP_N) -> pd.DataFrame:
+    if live.empty:
+        return pd.DataFrame()
+    frame = live.copy().sort_values("rank").reset_index(drop=True)
+    health = float(frame["market_health"].dropna().iloc[0]) if frame["market_health"].notna().any() else 50.0
+    if health >= 75.0:
+        long_gross, short_gross = 0.85, 0.15
+        regime_risk = "risk-on"
+    elif health >= 60.0:
+        long_gross, short_gross = 0.70, 0.25
+        regime_risk = "constructive"
+    elif health >= 45.0:
+        long_gross, short_gross = 0.50, 0.35
+        regime_risk = "balanced"
+    elif health >= 30.0:
+        long_gross, short_gross = 0.30, 0.55
+        regime_risk = "defensive"
+    else:
+        long_gross, short_gross = 0.15, 0.75
+        regime_risk = "risk-off"
+
+    frame["side"] = "Flat"
+    frame.loc[frame["rank"] <= top_n, "side"] = "Long"
+    frame.loc[frame["rank"] > len(frame) - top_n, "side"] = "Short"
+
+    frame["confidence"] = (frame["final_score"] - 0.50).abs().mul(2.0).clip(0.10, 1.00)
+    frame["trend_multiplier"] = 1.0
+    if "daily_50_200_state" in frame.columns:
+        long_bad = (frame["side"] == "Long") & frame["daily_50_200_state"].eq("death")
+        short_bad = (frame["side"] == "Short") & frame["daily_50_200_state"].eq("golden")
+        frame.loc[long_bad | short_bad, "trend_multiplier"] = 0.50
+    if "daily_50_200_gap" in frame.columns:
+        near_cross = frame["daily_50_200_gap"].abs() < 0.015
+        frame.loc[near_cross, "trend_multiplier"] *= 0.80
+
+    frame["risk_unit"] = frame["confidence"] * frame["trend_multiplier"]
+    volatility = pd.to_numeric(frame.get("volatility_12m", pd.Series(index=frame.index)), errors="coerce")
+    frame["volatility_scalar"] = (volatility.median() / volatility).replace([np.inf, -np.inf], np.nan).clip(0.50, 1.50).fillna(1.0)
+    frame["risk_unit"] *= frame["volatility_scalar"]
+
+    frame["advisor_weight"] = 0.0
+    long_mask = frame["side"].eq("Long")
+    short_mask = frame["side"].eq("Short")
+    if long_mask.any():
+        units = frame.loc[long_mask, "risk_unit"].clip(lower=0.05)
+        frame.loc[long_mask, "advisor_weight"] = long_gross * units / units.sum()
+    if short_mask.any():
+        units = frame.loc[short_mask, "risk_unit"].clip(lower=0.05)
+        frame.loc[short_mask, "advisor_weight"] = -short_gross * units / units.sum()
+
+    frame["advisor_weight_%"] = frame["advisor_weight"] * 100.0
+    frame["portfolio_role"] = regime_risk
+    frame["action_note"] = "Hold flat"
+    frame.loc[long_mask, "action_note"] = "Long candidate"
+    frame.loc[short_mask, "action_note"] = "Short/hedge candidate"
+    if "daily_50_200_state" in frame.columns:
+        frame.loc[long_mask & frame["daily_50_200_state"].eq("death"), "action_note"] = "Long watchlist; below 50/200 trend"
+        frame.loc[short_mask & frame["daily_50_200_state"].eq("golden"), "action_note"] = "Hedge only; above 50/200 trend"
+
+    cols = [
+        "rank",
+        "sector",
+        "symbol",
+        "side",
+        "advisor_weight_%",
+        "portfolio_role",
+        "final_score",
+        "ensemble_probability",
+        "daily_50_200_state",
+        "daily_50_200_gap",
+        "relative_oscillator",
+        "current_regime_fwd6_excess_%",
+        "fake_breakout_rate_%",
+        "trend_quality_score",
+        "action_note",
+    ]
+    return frame[[c for c in cols if c in frame.columns]].sort_values("advisor_weight_%", ascending=False)
+
+
+def build_feature_family_summary(feature_importance: pd.DataFrame) -> pd.DataFrame:
+    if feature_importance.empty or "family" not in feature_importance:
+        return pd.DataFrame()
+    summary = (
+        feature_importance.groupby("family")
+        .agg(
+            feature_count=("feature", "count"),
+            total_importance=("importance", "sum"),
+            mean_importance=("importance", "mean"),
+        )
+        .sort_values("total_importance", ascending=False)
+    )
+    total = float(summary["total_importance"].sum())
+    summary["importance_share_%"] = summary["total_importance"] / total * 100.0 if total > 0 else np.nan
+    return summary
 
 
 def _topn_signal_series(predictions: pd.DataFrame, top_n: int) -> pd.DataFrame:
@@ -1152,6 +1554,93 @@ def chart_oscillators(live: pd.DataFrame) -> str:
     return _fig_b64(fig)
 
 
+def chart_daily_cross_frequency(summary: pd.DataFrame) -> str:
+    if summary.empty:
+        fig = _vintage_fig((10, 4))
+        ax = fig.add_subplot(111)
+        _vintage_ax(ax)
+        ax.text(0.5, 0.5, "No daily 50/200 cross data available", ha="center", va="center", color=INK)
+        return _fig_b64(fig)
+    view = summary.sort_values("crosses_per_year", ascending=True)
+    fig = _vintage_fig((12, 5.8))
+    ax = fig.add_subplot(111)
+    _vintage_ax(ax)
+    y = np.arange(len(view))
+    ax.barh(y, view["crosses_per_year"], color=INK_AMBER, alpha=0.86)
+    ax.set_yticks(y, labels=view.index, fontsize=8)
+    ax.set_xlabel("Daily 50/200 crosses per year", color=INK)
+    ax.set_title("How often true daily 50/200 sector crosses happen", loc="left", color=INK)
+    for i, (_, row) in enumerate(view.iterrows()):
+        ax.text(
+            float(row["crosses_per_year"]) + 0.02,
+            i,
+            f"{float(row['events']):.0f} events · {float(row['whipsaw_rate_%']):.0f}% fakes",
+            va="center",
+            fontsize=7,
+            color=INK_MUTED,
+        )
+    ax.margins(x=0.22)
+    return _fig_b64(fig)
+
+
+def chart_cross_lead_summary(summary: pd.DataFrame) -> str:
+    if summary.empty:
+        fig = _vintage_fig((10, 4))
+        ax = fig.add_subplot(111)
+        _vintage_ax(ax)
+        ax.text(0.5, 0.5, "No cross lead summary available", ha="center", va="center", color=INK)
+        return _fig_b64(fig)
+    view = summary[summary["environment_family"].eq("Dalio quadrant")].copy()
+    if view.empty:
+        view = summary.copy()
+    view = view.sort_values("next_any_cross_rate_%", ascending=True)
+    fig = _vintage_fig((12, 5.4))
+    ax = fig.add_subplot(111)
+    _vintage_ax(ax)
+    y = np.arange(len(view))
+    ax.barh(y - 0.18, view["next_golden_cross_rate_%"], height=0.36, color=INK_GREEN, alpha=0.78, label="Next-month golden")
+    ax.barh(y + 0.18, view["next_death_cross_rate_%"], height=0.36, color=INK_RED, alpha=0.78, label="Next-month death")
+    labels = [str(v)[:38] for v in view["environment"]]
+    ax.set_yticks(y, labels=labels, fontsize=7)
+    ax.set_xlabel("Next-month cross rate across sector-months (%)", color=INK)
+    ax.set_title("Which Dalio environments lead to 50/200 cross events", loc="left", color=INK)
+    ax.legend(fontsize=7, facecolor=PAPER, edgecolor=GRID_MAJOR)
+    return _fig_b64(fig)
+
+
+def chart_sizing_advisor(advisor: pd.DataFrame) -> str:
+    if advisor.empty:
+        fig = _vintage_fig((10, 4))
+        ax = fig.add_subplot(111)
+        _vintage_ax(ax)
+        ax.text(0.5, 0.5, "No sizing advisor rows available", ha="center", va="center", color=INK)
+        return _fig_b64(fig)
+    view = advisor.sort_values("advisor_weight_%", ascending=True)
+    fig = _vintage_fig((12, 5.4))
+    ax = fig.add_subplot(111)
+    _vintage_ax(ax)
+    colors = [INK_GREEN if value > 0 else INK_RED if value < 0 else INK_MUTED for value in view["advisor_weight_%"]]
+    y = np.arange(len(view))
+    ax.barh(y, view["advisor_weight_%"], color=colors, alpha=0.84)
+    ax.set_yticks(y, labels=view["sector"], fontsize=8)
+    ax.axvline(0, color=INK, lw=0.8)
+    ax.set_xlabel("Suggested portfolio weight (%)", color=INK)
+    ax.set_title("Sizing advisor: long/short sector sleeve", loc="left", color=INK)
+    for i, (_, row) in enumerate(view.iterrows()):
+        weight = float(row["advisor_weight_%"])
+        ax.text(
+            weight + (0.35 if weight >= 0 else -0.35),
+            i,
+            str(row["side"]),
+            va="center",
+            ha="left" if weight >= 0 else "right",
+            fontsize=7,
+            color=INK_MUTED,
+        )
+    ax.margins(x=0.18)
+    return _fig_b64(fig)
+
+
 def _build_current_snapshot(
     panel: pd.DataFrame,
     live_rankings: pd.DataFrame,
@@ -1303,6 +1792,9 @@ def build_html_report(result: ResearchResult, top_n: int) -> str:
         "wf": chart_walkforward(result.model.predictions, top_n),
         "imp": chart_feature_importance(result.model.feature_importance),
         "osc": chart_oscillators(live),
+        "daily_cross": chart_daily_cross_frequency(result.daily_cross_sector_summary),
+        "cross_lead": chart_cross_lead_summary(result.daily_cross_lead_summary),
+        "sizing": chart_sizing_advisor(result.sizing_advisor),
     }
 
     now_rows = {
@@ -1319,6 +1811,7 @@ def build_html_report(result: ResearchResult, top_n: int) -> str:
         "Avoid sectors": avoid3,
         "Most fake breakouts": fake3,
         "Cleanest trends": trend3,
+        "Daily 50/200 events": f"{len(result.daily_cross_events):,}",
         "Features in model": f"{len(result.model.feature_columns)}",
     }
     now_html = "".join(
@@ -1336,6 +1829,8 @@ def build_html_report(result: ResearchResult, top_n: int) -> str:
             "current_regime_fwd6_excess_%",
             "sector_oscillator",
             "relative_oscillator",
+            "daily_50_200_state",
+            "daily_50_200_gap",
             "fake_breakout_rate_%",
             "trend_quality_score",
             "young_cross_risk",
@@ -1346,6 +1841,11 @@ def build_html_report(result: ResearchResult, top_n: int) -> str:
     ].astype(float)
 
     forecast_table = result.macro_bundle.regime_forecast_12m.head(6).rename("probability").to_frame()
+    sizing_table = result.sizing_advisor.set_index("rank") if not result.sizing_advisor.empty else pd.DataFrame()
+    cross_sector_table = result.daily_cross_sector_summary.copy()
+    cross_regime_table = result.daily_cross_regime_summary.copy()
+    cross_lead_table = result.daily_cross_lead_summary.copy()
+    family_summary = build_feature_family_summary(result.model.feature_importance)
 
     return f"""<!doctype html>
 <html lang="en">
@@ -1371,9 +1871,36 @@ def build_html_report(result: ResearchResult, top_n: int) -> str:
   </section>
 
   <section>
+    <h2>Sizing Advisor</h2>
+    <p>The advisor converts the live ensemble ranking into a long/short sector sleeve. Gross long and short exposure come from market health; sector weights are scaled by ensemble confidence, volatility, and the true daily 50/200 trend state. It is an allocation guide, not an execution order.</p>
+    {_img(charts["sizing"], "Long/short sizing advisor")}
+    {_table(sizing_table, float_fmt="{:.3f}")}
+  </section>
+
+  <section>
     <h2>Momentum Oscillation</h2>
     <p>Each sector has a bounded oscillator from -1 to +1, computed from 3, 6 and 12 month causal momentum z-scores. The chart below uses relative sector price versus the broad sector basket, so it shows leadership momentum rather than market beta alone.</p>
     {_img(charts["osc"], "Current relative momentum oscillators")}
+  </section>
+
+  <section>
+    <h2>Daily 50/200 Crosses</h2>
+    <p>This section uses true daily sector ETF prices, not the monthly stock-built sector panel. A golden cross is SMA50 moving above SMA200; a death cross is SMA50 moving below SMA200. Each event is tagged with the last completed macro month to avoid using future same-month macro data.</p>
+    {_img(charts["daily_cross"], "Daily 50/200 cross frequency by sector")}
+    {_table(cross_sector_table, float_fmt="{:.2f}")}
+  </section>
+
+  <section>
+    <h2>Which Environments Lead Crosses</h2>
+    <p>The lead table asks which completed macro environments are followed by sector 50/200 crosses in the next month. This is the direct answer to whether crosses happen after expansion, reflation, stagflation, stress, or late-cycle conditions.</p>
+    {_img(charts["cross_lead"], "Next-month 50/200 cross rate by environment")}
+    {_table(cross_lead_table, max_rows=24, float_fmt="{:.2f}")}
+  </section>
+
+  <section>
+    <h2>Cross Outcomes By Regime</h2>
+    <p>After detecting each daily event, the report measures what happened over the following 63 and 126 trading days and flags whipsaws. This verifies whether the Dalio matrix and statistical regimes historically supported or punished the cross.</p>
+    {_table(cross_regime_table, max_rows=36, float_fmt="{:.2f}")}
   </section>
 
   <section>
@@ -1405,8 +1932,9 @@ def build_html_report(result: ResearchResult, top_n: int) -> str:
 
   <section>
     <h2>Model Inputs</h2>
-    <p>ExtraTrees importance from the final model stack shows which features carried the most splitting power. Dummies beginning with sector, gmm_regime and dalio_quadrant are categorical state variables; numeric variables are causal levels, changes, z-scores and sector technical/fundamental features.</p>
+    <p>ExtraTrees importance from the final model stack shows which features carried the most splitting power. Coverage/count metadata such as symbol counts are excluded from the predictive feature space; sector dummies are retained as sector controls, not interpreted as fundamentals.</p>
     {_img(charts["imp"], "Top feature importance")}
+    {_table(family_summary, float_fmt="{:.4f}")}
     {_table(result.model.feature_importance.set_index("feature").head(35), float_fmt="{:.4f}")}
   </section>
 
@@ -1474,7 +2002,15 @@ def build_research(
         live_price_through = panel["date"].max().strftime("%Y-%m-%d")
         print("      no newer ETF overlay available; using stock sector panel for live row")
 
-    print("[2/7] Running walk-forward sector leadership model...")
+    print("[2/8] Running daily 50/200 sector ETF crossover study...")
+    daily_cross_events, daily_cross_sector_summary, daily_cross_regime_summary = build_daily_50200_cross_study(root, live_macro)
+    daily_cross_lead_summary = build_daily_cross_lead_summary(live_overlay, daily_cross_events) if not live_overlay.empty else pd.DataFrame()
+    print(
+        "      daily cross events="
+        f"{len(daily_cross_events):,}, sectors={daily_cross_events['sector'].nunique() if not daily_cross_events.empty else 0}"
+    )
+
+    print("[3/8] Running walk-forward sector leadership model...")
     model = run_walk_forward_model(
         panel,
         live_panel=live_overlay,
@@ -1486,10 +2022,14 @@ def build_research(
     )
     print(f"      features={len(model.feature_columns)}, validation rows={len(model.predictions):,}, holdout rows={len(model.holdout_predictions):,}")
 
-    print("[3/7] Building regime payoff and live ranking overlays...")
+    print("[4/8] Building regime payoff, daily trend state, and sizing advisor...")
     regime_payoff = build_regime_payoff(panel)
     live_rankings = enrich_live_rankings(model.live_rankings, trend_quality, regime_payoff)
+    daily_state = latest_daily_50200_state(root)
+    if not daily_state.empty:
+        live_rankings = live_rankings.merge(daily_state, on="sector", how="left", suffixes=("", "_daily"))
     model.live_rankings = live_rankings
+    sizing_advisor = build_sizing_advisor(live_rankings, top_n=top_n)
     snapshot_panel = live_overlay if not live_overlay.empty else panel
     snapshot = _build_current_snapshot(
         snapshot_panel,
@@ -1501,17 +2041,58 @@ def build_research(
         live_source=live_source,
     )
 
-    print("[4/7] Writing CSV/JSON research outputs...")
+    print("[5/8] Writing CSV/JSON research outputs...")
     panel.to_csv(out_dir / "sector_regime_panel.csv", index=False)
     trend_quality.to_csv(out_dir / "sector_trend_quality.csv")
     trend_quality.sort_values("fake_breakout_rate_%", ascending=False).to_csv(out_dir / "fake_breakouts_by_sector.csv")
     cross_events.to_csv(out_dir / "cross_events.csv", index=False)
+    daily_cross_events.to_csv(out_dir / "daily_50_200_cross_events.csv", index=False)
+    daily_cross_sector_summary.to_csv(out_dir / "daily_50_200_cross_by_sector.csv")
+    daily_cross_regime_summary.to_csv(out_dir / "daily_50_200_cross_by_regime.csv", index=False)
+    daily_cross_lead_summary.to_csv(out_dir / "daily_50_200_cross_lead_environments.csv", index=False)
+    sizing_advisor.to_csv(out_dir / "sizing_advisor.csv", index=False)
     regime_payoff.to_csv(out_dir / "sector_regime_payoff.csv")
     model.predictions.to_csv(out_dir / "walkforward_predictions.csv", index=False)
     model.holdout_predictions.to_csv(out_dir / "holdout_predictions.csv", index=False)
     model.live_rankings.to_csv(out_dir / "live_sector_rankings.csv", index=False)
     model.metrics.to_csv(out_dir / "model_metrics.csv")
     model.feature_importance.to_csv(out_dir / "feature_importance.csv", index=False)
+    build_feature_family_summary(model.feature_importance).to_csv(out_dir / "feature_family_importance.csv")
+    model_config = {
+        "target": "top-tercile next-6-month sector excess return",
+        "ensemble": {
+            "logit": {
+                "model": "LogisticRegression",
+                "solver": "lbfgs",
+                "max_iter": 2000,
+                "class_weight": "balanced",
+            },
+            "extra_trees": {
+                "model": "ExtraTreesClassifier",
+                "n_estimators": 500,
+                "max_depth": 7,
+                "min_samples_leaf": 25,
+                "min_samples_split": 50,
+                "class_weight": "balanced",
+            },
+            "hist_gradient": {
+                "model": "HistGradientBoostingClassifier",
+                "learning_rate": 0.04,
+                "max_iter": 250,
+                "max_leaf_nodes": 15,
+                "min_samples_leaf": 35,
+                "l2_regularization": 2.0,
+            },
+        },
+        "ensemble_combination": "simple average of model probabilities",
+        "train_years": train_years,
+        "label_horizon_months": label_horizon,
+        "holdout_start": holdout_start,
+        "min_feature_coverage": min_feature_coverage,
+        "excluded_predictive_feature_parts": list(EXCLUDED_PREDICTIVE_FEATURE_PARTS),
+        "note": "Coverage/count metadata is excluded from predictive features; it can be used for diagnostics only.",
+    }
+    (out_dir / "model_config.json").write_text(json.dumps(model_config, indent=2), encoding="utf-8")
     (out_dir / "current_regime_snapshot.json").write_text(
         json.dumps(
             {
@@ -1520,18 +2101,24 @@ def build_research(
                 "holdout_start": holdout_start,
                 "label_horizon_months": label_horizon,
                 "top_n": top_n,
+                "daily_cross_events": int(len(daily_cross_events)),
             },
             indent=2,
         ),
         encoding="utf-8",
     )
 
-    print("[5/7] Rendering plotting-paper HTML report...")
+    print("[6/8] Rendering plotting-paper HTML report...")
     result = ResearchResult(
         panel=panel,
         trend_quality=trend_quality,
         fake_breakouts=trend_quality.sort_values("fake_breakout_rate_%", ascending=False),
         regime_payoff=regime_payoff,
+        daily_cross_events=daily_cross_events,
+        daily_cross_sector_summary=daily_cross_sector_summary,
+        daily_cross_regime_summary=daily_cross_regime_summary,
+        daily_cross_lead_summary=daily_cross_lead_summary,
+        sizing_advisor=sizing_advisor,
         model=model,
         macro_bundle=live_macro,
         current_snapshot=snapshot,
@@ -1540,8 +2127,8 @@ def build_research(
     html_doc = build_html_report(result, top_n)
     out_path = out_dir / "index.html"
     out_path.write_text(html_doc, encoding="utf-8")
-    print(f"[6/7] Wrote {out_path}")
-    print("[7/7] Done.")
+    print(f"[7/8] Wrote {out_path}")
+    print("[8/8] Done.")
     return out_path
 
 

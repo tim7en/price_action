@@ -8,12 +8,12 @@
   "favored_sectors": [
     "Technology",
     "Energy",
-    "Real Estate"
+    "Financials"
   ],
   "avoid_sectors": [
     "Health Care",
-    "Materials",
-    "Industrials"
+    "Consumer Defensive",
+    "Materials"
   ],
   "most_fake_breakouts": [
     "Health Care",
@@ -33,8 +33,9 @@
   "history_through": "2025-09-30",
   "live_price_through": "2026-07-10",
   "live_source": "sector_etf_cache",
-  "generated_at": "2026-07-12T17:09:54.112783+00:00",
+  "generated_at": "2026-07-12T18:55:17.554125+00:00",
   "holdout_start": "2025-01-01",
   "label_horizon_months": 6,
-  "top_n": 3
+  "top_n": 3,
+  "daily_cross_events": 358
 }

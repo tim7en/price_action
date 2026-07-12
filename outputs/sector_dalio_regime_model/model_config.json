@@ -1,0 +1,41 @@
+{
+  "target": "top-tercile next-6-month sector excess return",
+  "ensemble": {
+    "logit": {
+      "model": "LogisticRegression",
+      "solver": "lbfgs",
+      "max_iter": 2000,
+      "class_weight": "balanced"
+    },
+    "extra_trees": {
+      "model": "ExtraTreesClassifier",
+      "n_estimators": 500,
+      "max_depth": 7,
+      "min_samples_leaf": 25,
+      "min_samples_split": 50,
+      "class_weight": "balanced"
+    },
+    "hist_gradient": {
+      "model": "HistGradientBoostingClassifier",
+      "learning_rate": 0.04,
+      "max_iter": 250,
+      "max_leaf_nodes": 15,
+      "min_samples_leaf": 35,
+      "l2_regularization": 2.0
+    }
+  },
+  "ensemble_combination": "simple average of model probabilities",
+  "train_years": 8,
+  "label_horizon_months": 6,
+  "holdout_start": "2025-01-01",
+  "min_feature_coverage": 0.65,
+  "excluded_predictive_feature_parts": [
+    "symbol_count",
+    "constituent_count",
+    "coverage_count",
+    "monthly_observations",
+    "observation_count",
+    "_n_members"
+  ],
+  "note": "Coverage/count metadata is excluded from predictive features; it can be used for diagnostics only."
+}
