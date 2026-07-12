@@ -88,18 +88,44 @@ def _get(url: str, timeout: int = 90, attempts: int = 3) -> bytes:
     raise RuntimeError(f"GET failed after {attempts} attempts: {url}") from last
 
 
+def _parse_fred_frame(frame: pd.DataFrame) -> dict[str, pd.Series]:
+    out: dict[str, pd.Series] = {}
+    date_col = frame.columns[0]
+    idx = pd.to_datetime(frame[date_col], errors="coerce")
+    for col in frame.columns[1:]:
+        s = pd.Series(pd.to_numeric(frame[col], errors="coerce").to_numpy(),
+                      index=idx, name=col).dropna().sort_index()
+        if not s.empty:
+            out[col] = s
+    return out
+
+
+def fetch_fred_batch(series_ids: list[str]) -> dict[str, pd.Series]:
+    """One request for many series: multi-id fredgraph returns a ZIP of CSVs
+    (one per frequency group).  Sequential single requests get tarpitted by
+    FRED's CDN, so batching is load-bearing here, not an optimisation."""
+    import io
+    import zipfile
+    raw = _get("https://fred.stlouisfed.org/graph/fredgraph.csv?id="
+               + ",".join(series_ids))
+    out: dict[str, pd.Series] = {}
+    if raw[:2] == b"PK":
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            for name in z.namelist():
+                if not name.endswith(".csv"):
+                    continue
+                frame = pd.read_csv(StringIO(z.read(name).decode("utf-8")))
+                out.update(_parse_fred_frame(frame))
+    else:
+        out.update(_parse_fred_frame(pd.read_csv(StringIO(raw.decode("utf-8")))))
+    missing = [sid for sid in series_ids if sid not in out]
+    if missing:
+        raise RuntimeError(f"FRED batch missing series: {missing}")
+    return out
+
+
 def fetch_fred_series(series_id: str) -> pd.Series:
-    raw = _get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
-    frame = pd.read_csv(StringIO(raw.decode("utf-8")))
-    date_col, val_col = frame.columns[0], frame.columns[1]
-    s = pd.Series(
-        pd.to_numeric(frame[val_col], errors="coerce").to_numpy(),
-        index=pd.to_datetime(frame[date_col], errors="coerce"),
-        name=series_id,
-    ).dropna().sort_index()
-    if s.empty:
-        raise RuntimeError(f"FRED returned no rows for {series_id}")
-    return s
+    return fetch_fred_batch([series_id])[series_id]
 
 
 def fetch_yahoo_series(symbol: str) -> pd.Series:
@@ -146,15 +172,19 @@ def refresh_fred_dir(root: Path, only: list[str] | None = None) -> tuple[list[st
     names = sorted((existing | set(EXTRA_FRED_SERIES)) - {"UMCSENT_RELEASE_AWARE"})
     if only is not None:
         names = [n for n in names if n in only]
-    for name in names:
+    for i in range(0, len(names), 10):           # batches of <=10 ids
+        chunk = names[i:i + 10]
         try:
-            time.sleep(1.5)                      # pace FRED, it throttles bursts
-            s = fetch_fred_series(name)
+            series_map = fetch_fred_batch(chunk)
+        except Exception as exc:  # noqa: BLE001
+            failed.extend(f"{n}: {exc}" for n in chunk)
+            continue
+        for name in chunk:
+            s = series_map[name]
             s.rename_axis("observation_date").reset_index().to_csv(
                 root / "fred" / f"{name}.csv", index=False)
             done.append(f"{name} → {s.index[-1]:%Y-%m-%d}")
-        except Exception as exc:  # noqa: BLE001
-            failed.append(f"{name}: {exc}")
+        time.sleep(2.0)
     return done, failed
 
 
@@ -168,13 +198,13 @@ def rebuild_macro_daily(root: Path) -> tuple[list[str], list[str]]:
             done.append(f"{col} ({sym}) → {cols[col].index[-1]:%Y-%m-%d}")
         except Exception as exc:  # noqa: BLE001
             failed.append(f"{col} ({sym}): {exc}")
-    for col, sid in FRED_COLS.items():
-        try:
-            time.sleep(1.5)                      # pace FRED, it throttles bursts
-            cols[col] = fetch_fred_series(sid)
+    try:
+        fred_map = fetch_fred_batch(list(FRED_COLS.values()))
+        for col, sid in FRED_COLS.items():
+            cols[col] = fred_map[sid]
             done.append(f"{col} ({sid}) → {cols[col].index[-1]:%Y-%m-%d}")
-        except Exception as exc:  # noqa: BLE001
-            failed.append(f"{col} ({sid}): {exc}")
+    except Exception as exc:  # noqa: BLE001
+        failed.extend(f"{col} ({sid}): {exc}" for col, sid in FRED_COLS.items())
 
     try:
         cols["shiller_cape_ratio"] = fetch_multpl_cape()
