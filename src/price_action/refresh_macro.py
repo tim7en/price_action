@@ -24,11 +24,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
 
 import numpy as np
 import pandas as pd
@@ -72,6 +74,7 @@ MULTPL_URL = "https://www.multpl.com/shiller-pe/table/by-month"
 EXTRA_FRED_SERIES = ["DFF", "T10YIE", "T5YIFR", "MICH", "ICSA", "PERMIT",
                      "FEDTARMD", "FEDTARMDLR"]
 DEFAULT_PROGRESS_FILE = Path("outputs") / "macro_refresh_progress.json"
+FRED_API_URL = "https://api.stlouisfed.org/fred/series/observations"
 
 
 def _utc_now() -> str:
@@ -83,6 +86,29 @@ def _resolve_progress_file(root: Path, progress_file: str | Path | None) -> Path
         return None
     path = Path(progress_file)
     return path if path.is_absolute() else root / path
+
+
+def _read_dotenv_value(name: str) -> str | None:
+    for base in [resolve_project_root(None), Path.cwd()]:
+        path = base / ".env"
+        if not path.exists():
+            continue
+        for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, value = stripped.split("=", 1)
+            key = key.strip()
+            if key.startswith("export "):
+                key = key.removeprefix("export ").strip()
+            if key == name:
+                return value.strip().strip('"').strip("'")
+    return None
+
+
+def _fred_api_key() -> str | None:
+    value = os.environ.get("FRED_API_KEY") or _read_dotenv_value("FRED_API_KEY")
+    return value.strip() if value and value.strip() else None
 
 
 class ProgressTracker:
