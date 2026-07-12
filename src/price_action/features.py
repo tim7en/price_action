@@ -14,6 +14,26 @@ def rolling_zscore(series: pd.Series, window: int) -> pd.Series:
     return (series - mean) / std
 
 
+def bounded_momentum_oscillator(close: pd.Series, window: int = 14) -> pd.Series:
+    close = pd.to_numeric(close, errors="coerce")
+    delta = close.diff()
+    gain = delta.clip(lower=0.0)
+    loss = -delta.clip(upper=0.0)
+
+    average_gain = gain.ewm(alpha=1.0 / window, min_periods=window, adjust=False).mean()
+    average_loss = loss.ewm(alpha=1.0 / window, min_periods=window, adjust=False).mean()
+    rs = average_gain / average_loss.replace(0.0, np.nan)
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+
+    rsi = rsi.mask((average_loss == 0.0) & (average_gain > 0.0), 100.0)
+    rsi = rsi.mask((average_gain == 0.0) & (average_loss > 0.0), 0.0)
+    rsi = rsi.mask((average_gain == 0.0) & (average_loss == 0.0), 50.0)
+
+    oscillator = (rsi / 50.0 - 1.0).clip(lower=-1.0, upper=1.0)
+    oscillator.name = "momentum_oscillator"
+    return oscillator
+
+
 def _existing(columns: Iterable[str], frame: pd.DataFrame) -> list[str]:
     return [column for column in columns if column in frame.columns]
 
@@ -54,6 +74,7 @@ def build_feature_frame(
         - 1.0
     )
     frame["trend_strength"] = frame["ret_20d"] / frame["vol_20d"].replace(0.0, np.nan)
+    frame["momentum_oscillator"] = bounded_momentum_oscillator(frame["close"])
 
     if "atr" in frame.columns:
         frame["atr_pct"] = frame["atr"] / frame["close"]
@@ -129,6 +150,7 @@ def build_feature_frame(
             "distance_to_20d_low",
             "range_20d",
             "trend_strength",
+            "momentum_oscillator",
             "risk_off_score",
             "regime_risk_off",
             "trend_score",
@@ -173,4 +195,3 @@ def engineer_daily_features(
 
     dataset = frame[feature_columns + ["target", "forward_return", "net_forward_return"]].dropna()
     return dataset, feature_columns
-

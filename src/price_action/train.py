@@ -172,6 +172,7 @@ def _gate_feature_columns(frame: pd.DataFrame) -> list[str]:
         "risk_off_score",
         "regime_trend",
         "trend_score",
+        "momentum_oscillator",
     ]
     return [column for column in preferred if column in frame.columns]
 
@@ -193,9 +194,15 @@ def fit_gate_model(
         return None
 
     oof = pd.DataFrame(index=pd.RangeIndex(len(x_train)))
-    regime_columns = [
+    gate_context_columns = [
         column
-        for column in ["regime_risk_off", "risk_off_score", "regime_trend", "trend_score"]
+        for column in [
+            "regime_risk_off",
+            "risk_off_score",
+            "regime_trend",
+            "trend_score",
+            "momentum_oscillator",
+        ]
         if column in x_train.columns
     ]
 
@@ -212,7 +219,7 @@ def fit_gate_model(
             fitted.fit(split_x_train, split_y_train)
             oof.loc[split_valid_idx, f"prob_{name}"] = fitted.predict_proba(split_x_valid)[:, 1]
 
-    for column in regime_columns:
+    for column in gate_context_columns:
         oof[column] = x_train[column].to_numpy()
 
     oof = oof.dropna()
@@ -339,7 +346,13 @@ def run_walk_forward_experiment(
         fold_frame = fold_frame.join(probability_frame)
         fold_frame["ensemble_probability"] = probability_frame.mean(axis=1)
 
-        for column in ["regime_risk_off", "risk_off_score", "regime_trend", "trend_score"]:
+        for column in [
+            "regime_risk_off",
+            "risk_off_score",
+            "regime_trend",
+            "trend_score",
+            "momentum_oscillator",
+        ]:
             if column in x_test.columns:
                 fold_frame[column] = x_test[column]
 

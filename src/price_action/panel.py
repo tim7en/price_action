@@ -196,7 +196,13 @@ def run_panel_experiment(
 
         fold_frame = fold_frame.join(probability_frame)
         fold_frame["ensemble_probability"] = probability_frame.mean(axis=1)
-        for column in ["regime_risk_off", "risk_off_score", "regime_trend", "trend_score"]:
+        for column in [
+            "regime_risk_off",
+            "risk_off_score",
+            "regime_trend",
+            "trend_score",
+            "momentum_oscillator",
+        ]:
             if column in x_test.columns:
                 fold_frame[column] = x_test[column]
 
@@ -211,6 +217,7 @@ def run_panel_experiment(
                     "risk_off_score",
                     "regime_trend",
                     "trend_score",
+                    "momentum_oscillator",
                 ]
                 if column in fold_frame.columns
             ]
