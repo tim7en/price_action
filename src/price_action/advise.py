@@ -316,6 +316,10 @@ def drawdown_ladder_lines(root: Path, prices: pd.DataFrame, health: float) -> li
                  f"inventory in profit (your ledger)")
     lines.append("- Reserve target 15% of NAV in yield-bearing cash; ladder trades the reserve only — "
                  "core DCA holdings are never sold.")
+    if not np.isnan(osc_value):
+        throttle = max(1.0 + osc_value, 0.0)
+        lines.append(f"- Momentum throttle (satellite book, E = 1 + oscillator, 0…2x, monthly): "
+                     f"**{throttle:.2f}x** as of {osc_asof:%Y-%m} — rebalance at month-end only.")
     lines.append("")
     return lines
 
