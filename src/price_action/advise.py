@@ -268,6 +268,64 @@ def _load_whipsaw(root: Path) -> pd.Series:
     return df["whipsaw_rate_%"]
 
 
+MARKET_STRUCTURE_DIR = Path("outputs") / "market_structure"
+
+
+def market_structure_lines(root: Path) -> list[str]:
+    """CFTC positioning, volume nodes, dealer gamma — context instruments."""
+    lines: list[str] = []
+    cot_path = root / MARKET_STRUCTURE_DIR / "cot_panel.csv"
+    if not cot_path.exists():
+        return lines
+    lines.append("## Market structure (context instruments — run build_market_structure.py to refresh)")
+    panel = pd.read_csv(cot_path, parse_dates=[0], index_col=0)
+    last = panel.iloc[-1]
+    age_days = (pd.Timestamp.now() - panel.index[-1]).days
+    stale = " ⚠ stale" if age_days > 12 else ""
+    lines.append(
+        f"- CFTC E-mini S&P positioning (release-aligned, as of {panel.index[-1]:%Y-%m-%d}{stale}): "
+        f"asset managers **{last['asset_mgr_net_pct_oi']:+.0f}% of OI (z {last['asset_mgr_net_pct_oi_z']:+.1f})**, "
+        f"leveraged funds {last['lev_funds_net_pct_oi']:+.0f}% (z {last['lev_funds_net_pct_oi_z']:+.1f}), "
+        f"dealers {last['dealer_net_pct_oi']:+.0f}%.")
+    if last["asset_mgr_net_pct_oi_z"] > 1.0:
+        lines.append("  - Asset-manager crowding above +1z: historically 1.6%/qtr forward vs 4.6% when light "
+                     "(weak contrarian tilt, IC −0.11 — a caution flag, never a trade signal). "
+                     "Quarterly-roll weeks distort %OI; read levels, not week-to-week jumps.")
+    profile_path = root / MARKET_STRUCTURE_DIR / "volume_profile_2y.csv"
+    if profile_path.exists():
+        profile = pd.read_csv(profile_path)
+        spy_path = root / PRICE_CACHE / "SPY_daily.csv"
+        spot = float(pd.read_csv(spy_path)["close"].iloc[-1]) if spy_path.exists() else np.nan
+        if not np.isnan(spot):
+            hvn = profile[profile["node"] == "HVN"]
+            lvn = profile[profile["node"] == "LVN"]
+            below = hvn[hvn["price_high"] <= spot].tail(1)
+            above = hvn[hvn["price_low"] >= spot].head(1)
+            gaps = lvn[(lvn["price_high"] <= spot)].tail(1)
+            parts = []
+            if not below.empty:
+                parts.append(f"nearest high-volume shelf below: {below.iloc[0]['price_low']:.0f}–{below.iloc[0]['price_high']:.0f}")
+            if not above.empty:
+                parts.append(f"above: {above.iloc[0]['price_low']:.0f}–{above.iloc[0]['price_high']:.0f}")
+            if not gaps.empty:
+                parts.append(f"air pocket below: {gaps.iloc[0]['price_low']:.0f}–{gaps.iloc[0]['price_high']:.0f} (price moves fast through)")
+            if parts:
+                lines.append(f"- SPY volume-by-price (2y): {'; '.join(parts)}.")
+    try:
+        from .market_structure import gamma_exposure
+        gex = gamma_exposure(root)
+        if gex is not None:
+            lines.append(f"- Dealer gamma (snapshot {gex['as_of_file_mtime']}): net {gex['net_gex_usd_bn_per_1pct']:+.1f}bn/1% — "
+                         f"{gex['regime']}; pins near {', '.join(f'{s:.0f}' for s in gex['top_pin_strikes'])}. "
+                         f"Unvalidated context — no free history to backtest.")
+        else:
+            lines.append("- Dealer gamma: no chain file (see market_structure.GEX_INSTRUCTIONS to enable).")
+    except Exception:  # noqa: BLE001
+        pass
+    lines.append("")
+    return lines
+
+
 LADDER_TRANCHES = ((-0.30, 0.10), (-0.40, 0.50), (-0.50, 0.40))
 LADDER_OSC_EXIT = 0.75
 LADDER_HEALTH_EXIT = 55.0
@@ -440,6 +498,7 @@ def build_sheet(root: Path, offline: bool = False) -> str:
     add("")
 
     lines.extend(drawdown_ladder_lines(root, prices, health))
+    lines.extend(market_structure_lines(root))
 
     add("## Caveats (printed on purpose)")
     add("- Health is a **de-risk-only** governor: the walk-forward regime test "
