@@ -268,6 +268,58 @@ def _load_whipsaw(root: Path) -> pd.Series:
     return df["whipsaw_rate_%"]
 
 
+LADDER_TRANCHES = ((-0.30, 0.10), (-0.40, 0.50), (-0.50, 0.40))
+LADDER_OSC_EXIT = 0.75
+LADDER_HEALTH_EXIT = 55.0
+LADDER_RETRACE_EXIT = -0.15
+OSCILLATOR_SERIES = Path("outputs") / "momentum_oscillator" / "oscillator_series.csv"
+
+
+def drawdown_ladder_lines(root: Path, prices: pd.DataFrame, health: float) -> list[str]:
+    """SPY drawdown cycle ladder status (docs/drawdown_cycle_rules.md)."""
+    lines: list[str] = []
+    if BROAD_ETF not in prices.columns:
+        return lines
+    spy = prices[BROAD_ETF].dropna()
+    ath = spy.cummax()
+    dd_now = float(spy.iloc[-1] / ath.iloc[-1] - 1.0)
+    last_ath_date = spy.index[(spy >= ath).to_numpy()][-1]
+    episode_min_dd = float((spy.loc[last_ath_date:] / ath.iloc[-1] - 1.0).min())
+
+    osc_value, osc_asof = np.nan, None
+    osc_path = root / OSCILLATOR_SERIES
+    if osc_path.exists():
+        osc = pd.read_csv(osc_path, parse_dates=["date"]).set_index("date")["oscillator"].dropna()
+        if not osc.empty:
+            osc_value, osc_asof = float(osc.iloc[-1]), osc.index[-1]
+
+    lines.append("## SPY drawdown cycle ladder (docs/drawdown_cycle_rules.md)")
+    lines.append(f"- SPY drawdown from ATH: **{dd_now:.1%}** "
+                 f"(episode since {last_ath_date:%Y-%m-%d}, episode low {episode_min_dd:.1%})")
+    lines.append("")
+    lines.append("| Tranche | Trigger | SPY price | Fired this episode | Deploys |")
+    lines.append("|---|---|---|---|---|")
+    for n, (threshold, fraction) in enumerate(LADDER_TRANCHES, start=1):
+        trigger_px = float(ath.iloc[-1]) * (1.0 + threshold)
+        fired = episode_min_dd <= threshold
+        lines.append(f"| {n} | {threshold:.0%} | {trigger_px:.0f} | "
+                     f"{'**YES — buy if not yet filled**' if fired else 'no'} | {fraction:.0%} of reserve |")
+    lines.append("")
+
+    osc_txt = "n/a (run build_momentum_oscillator.py)" if np.isnan(osc_value) else (
+        f"{osc_value:+.2f} as of {osc_asof:%Y-%m} {'✅' if osc_value >= LADDER_OSC_EXIT else '❌'} "
+        f"(needs ≥ {LADDER_OSC_EXIT:+.2f}; partial month until month-end)")
+    lines.append("- Exit gates (all four must hold at a month-end): "
+                 f"oscillator {osc_txt} · "
+                 f"health {health:.0f} {'✅' if health >= LADDER_HEALTH_EXIT else '❌'} (needs ≥ {LADDER_HEALTH_EXIT:.0f}) · "
+                 f"drawdown {dd_now:.1%} {'✅' if dd_now > LADDER_RETRACE_EXIT else '❌'} (needs > {LADDER_RETRACE_EXIT:.0%}) · "
+                 f"inventory in profit (your ledger)")
+    lines.append("- Reserve target 15% of NAV in yield-bearing cash; ladder trades the reserve only — "
+                 "core DCA holdings are never sold.")
+    lines.append("")
+    return lines
+
+
 def build_sheet(root: Path, offline: bool = False) -> str:
     prices, warnings = load_prices(root, offline)
     macro = load_macro_panel(root)
@@ -382,6 +434,8 @@ def build_sheet(root: Path, offline: bool = False) -> str:
             f"asset is in an uptrend** → the trend gate keeps the whole sleeve in "
             f"stables yield / PAXG until a golden cross.")
     add("")
+
+    lines.extend(drawdown_ladder_lines(root, prices, health))
 
     add("## Caveats (printed on purpose)")
     add("- Health is a **de-risk-only** governor: the walk-forward regime test "

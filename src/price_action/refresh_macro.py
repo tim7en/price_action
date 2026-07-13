@@ -7,7 +7,8 @@ Rebuilds, from origin sources:
 * ``cache/macro_daily_1999.csv`` -- the combined daily store: Yahoo tickers
                                  (DXY, gold, copper, Wilshire, VIX3M, sector
                                  ETFs), FRED series (yields, WTI, GDP, CPI,
-                                 unemployment, mktcap/GDP), and the Shiller
+                         we
+                                         unemployment, mktcap/GDP), and the Shiller
                                  CAPE from multpl.com (falls back to a
                                  price-scaled proxy of the last known CAPE if
                                  the scrape fails -- flagged in the output).

@@ -140,7 +140,12 @@ asymmetry is cheap insurance against health-score whipsaw.
    long exposure.
 3. Per-asset caps from the table in §1, enforced at rebalance.
 4. Perps for hedge/overlay only — position notional, margin ring-fenced,
-   isolated margin, no cross.
+   isolated margin, no cross. **Hedge leverage ≤ 3x effective, so liquidation
+   sits ≥ +30% away**: in-sample, no 20-day bear-market rally in BTC or SPY
+   ever reached +30%, while a 20x hedge (liq ≈ +4.5%) would have been
+   liquidated by 18% of BTC's 5-day bear bounces — a leveraged hedge dies
+   exactly when it is needed. Protection comes from notional, not leverage;
+   higher leverage only moves the liquidation closer.
 5. Venue risk is real: Binance is a single counterparty for everything here.
    Keep a defined fraction (your call, e.g. long-term core) in self-custody;
    the playbook operates on the exchange-resident fraction.
