@@ -270,6 +270,91 @@ def _load_whipsaw(root: Path) -> pd.Series:
 
 MARKET_STRUCTURE_DIR = Path("outputs") / "market_structure"
 
+# Weekly narratives (docs/weekly_narratives.md): first matching state wins.
+# (name, fwd-3m footprint text, action text)
+NARRATIVES = {
+    1: ("Panic flush — the ladder's moment",
+        "+6.7%/3m historically, 74% hit, worst −21%",
+        "Ladder buys fire mechanically; DCA continues; sell nothing."),
+    2: ("Euphoria — sell inventory, not the market",
+        "+5.2%/3m, 88% hit — this state continues, it is not a top signal",
+        "Ladder exit gates only; shorting here fights an 88% hit rate."),
+    3: ("Bear-market rally — the hedge-killer",
+        "too rare to quantify (n=1); bear bounces hit +19%/5d",
+        "No action. Don't chase, don't short. Wait for the golden cross."),
+    4: ("Confirmed bear — the only red state",
+        "−0.3%/3m, worst −38% — the single negative-expectation state",
+        "Cross book in cash by rule; throttle near zero; DCA continues."),
+    5: ("Broken trend, health holding — the whipsaw tax",
+        "+5.4%/3m, 84% hit — the rebound the filter deliberately sits out",
+        "None. Do not front-run the golden cross; this cost buys the −33% maxDD."),
+    6: ("Crack in the trend — cheap insurance season",
+        "+3.2%/3m ≈ baseline, fatter tails",
+        "Governor de-risk row on anything levered (grid margin halves)."),
+    7: ("Momentum surge — the false dawn",
+        "+0.4%/3m vs +2.9% baseline — momentum LEVEL predicts, CHANGE seduces",
+        "Explicitly none — this narrative exists to stop a trade."),
+    8: ("Crowded calm — late innings",
+        "+2.9%/3m ≈ baseline, worst −23%; crowding bites when trend cracks",
+        "Full size per rules, zero improvisation above them; watch for state 6/4."),
+    9: ("Confirmed bull, clean positioning — the default",
+        "+2.8%/3m, 74% hit (a third of all weeks)",
+        "The boring rules, executed boringly."),
+}
+
+
+def classify_narrative(*, trend_up: bool, dd: float, ret20: float, osc: float,
+                       osc_chg3m: float, health: float, am_z: float) -> int:
+    if dd <= -0.30 or osc <= -0.75:
+        return 1
+    if osc >= 0.75 and health >= 55:
+        return 2
+    if dd <= -0.20 and ret20 >= 0.08 and not trend_up:
+        return 3
+    if not trend_up and health < 45:
+        return 4
+    if not trend_up:
+        return 5
+    if health < 55:
+        return 6
+    if osc_chg3m >= 0.30 and osc < 0.5:
+        return 7
+    if am_z > 1.0:
+        return 8
+    return 9
+
+
+def narrative_lines(root: Path, prices: pd.DataFrame, health: float) -> list[str]:
+    lines: list[str] = []
+    if BROAD_ETF not in prices.columns:
+        return lines
+    spy = prices[BROAD_ETF].dropna()
+    osc_path = root / OSCILLATOR_SERIES
+    cot_path = root / MARKET_STRUCTURE_DIR / "cot_panel.csv"
+    if not osc_path.exists() or not cot_path.exists():
+        return lines
+    osc = pd.read_csv(osc_path, parse_dates=["date"]).set_index("date")["oscillator"].dropna()
+    am_z = pd.read_csv(cot_path, parse_dates=[0], index_col=0)["asset_mgr_net_pct_oi_z"].dropna()
+    ma50 = spy.rolling(50, min_periods=50).mean()
+    ma200 = spy.rolling(200, min_periods=200).mean()
+    trend_up = bool(spy.iloc[-1] > ma200.iloc[-1] and ma50.iloc[-1] > ma200.iloc[-1])
+    number = classify_narrative(
+        trend_up=trend_up,
+        dd=float(spy.iloc[-1] / spy.cummax().iloc[-1] - 1.0),
+        ret20=float(spy.iloc[-1] / spy.iloc[-21] - 1.0) if len(spy) > 21 else 0.0,
+        osc=float(osc.iloc[-1]),
+        osc_chg3m=float(osc.iloc[-1] - osc.iloc[-4]) if len(osc) > 4 else 0.0,
+        health=health,
+        am_z=float(am_z.iloc[-1]),
+    )
+    name, footprint, action = NARRATIVES[number]
+    lines.append("## This week's narrative (docs/weekly_narratives.md)")
+    lines.append(f"- **State {number} · {name}**")
+    lines.append(f"- Historical footprint: {footprint}.")
+    lines.append(f"- Action: {action}")
+    lines.append("")
+    return lines
+
 
 def market_structure_lines(root: Path) -> list[str]:
     """CFTC positioning, volume nodes, dealer gamma — context instruments."""
@@ -497,6 +582,7 @@ def build_sheet(root: Path, offline: bool = False) -> str:
             f"stables yield / PAXG until a golden cross.")
     add("")
 
+    lines.extend(narrative_lines(root, prices, health))
     lines.extend(drawdown_ladder_lines(root, prices, health))
     lines.extend(market_structure_lines(root))
 
