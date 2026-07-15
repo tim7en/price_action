@@ -99,7 +99,37 @@ otherwise be panic. The no-retrace variant buys a much softer ride (−21%
 maxDD) for ~2% CAGR — a legitimate preference, documented so future-you
 doesn't "discover" it in-sample.
 
-## 6 · Frozen
+## 6 · Depth-gated leverage (2026-07 gradient study, outputs/drawdown_gradient/)
+
+The forward-return gradient by ATH-drawdown depth (SPY daily, 1998–2026) is
+**not monotone**: the −10%…−30% zone is the falling-knife trap (fwd 12m
+3.7–8.4%, Sharpe 0.23–0.45 — *worse* than buying at all-time highs), while
+−30…−40% pays +14.4% (93% hit, Sharpe 1.41) and −40%+ pays +33.8% (100% hit
+across its ~2 episodes, worst decile still +21%).
+
+The survival column decides where leverage may live. After entering at a
+−5…−20% dip, the further fall exceeded −33% (the 2x liquidation line at 25%
+maintenance) in **13–25% of cases** (p90 further drawdown −43…−48%). After
+entering below −30%, the further fall **never** exceeded −23% in the sample.
+
+Amendment, consistent with the user's mandate (max 2x, equal-margin top-up
+reserve available):
+
+- Above −30% drawdown: **no leverage, ever** — this includes the tempting
+  −10…−20% "big dip" zone, which is statistically the worst place to add.
+- T1 (−30%) and T2 (−40%): cash tranches at 1x, as specified.
+- T3 (−50%): may deploy at up to **2x**, with the equal-margin top-up
+  reserved for it (topping up de-levers to ~1x on cost — no liquidation
+  path). Historically no entry below −30% ever faced a further −33% fall;
+  this rule is calibrated to that, on ~2–3 independent episodes — treat it
+  as a survivable bet, not a certainty.
+- Sector dips are excluded from the ladder entirely: deep-drawdown buying
+  paid +34…+51% for cyclicals but **+1.5% for XLK after 2000 and +8% for
+  XLF after 2008** — the crash's epicenter sector is the value trap, and
+  you cannot know the epicenter ex-ante. The index rotates leadership;
+  single sectors don't have to recover. Ladder the index only.
+
+## 7 · Frozen
 
 One calendar-scheduled review per year, written reasons for any change.
 Log every action: date, drawdown at fire, price, tranche, blended cost,
