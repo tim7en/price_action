@@ -29,7 +29,8 @@
       "Bash(echo \"=== exit: $? ===\")",
       "Bash(git rev-list *)",
       "Bash(git checkout *)",
-      "Bash(open outputs/regime_analysis/index.html)"
+      "Bash(open outputs/regime_analysis/index.html)",
+      "Bash(python refresh_macro.py --status)"
     ],
     "additionalDirectories": [
       "/tmp"

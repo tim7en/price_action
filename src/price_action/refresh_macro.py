@@ -520,8 +520,18 @@ def rebuild_macro_daily(
 
     missing = [c for c in COLUMN_ORDER if c not in cols
                and c not in ("cpi_mom_pct", "cpi_yoy_pct")]
-    if "wilshire_total_market_index" not in cols or "cpi_all_items_index" not in cols:
+    if "cpi_all_items_index" not in cols:
         raise RuntimeError(f"Core series failed, aborting rebuild: {failed}")
+    if "wilshire_total_market_index" not in cols:
+        # Yahoo's ^FTW5000 feed can return nothing at all. Not fatal when the
+        # store already holds history: the post-merge VTI bridge extends it.
+        store = root / "cache" / "macro_daily_1999.csv"
+        if not store.exists():
+            raise RuntimeError(f"Core series failed, aborting rebuild: {failed}")
+        item = "wilshire_total_market_index: fetch empty; extending stored history via VTI bridge"
+        failed.append(item)
+        if progress is not None:
+            progress.warn(item, item_index=item_index)
 
     frame = pd.DataFrame(cols).sort_index()
     frame = frame[frame.index >= pd.Timestamp(START)]
