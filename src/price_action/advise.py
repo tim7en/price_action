@@ -302,6 +302,19 @@ NARRATIVES = {
         "The boring rules, executed boringly."),
 }
 
+# Transition facts per state (docs/weekly_narratives.md, transitions section).
+NARRATIVE_TRANSITIONS = {
+    1: "Bimodal: 44% reach a bear within a quarter AND best avg forward return — tranching holds both outcomes. Median run 4w.",
+    2: "Median run 9w; only 16% reach a bear within a quarter. Euphoria mostly cools, not crashes.",
+    3: "Historically resolves into state 5 (broken trend, health holding).",
+    4: "Persists (median 6w, max 38w); 91% still bear-bound a quarter out. Exits via 5 (60%) or a flush.",
+    5: "32% bear within a quarter; watch for a fresh flush (22% of exits).",
+    6: "The gate to the bear: 29% reach state 4 within a quarter; exits split evenly to 4 / 1 / 9. Vigilance is live.",
+    7: "0% reached a bear within a quarter; usually resolves to clean bull — but carries no edge of its own.",
+    8: "Benign in itself: median 3w, exits to clean bull 89% of the time, lowest bear risk of any state (4% within a quarter). Crowding is dry tinder, not a spark.",
+    9: "6% bear within a quarter; two-thirds of exits are into crowded calm as positioning builds.",
+}
+
 
 def classify_narrative(*, trend_up: bool, dd: float, ret20: float, osc: float,
                        osc_chg3m: float, health: float, am_z: float) -> int:
@@ -351,6 +364,7 @@ def narrative_lines(root: Path, prices: pd.DataFrame, health: float) -> list[str
     lines.append("## This week's narrative (docs/weekly_narratives.md)")
     lines.append(f"- **State {number} · {name}**")
     lines.append(f"- Historical footprint: {footprint}.")
+    lines.append(f"- Transitions: {NARRATIVE_TRANSITIONS[number]}")
     lines.append(f"- Action: {action}")
     lines.append("")
     return lines

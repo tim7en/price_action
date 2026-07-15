@@ -80,6 +80,46 @@ armed, read state 6/4 transitions promptly.*
 weeks. Trend up, health fine, positioning unremarkable. *Action: the boring
 rules, executed borly. DCA, throttle by formula, sheet on Sundays.*
 
+## Transitions — the early-warning map
+
+Run-length and transition analysis of the same 996 weeks (state runs, where
+each state goes when it changes, and the probability of reaching the red
+state within the next quarter):
+
+| From state | Median run | Exits to (top) | P(bear ≤ 13w) |
+|---|---|---|---|
+| 1 Panic flush | 4w | →6 44% · →4 44% | **44%** |
+| 2 Euphoria | 9w | →6/→9/→8 even | 16% |
+| 4 Confirmed bear | 6w (max 38w) | →5 60% · →1 20% | 91% (persists) |
+| 5 Broken trend, health OK | 5w | →7 44% · →1 22% | 32% |
+| 6 Crack in the trend | 4w | →4 25% · →1 25% · →9 25% | **29%** |
+| 7 Momentum surge | 6w | →9 50% | 0% |
+| 8 Crowded calm | 3w | **→9 89%** | **4%** |
+| 9 Clean bull | 4w | →8 67% · →6 17% | 6% |
+
+**The road to a bear is stereotyped.** The eight weeks before the ten bear
+entries were spent in state 1 (36%), state 6 (32%), and state 9 (18%) —
+almost never in crowded calm (1%) or euphoria (1%). The market does not jump
+from healthy states to a bear; it walks through a **crack (6) or a flush (1)
+first**. Operationally: states 8/9 need no vigilance beyond the weekly
+glance; the moment the sheet prints state 6 or 1, transition risk is live
+(~1-in-3 to the red state within a quarter) and the governor/ladder rules are
+the response.
+
+**Panic flushes are bimodal, which is the ladder's whole thesis:** from state
+1, 44% of paths reach a bear within a quarter *and* the average forward
+return is the best in the table (+6.7%). Flushes either resolve violently up
+or become bears — tranching is the only honest way to hold both outcomes.
+
+**Crowded calm (8) is benign in itself:** median 3 weeks, exits to clean bull
+89% of the time, and the lowest bear-within-a-quarter probability of any
+state (4%). Crowding is dry tinder, not a spark — it tells you how bad the
+fire could be, not when it starts.
+
+**Ladder cycle expectations:** from the first week of a panic flush to the
+next euphoria (the ladder's exit zone), the median wait was **41 weeks**; the
+longest was ~10.5 years (2008→2020). Seven of nine flush runs resolved.
+
 ## Priority order and hygiene
 
 Conditions are evaluated 1→9; the first match is the week's narrative
