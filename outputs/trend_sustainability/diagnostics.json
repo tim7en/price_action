@@ -1,0 +1,19 @@
+{
+ "symbols": [
+  "SPY",
+  "XLK",
+  "XLF",
+  "XLV",
+  "XLI",
+  "XLY",
+  "XLP",
+  "XLC",
+  "XLRE",
+  "XLB",
+  "XLE",
+  "XLU"
+ ],
+ "crosses": 227,
+ "confirmed_share_%": 79.0,
+ "note": "SMA/VWAP/OBV on raw close; returns on adjclose; 10bps turnover; idle earns 2y rate; 1-bar lag."
+}
