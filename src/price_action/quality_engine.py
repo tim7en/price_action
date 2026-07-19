@@ -382,6 +382,7 @@ ARCHETYPE_METRICS = {
 def quality_scores(sector: str, funds: dict[str, dict], asof: pd.Timestamp,
                    prices: dict[str, pd.Series]) -> pd.DataFrame:
     """Cross-sectional z-scored quality within the sector, point-in-time."""
+    metric_fn = ARCHETYPE_METRICS[SECTOR_ARCHETYPE[sector]]
     rows = {}
     for t, f in funds.items():
         px = prices[t]
@@ -392,7 +393,7 @@ def quality_scores(sector: str, funds: dict[str, dict], asof: pd.Timestamp,
         mcap = shares * float(px_asof.iloc[-1]) if not np.isnan(shares) else np.nan
         if not np.isnan(mcap) and mcap < MIN_MARKET_CAP:
             continue
-        rows[t] = SECTOR_METRICS[sector](f, asof)
+        rows[t] = metric_fn(f, asof)
     frame = pd.DataFrame(rows).T
     if frame.empty:
         return frame
@@ -405,13 +406,9 @@ def quality_scores(sector: str, funds: dict[str, dict], asof: pd.Timestamp,
 # --------------------------------------------------------------------------- #
 # Event study.
 # --------------------------------------------------------------------------- #
-def event_study(sector: str, root: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
-    tickers = SECTOR_UNIVERSE[sector]
+def event_study(sector: str, tickers: list[str], root: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     funds = {t: load_fundamentals(root, t) for t in tickers}
-    prices = {}
-    for t in tickers:
-        c = load_asset_daily(t)["close"].astype(float)
-        prices[t] = c[~c.index.duplicated(keep="last")].sort_index()
+    prices = {t: load_close(root, t) for t in tickers}
     grid = pd.date_range("2010-01-31", "2025-11-30", freq="ME")
     obs = []
     for asof in grid:
@@ -457,10 +454,9 @@ def event_study(sector: str, root: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     return panel, summary
 
 
-def current_scorecard(sector: str, root: Path) -> pd.DataFrame:
-    tickers = SECTOR_UNIVERSE[sector]
+def current_scorecard(sector: str, tickers: list[str], root: Path) -> pd.DataFrame:
     funds = {t: load_fundamentals(root, t) for t in tickers}
-    prices = {t: load_asset_daily(t)["close"].astype(float).sort_index() for t in tickers}
+    prices = {t: load_close(root, t) for t in tickers}
     asof = max(px.index[-1] for px in prices.values())
     scores = quality_scores(sector, funds, asof, prices)
     return scores.sort_values("quality_z", ascending=False).round(3)
@@ -469,24 +465,31 @@ def current_scorecard(sector: str, root: Path) -> pd.DataFrame:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", default=None)
+    parser.add_argument("--sector", default=None, help="Run a single book (e.g. SEMIS).")
     args = parser.parse_args()
     root = resolve_project_root(args.project_root)
     out = root / OUTPUT_DIR
     out.mkdir(parents=True, exist_ok=True)
 
+    universes = build_universes(root)
+    if args.sector:
+        universes = {args.sector.upper(): universes[args.sector.upper()]}
     summaries = []
-    for sector in SECTOR_UNIVERSE:
-        panel, summary = event_study(sector, root)
+    for sector, tickers in sorted(universes.items()):
+        panel, summary = event_study(sector, tickers, root)
+        summary.insert(1, "archetype", SECTOR_ARCHETYPE[sector])
+        summary.insert(2, "names", len(tickers))
         panel.to_csv(out / f"{sector}_panel.csv", index=False)
         summaries.append(summary)
-        print(f"=== {sector}: quality (point-in-time, filed-date aligned) -> fwd 6m vs peers ===")
-        print(summary.to_string(index=False))
-        card = current_scorecard(sector, root)
+        card = current_scorecard(sector, tickers, root)
         card.to_csv(out / f"{sector}_scorecard.csv")
-        print(f"\n--- {sector} current scorecard ---")
-        print(card.to_string())
-        print()
-    pd.concat(summaries).to_csv(out / "summary.csv", index=False)
+        top = ", ".join(card.index[:3])
+        bottom = ", ".join(card.index[-3:])
+        print(f"{sector}: top = {top} | bottom = {bottom}")
+    combined = pd.concat(summaries)
+    combined.to_csv(out / "summary.csv", index=False)
+    print("\n=== Quality -> forward 6m vs sector peers (point-in-time, filed-date aligned) ===")
+    print(combined.to_string(index=False))
 
 
 if __name__ == "__main__":
