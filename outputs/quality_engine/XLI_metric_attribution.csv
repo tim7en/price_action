@@ -1,0 +1,7 @@
+sector,specification,metric,kind,observations,months,avg_monthly_IC,IC_pos_share_%,avg_6m_top_minus_bottom_%,nonoverlap_spread_%,nonoverlap_n,spread_tstat_nonoverlap
+XLI,industrials,composite,composite,2684,184,0.021,50.0,-1.34,-0.58,31,-0.32
+XLI,industrials,fcf_margin,standalone_metric,2551,184,0.047,51.0,-0.13,0.04,31,0.03
+XLI,industrials,gross_margin,standalone_metric,1301,184,-0.097,38.0,-2.83,-2.38,31,-1.14
+XLI,industrials,low_leverage,standalone_metric,1995,184,0.125,61.0,1.42,0.1,31,0.06
+XLI,industrials,margin_steadiness,standalone_metric,2562,184,0.069,58.0,-0.06,-0.27,31,-0.19
+XLI,industrials,rev_growth,standalone_metric,2730,184,-0.082,38.0,-2.09,-2.25,31,-1.64

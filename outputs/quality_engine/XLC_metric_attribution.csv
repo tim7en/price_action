@@ -1,0 +1,7 @@
+sector,specification,metric,kind,observations,months,avg_monthly_IC,IC_pos_share_%,avg_6m_top_minus_bottom_%,nonoverlap_spread_%,nonoverlap_n,spread_tstat_nonoverlap
+XLC,communication_services,composite,composite,1749,175,0.001,46.0,0.95,0.9,30,0.29
+XLC,communication_services,fcf_margin,standalone_metric,1586,175,-0.017,53.0,-0.18,-0.43,30,-0.18
+XLC,communication_services,margin_steadiness,standalone_metric,1734,175,-0.014,45.0,0.33,0.96,30,0.42
+XLC,communication_services,net_cash_ratio,standalone_metric,1785,175,0.08,64.0,1.76,3.88,30,1.35
+XLC,communication_services,ni_margin,standalone_metric,1753,175,0.04,51.0,0.51,1.53,30,0.57
+XLC,communication_services,rev_growth,standalone_metric,1739,175,0.024,47.0,0.25,-3.28,30,-1.35

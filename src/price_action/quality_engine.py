@@ -18,19 +18,11 @@ Factor choices anchor to the literature rather than in-sample search:
 * Asness-Frazzini-Pedersen (2014, QMJ): profitable, stable, conservatively
   financed names outperform junk.
 
-Sector metric sets (all computed trailing-twelve-months, point-in-time):
-
-  Financials  : ROE, capital ratio (equity/assets), earnings stability,
-                TTM net-income growth.
-  Asset-light : gross margin, FCF margin, revenue growth, net-cash ratio,
-                earnings stability.
-  Defensive   : net margin and stability, FCF margin, leverage, earnings
-                stability.
-  Cyclical    : FCF margin, net margin, leverage, revenue growth, earnings
-                stability.
-  Real estate : OCF margin and growth, leverage, OCF stability.
-  Semis       : gross-margin level and trend, revenue growth, FCF margin,
-                net cash.
+Each of the 11 sectors plus the semiconductor/memory book has its own explicit
+metric specification. Metrics may overlap where the economics genuinely do,
+but no sector inherits a generic "cyclical" or "defensive" composite. The
+report includes standalone metric attribution and leave-one-metric-out
+ablation for every book.
 
 Universe rule: market cap >= $5B at observation (shares x price).
 
@@ -59,16 +51,22 @@ SEC_DIR = Path("data") / "sec_facts"
 OHLCV_DIR = Path("cache") / "market_structure"
 OUTPUT_DIR = Path("outputs") / "quality_engine"
 # Every name that ever appeared in a top-10 sector snapshot (with data), plus
-# the dedicated semiconductor/memory book. Sector archetype decides metrics.
+# the dedicated semiconductor/memory book. Every book has its own metric spec.
 SEMIS = ["NVDA", "AMD", "AVGO", "MU", "INTC", "TXN", "QCOM", "AMAT",
          "LRCX", "ADI", "WDC", "STX", "SNDK"]
-SECTOR_ARCHETYPE = {
-    "XLF": "financial",
-    "XLK": "asset_light", "XLC": "asset_light",
-    "XLP": "defensive", "XLU": "defensive", "XLV": "defensive",
-    "XLI": "cyclical", "XLB": "cyclical", "XLE": "cyclical", "XLY": "cyclical",
-    "XLRE": "reit",
-    "SEMIS": "semis",
+SECTOR_SPECIFICATION = {
+    "XLB": "materials",
+    "XLC": "communication_services",
+    "XLE": "energy",
+    "XLF": "financials",
+    "XLI": "industrials",
+    "XLK": "technology",
+    "XLP": "consumer_staples",
+    "XLRE": "real_estate",
+    "XLU": "utilities",
+    "XLV": "health_care",
+    "XLY": "consumer_discretionary",
+    "SEMIS": "semiconductors_memory",
 }
 MIN_MARKET_CAP = 5e9
 MIN_METRICS = 3
@@ -290,35 +288,27 @@ def _stability(frame: pd.DataFrame, asof: pd.Timestamp) -> float:
 # --------------------------------------------------------------------------- #
 # Sector-specific metrics (all point-in-time as of `asof`).
 # --------------------------------------------------------------------------- #
-def metrics_financials(f: dict, asof: pd.Timestamp) -> dict[str, float]:
-    ni, ni_ago = _ttm(f["net_income"], asof), _ttm_ago(f["net_income"], asof)
-    eq, assets = _latest(f["equity"], asof), _latest(f["assets"], asof)
-    return {
-        "roe": ni / eq if eq and eq > 0 and not np.isnan(ni) else np.nan,
-        "capital_ratio": eq / assets if assets and assets > 0 and eq else np.nan,
-        "stability": _stability(f["net_income"], asof),
-        "ni_growth": (ni / ni_ago - 1.0) if ni_ago and ni_ago > 0 and not np.isnan(ni) else np.nan,
-    }
-
-
-def metrics_technology(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+def _operating_snapshot(f: dict, asof: pd.Timestamp) -> dict[str, float]:
     rev, rev_ago = _ttm(f["revenue"], asof), _ttm_ago(f["revenue"], asof)
     gp = _ttm(f["gross_profit"], asof)
     if np.isnan(gp):
         cor = _ttm(f["cost_of_revenue"], asof)
         gp = rev - cor if not (np.isnan(rev) or np.isnan(cor)) else np.nan
+    gp_ago = _ttm_ago(f["gross_profit"], asof)
+    if np.isnan(gp_ago):
+        cor_ago = _ttm_ago(f["cost_of_revenue"], asof)
+        gp_ago = rev_ago - cor_ago if not (np.isnan(rev_ago) or np.isnan(cor_ago)) else np.nan
+    ni, ni_ago = _ttm(f["net_income"], asof), _ttm_ago(f["net_income"], asof)
     ocf, capex = _ttm(f["ocf"], asof), _ttm(f["capex"], asof)
     fcf = ocf - capex if not (np.isnan(ocf) or np.isnan(capex)) else np.nan
     cash, debt = _latest(f["cash"], asof), _latest(f["lt_debt"], asof)
     assets = _latest(f["assets"], asof)
+    equity = _latest(f["equity"], asof)
     return {
-        "gross_margin": gp / rev if rev and rev > 0 and not np.isnan(gp) else np.nan,
-        "fcf_margin": fcf / rev if rev and rev > 0 and not np.isnan(fcf) else np.nan,
-        "rev_growth": (rev / rev_ago - 1.0) if rev_ago and rev_ago > 0 and not np.isnan(rev) else np.nan,
-        "net_cash_ratio": ((cash if not np.isnan(cash) else 0.0)
-                           - (debt if not np.isnan(debt) else 0.0)) / assets
-                          if assets and assets > 0 else np.nan,
-        "stability": _stability(f["net_income"], asof),
+        "rev": rev, "rev_ago": rev_ago, "gp": gp, "gp_ago": gp_ago,
+        "ni": ni, "ni_ago": ni_ago, "ocf": ocf, "capex": capex,
+        "fcf": fcf, "cash": cash, "debt": debt, "assets": assets,
+        "equity": equity,
     }
 
 
@@ -330,43 +320,119 @@ def _ni_margin_series(f: dict, asof: pd.Timestamp) -> pd.Series:
     return joined["ni"] / joined["rev"]
 
 
-def metrics_defensive(f: dict, asof: pd.Timestamp) -> dict[str, float]:
-    """Staples / Utilities / Health Care: steadiness over growth (Graham's
-    defensive tests): margin level AND margin stability, cash conversion,
-    conservative leverage, unbroken earnings."""
-    rev = _ttm(f["revenue"], asof)
-    ni = _ttm(f["net_income"], asof)
-    ocf, capex = _ttm(f["ocf"], asof), _ttm(f["capex"], asof)
-    fcf = ocf - capex if not (np.isnan(ocf) or np.isnan(capex)) else np.nan
-    debt, assets = _latest(f["lt_debt"], asof), _latest(f["assets"], asof)
+def _revenue_steadiness(f: dict, asof: pd.Timestamp) -> float:
+    revenue = _known(f["revenue"], asof).tail(16)["val"]
+    yoy = revenue.pct_change(4, fill_method=None).replace([np.inf, -np.inf], np.nan).dropna()
+    return -float(yoy.tail(8).std()) if len(yoy) >= 4 else np.nan
+
+
+def _common_quality(s: dict, f: dict, asof: pd.Timestamp) -> dict[str, float]:
     margins = _ni_margin_series(f, asof)
     return {
-        "ni_margin": ni / rev if rev and rev > 0 and not np.isnan(ni) else np.nan,
+        "gross_margin": s["gp"] / s["rev"]
+                        if s["rev"] and s["rev"] > 0 and not np.isnan(s["gp"]) else np.nan,
+        "ni_margin": s["ni"] / s["rev"]
+                     if s["rev"] and s["rev"] > 0 and not np.isnan(s["ni"]) else np.nan,
+        "ocf_margin": s["ocf"] / s["rev"]
+                      if s["rev"] and s["rev"] > 0 and not np.isnan(s["ocf"]) else np.nan,
+        "fcf_margin": s["fcf"] / s["rev"]
+                      if s["rev"] and s["rev"] > 0 and not np.isnan(s["fcf"]) else np.nan,
+        "rev_growth": (s["rev"] / s["rev_ago"] - 1.0)
+                      if s["rev_ago"] and s["rev_ago"] > 0 and not np.isnan(s["rev"]) else np.nan,
         "margin_steadiness": -float(margins.std()) if len(margins) >= 8 else np.nan,
-        "fcf_margin": fcf / rev if rev and rev > 0 and not np.isnan(fcf) else np.nan,
-        "low_leverage": -(debt / assets) if assets and assets > 0 and not np.isnan(debt) else np.nan,
-        "stability": _stability(f["net_income"], asof),
+        "low_leverage": -(s["debt"] / s["assets"])
+                        if s["assets"] and s["assets"] > 0 and not np.isnan(s["debt"]) else np.nan,
+        "net_cash_ratio": ((s["cash"] if not np.isnan(s["cash"]) else 0.0)
+                           - (s["debt"] if not np.isnan(s["debt"]) else 0.0)) / s["assets"]
+                          if s["assets"] and s["assets"] > 0 else np.nan,
+        "earnings_stability": _stability(f["net_income"], asof),
     }
 
 
-def metrics_cyclical(f: dict, asof: pd.Timestamp) -> dict[str, float]:
-    """Industrials / Materials / Energy / Cons-Cyclical: survivability first
-    (leverage), cash through the cycle, then growth."""
-    rev, rev_ago = _ttm(f["revenue"], asof), _ttm_ago(f["revenue"], asof)
-    ni = _ttm(f["net_income"], asof)
-    ocf, capex = _ttm(f["ocf"], asof), _ttm(f["capex"], asof)
-    fcf = ocf - capex if not (np.isnan(ocf) or np.isnan(capex)) else np.nan
-    debt, assets = _latest(f["lt_debt"], asof), _latest(f["assets"], asof)
+def metrics_financials(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    s = _operating_snapshot(f, asof)
     return {
-        "fcf_margin": fcf / rev if rev and rev > 0 and not np.isnan(fcf) else np.nan,
-        "ni_margin": ni / rev if rev and rev > 0 and not np.isnan(ni) else np.nan,
-        "low_leverage": -(debt / assets) if assets and assets > 0 and not np.isnan(debt) else np.nan,
-        "rev_growth": (rev / rev_ago - 1.0) if rev_ago and rev_ago > 0 and not np.isnan(rev) else np.nan,
-        "stability": _stability(f["net_income"], asof),
+        "roe": s["ni"] / s["equity"]
+               if s["equity"] and s["equity"] > 0 and not np.isnan(s["ni"]) else np.nan,
+        "capital_ratio": s["equity"] / s["assets"]
+                         if s["assets"] and s["assets"] > 0 and s["equity"] else np.nan,
+        "earnings_stability": _stability(f["net_income"], asof),
+        "ni_growth": (s["ni"] / s["ni_ago"] - 1.0)
+                     if s["ni_ago"] and s["ni_ago"] > 0 and not np.isnan(s["ni"]) else np.nan,
     }
 
 
-def metrics_reit(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+def metrics_technology(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    q = _common_quality(_operating_snapshot(f, asof), f, asof)
+    return {k: q[k] for k in (
+        "gross_margin", "fcf_margin", "rev_growth", "net_cash_ratio", "earnings_stability"
+    )}
+
+
+def metrics_communication_services(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    q = _common_quality(_operating_snapshot(f, asof), f, asof)
+    return {k: q[k] for k in (
+        "ni_margin", "fcf_margin", "rev_growth", "net_cash_ratio", "margin_steadiness"
+    )}
+
+
+def metrics_consumer_staples(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    q = _common_quality(_operating_snapshot(f, asof), f, asof)
+    return {k: q[k] for k in (
+        "ni_margin", "margin_steadiness", "fcf_margin", "low_leverage", "earnings_stability"
+    )}
+
+
+def metrics_utilities(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    s = _operating_snapshot(f, asof)
+    q = _common_quality(s, f, asof)
+    capex_coverage = (s["ocf"] / s["capex"]
+                      if s["capex"] and s["capex"] > 0 and not np.isnan(s["ocf"]) else np.nan)
+    return {
+        "ocf_margin": q["ocf_margin"],
+        "capex_coverage": capex_coverage,
+        "low_leverage": q["low_leverage"],
+        "revenue_steadiness": _revenue_steadiness(f, asof),
+        "earnings_stability": q["earnings_stability"],
+    }
+
+
+def metrics_health_care(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    q = _common_quality(_operating_snapshot(f, asof), f, asof)
+    return {k: q[k] for k in (
+        "gross_margin", "fcf_margin", "rev_growth", "net_cash_ratio", "earnings_stability"
+    )}
+
+
+def metrics_industrials(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    q = _common_quality(_operating_snapshot(f, asof), f, asof)
+    return {k: q[k] for k in (
+        "gross_margin", "fcf_margin", "rev_growth", "low_leverage", "margin_steadiness"
+    )}
+
+
+def metrics_materials(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    q = _common_quality(_operating_snapshot(f, asof), f, asof)
+    return {k: q[k] for k in (
+        "gross_margin", "fcf_margin", "low_leverage", "rev_growth", "earnings_stability"
+    )}
+
+
+def metrics_energy(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    q = _common_quality(_operating_snapshot(f, asof), f, asof)
+    return {k: q[k] for k in (
+        "ocf_margin", "fcf_margin", "low_leverage", "rev_growth", "earnings_stability"
+    )}
+
+
+def metrics_consumer_discretionary(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    q = _common_quality(_operating_snapshot(f, asof), f, asof)
+    return {k: q[k] for k in (
+        "gross_margin", "fcf_margin", "rev_growth", "low_leverage", "margin_steadiness"
+    )}
+
+
+def metrics_real_estate(f: dict, asof: pd.Timestamp) -> dict[str, float]:
     """Real estate: GAAP net income is depreciation-distorted (FFO is the
     industry metric but not a standard XBRL tag), so quality is read off
     operating cash flow and leverage. Disclosed caveat."""
@@ -387,46 +453,40 @@ def metrics_semis(f: dict, asof: pd.Timestamp) -> dict[str, float]:
     Margin LEVEL rewards stable franchises (TXN/ADI); margin TREND (gross
     margin now vs a year ago) is the cycle-turn signal the DRAM names live
     and die by. Both included so the study can say which one pays."""
-    rev, rev_ago = _ttm(f["revenue"], asof), _ttm_ago(f["revenue"], asof)
-    gp = _ttm(f["gross_profit"], asof)
-    if np.isnan(gp):
-        cor = _ttm(f["cost_of_revenue"], asof)
-        gp = rev - cor if not (np.isnan(rev) or np.isnan(cor)) else np.nan
-    gp_ago = _ttm_ago(f["gross_profit"], asof)
-    if np.isnan(gp_ago):
-        cor_ago = _ttm_ago(f["cost_of_revenue"], asof)
-        gp_ago = rev_ago - cor_ago if not (np.isnan(rev_ago) or np.isnan(cor_ago)) else np.nan
-    gm = gp / rev if rev and rev > 0 and not np.isnan(gp) else np.nan
-    gm_ago = gp_ago / rev_ago if rev_ago and rev_ago > 0 and not np.isnan(gp_ago) else np.nan
-    ocf, capex = _ttm(f["ocf"], asof), _ttm(f["capex"], asof)
-    fcf = ocf - capex if not (np.isnan(ocf) or np.isnan(capex)) else np.nan
-    cash, debt = _latest(f["cash"], asof), _latest(f["lt_debt"], asof)
-    assets = _latest(f["assets"], asof)
+    s = _operating_snapshot(f, asof)
+    q = _common_quality(s, f, asof)
+    gm = q["gross_margin"]
+    gm_ago = (s["gp_ago"] / s["rev_ago"]
+              if s["rev_ago"] and s["rev_ago"] > 0 and not np.isnan(s["gp_ago"]) else np.nan)
     return {
         "gross_margin": gm,
         "gm_trend": gm - gm_ago if not (np.isnan(gm) or np.isnan(gm_ago)) else np.nan,
-        "rev_growth": (rev / rev_ago - 1.0) if rev_ago and rev_ago > 0 and not np.isnan(rev) else np.nan,
-        "fcf_margin": fcf / rev if rev and rev > 0 and not np.isnan(fcf) else np.nan,
-        "net_cash_ratio": ((cash if not np.isnan(cash) else 0.0)
-                           - (debt if not np.isnan(debt) else 0.0)) / assets
-                          if assets and assets > 0 else np.nan,
+        "rev_growth": q["rev_growth"],
+        "fcf_margin": q["fcf_margin"],
+        "net_cash_ratio": q["net_cash_ratio"],
     }
 
 
-ARCHETYPE_METRICS = {
-    "financial": metrics_financials,
-    "asset_light": metrics_technology,
-    "defensive": metrics_defensive,
-    "cyclical": metrics_cyclical,
-    "reit": metrics_reit,
-    "semis": metrics_semis,
+BOOK_METRICS = {
+    "XLB": metrics_materials,
+    "XLC": metrics_communication_services,
+    "XLE": metrics_energy,
+    "XLF": metrics_financials,
+    "XLI": metrics_industrials,
+    "XLK": metrics_technology,
+    "XLP": metrics_consumer_staples,
+    "XLRE": metrics_real_estate,
+    "XLU": metrics_utilities,
+    "XLV": metrics_health_care,
+    "XLY": metrics_consumer_discretionary,
+    "SEMIS": metrics_semis,
 }
 
 
 def quality_scores(sector: str, funds: dict[str, dict], asof: pd.Timestamp,
                    prices: dict[str, pd.Series]) -> pd.DataFrame:
     """Cross-sectional z-scored quality within the sector, point-in-time."""
-    metric_fn = ARCHETYPE_METRICS[SECTOR_ARCHETYPE[sector]]
+    metric_fn = BOOK_METRICS[sector]
     rows = {}
     for t, f in funds.items():
         px = prices[t]
@@ -441,7 +501,13 @@ def quality_scores(sector: str, funds: dict[str, dict], asof: pd.Timestamp,
     frame = pd.DataFrame(rows).T
     if frame.empty:
         return frame
-    z = frame.apply(lambda col: (col - col.mean()) / col.std() if col.std() and col.notna().sum() >= 4 else col * np.nan)
+    metric_columns = list(frame.columns)
+    z = frame[metric_columns].apply(
+        lambda col: (col - col.mean()) / col.std()
+        if col.std() and col.notna().sum() >= 4 else col * np.nan
+    )
+    for metric in metric_columns:
+        frame[f"{metric}_z"] = z[metric]
     frame["n_metrics"] = z.notna().sum(axis=1)
     frame["quality_z"] = z.mean(axis=1).where(frame["n_metrics"] >= MIN_METRICS)
     frame["eligible"] = frame["quality_z"].notna()
@@ -451,6 +517,53 @@ def quality_scores(sector: str, funds: dict[str, dict], asof: pd.Timestamp,
 # --------------------------------------------------------------------------- #
 # Event study.
 # --------------------------------------------------------------------------- #
+def _signal_stats(panel: pd.DataFrame, signal_col: str) -> dict[str, float | int]:
+    clean = panel[["date", signal_col, "fwd_rel"]].dropna().sort_values("date")
+    ics: list[tuple[pd.Timestamp, float]] = []
+    spreads: list[tuple[pd.Timestamp, float]] = []
+    for date, group in clean.groupby("date", sort=True):
+        if len(group) < 4 or group[signal_col].nunique() < 2:
+            continue
+        ic = group[signal_col].corr(group["fwd_rel"], method="spearman")
+        if not np.isnan(ic):
+            ics.append((pd.Timestamp(date), float(ic)))
+        median = group[signal_col].median()
+        high = group.loc[group[signal_col] >= median, "fwd_rel"]
+        low = group.loc[group[signal_col] < median, "fwd_rel"]
+        if len(high) and len(low):
+            spreads.append((pd.Timestamp(date), float(high.mean() - low.mean())))
+
+    ic_values = pd.Series(dict(ics), dtype="float64").sort_index()
+    spread_values = pd.Series(dict(spreads), dtype="float64").sort_index()
+    nonoverlap = spread_values.iloc[::6]
+    tstat = (float(nonoverlap.mean() / (nonoverlap.std() / np.sqrt(len(nonoverlap))))
+             if len(nonoverlap) > 2 and nonoverlap.std() > 0 else np.nan)
+    return {
+        "observations": int(len(clean)),
+        "months": int(len(ic_values)),
+        "avg_monthly_IC": float(ic_values.mean()) if len(ic_values) else np.nan,
+        "IC_pos_share_%": float((ic_values > 0).mean() * 100) if len(ic_values) else np.nan,
+        "avg_6m_top_minus_bottom_%": float(spread_values.mean() * 100)
+                                      if len(spread_values) else np.nan,
+        "nonoverlap_spread_%": float(nonoverlap.mean() * 100) if len(nonoverlap) else np.nan,
+        "nonoverlap_n": int(len(nonoverlap)),
+        "spread_tstat_nonoverlap": tstat,
+    }
+
+
+def _rounded_stats(stats: dict[str, float | int]) -> dict[str, float | int]:
+    return {
+        "observations": int(stats["observations"]),
+        "months": int(stats["months"]),
+        "avg_monthly_IC": round(float(stats["avg_monthly_IC"]), 3),
+        "IC_pos_share_%": round(float(stats["IC_pos_share_%"]), 0),
+        "avg_6m_top_minus_bottom_%": round(float(stats["avg_6m_top_minus_bottom_%"]), 2),
+        "nonoverlap_spread_%": round(float(stats["nonoverlap_spread_%"]), 2),
+        "nonoverlap_n": int(stats["nonoverlap_n"]),
+        "spread_tstat_nonoverlap": round(float(stats["spread_tstat_nonoverlap"]), 2),
+    }
+
+
 def event_study(sector: str, tickers: list[str], root: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     funds = {t: load_fundamentals(root, t) for t in tickers}
     prices = {t: load_close(root, t) for t in tickers}
@@ -473,33 +586,63 @@ def event_study(sector: str, tickers: list[str], root: Path) -> tuple[pd.DataFra
                 fwd[t] = float(px.iloc[pos + FWD_DAYS] / px.iloc[pos] - 1.0)
         fwd = pd.Series(fwd)
         peer = fwd.mean()
+        metric_z_cols = [c for c in scores.columns if c.endswith("_z") and c != "quality_z"]
         for t in scores.index:
-            obs.append({"date": asof, "ticker": t, "quality_z": scores.loc[t, "quality_z"],
-                        "fwd_rel": fwd[t] - peer if not np.isnan(fwd[t]) else np.nan})
+            row = {
+                "date": asof,
+                "ticker": t,
+                "quality_z": scores.loc[t, "quality_z"],
+                "n_metrics": scores.loc[t, "n_metrics"],
+                "fwd_rel": fwd[t] - peer if not np.isnan(fwd[t]) else np.nan,
+            }
+            row.update({column: scores.loc[t, column] for column in metric_z_cols})
+            obs.append(row)
     panel = pd.DataFrame(obs)
-    # summary
-    clean = panel.dropna()
-    months = clean.groupby("date")
-    ics = months.apply(lambda g: g["quality_z"].corr(g["fwd_rel"], method="spearman"),
-                       include_groups=False).dropna()
-    # top-half minus bottom-half, monthly then averaged; plus non-overlapping semiannual
-    def spread(g):
-        med = g["quality_z"].median()
-        return g.loc[g["quality_z"] >= med, "fwd_rel"].mean() - g.loc[g["quality_z"] < med, "fwd_rel"].mean()
-    spreads = months.apply(spread, include_groups=False).dropna()
-    semi = spreads[::6]
-    summary = pd.DataFrame([{
-        "sector": sector,
-        "months": len(ics),
-        "avg_monthly_IC": round(float(ics.mean()), 3),
-        "IC_pos_share_%": round(float((ics > 0).mean()) * 100, 0),
-        "avg_6m_top_minus_bottom_%": round(float(spreads.mean()) * 100, 2),
-        "nonoverlap_spread_%": round(float(semi.mean()) * 100, 2),
-        "nonoverlap_n": len(semi),
-        "spread_tstat_nonoverlap": round(float(semi.mean() / (semi.std() / np.sqrt(len(semi)))), 2)
-        if len(semi) > 2 and semi.std() > 0 else np.nan,
-    }])
+    summary = pd.DataFrame([{"sector": sector, **_rounded_stats(_signal_stats(panel, "quality_z"))}])
     return panel, summary
+
+
+def metric_attribution(sector: str, panel: pd.DataFrame) -> pd.DataFrame:
+    metric_z_cols = sorted(c for c in panel.columns if c.endswith("_z") and c != "quality_z")
+    rows = []
+    for signal_col in ["quality_z", *metric_z_cols]:
+        metric = "composite" if signal_col == "quality_z" else signal_col.removesuffix("_z")
+        rows.append({
+            "sector": sector,
+            "specification": SECTOR_SPECIFICATION[sector],
+            "metric": metric,
+            "kind": "composite" if signal_col == "quality_z" else "standalone_metric",
+            **_rounded_stats(_signal_stats(panel, signal_col)),
+        })
+    return pd.DataFrame(rows)
+
+
+def metric_ablation(sector: str, panel: pd.DataFrame) -> pd.DataFrame:
+    metric_z_cols = sorted(c for c in panel.columns if c.endswith("_z") and c != "quality_z")
+    rows = []
+    for excluded in metric_z_cols:
+        remaining = [column for column in metric_z_cols if column != excluded]
+        minimum = min(MIN_METRICS, len(remaining))
+        without = panel[remaining].mean(axis=1).where(panel[remaining].notna().sum(axis=1) >= minimum)
+        sample = panel.loc[panel["quality_z"].notna() & without.notna()].copy()
+        sample["without_metric_z"] = without.loc[sample.index]
+        baseline = _signal_stats(sample, "quality_z")
+        ablated = _signal_stats(sample, "without_metric_z")
+        rows.append({
+            "sector": sector,
+            "specification": SECTOR_SPECIFICATION[sector],
+            "excluded_metric": excluded.removesuffix("_z"),
+            "observations": int(baseline["observations"]),
+            "baseline_IC": round(float(baseline["avg_monthly_IC"]), 3),
+            "without_metric_IC": round(float(ablated["avg_monthly_IC"]), 3),
+            "metric_IC_contribution": round(
+                float(baseline["avg_monthly_IC"] - ablated["avg_monthly_IC"]), 3),
+            "baseline_nonoverlap_spread_%": round(float(baseline["nonoverlap_spread_%"]), 2),
+            "without_metric_nonoverlap_spread_%": round(float(ablated["nonoverlap_spread_%"]), 2),
+            "metric_spread_contribution_%": round(
+                float(baseline["nonoverlap_spread_%"] - ablated["nonoverlap_spread_%"]), 2),
+        })
+    return pd.DataFrame(rows)
 
 
 def current_scorecard(sector: str, tickers: list[str], root: Path) -> pd.DataFrame:
@@ -522,8 +665,12 @@ def _markdown_table(headers: list[str], rows: list[list[object]]) -> str:
 
 def write_report(out: Path, summary: pd.DataFrame,
                  universes: dict[str, list[str]],
-                 cards: dict[str, pd.DataFrame]) -> None:
+                 cards: dict[str, pd.DataFrame],
+                 attribution: pd.DataFrame,
+                 ablation: pd.DataFrame) -> None:
     leadership_rows = []
+    specification_rows = []
+    driver_rows = []
     for row in summary.itertuples(index=False):
         card = cards[row.sector]
         eligible = card[card["eligible"]]
@@ -532,12 +679,35 @@ def write_report(out: Path, summary: pd.DataFrame,
         leadership_rows.append([
             row.sector, f"{len(eligible)}/{len(card)}", top, bottom,
         ])
+        sector_attr = attribution[
+            (attribution["sector"] == row.sector)
+            & (attribution["kind"] == "standalone_metric")
+        ].dropna(subset=["nonoverlap_spread_%"])
+        metrics = ", ".join(sector_attr["metric"])
+        specification_rows.append([row.sector, row.specification, metrics])
+        if sector_attr.empty:
+            best_metric = worst_metric = "n/a"
+        else:
+            best = sector_attr.loc[sector_attr["nonoverlap_spread_%"].idxmax()]
+            worst = sector_attr.loc[sector_attr["nonoverlap_spread_%"].idxmin()]
+            best_metric = f'{best["metric"]} ({best["nonoverlap_spread_%"]:.2f}%)'
+            worst_metric = f'{worst["metric"]} ({worst["nonoverlap_spread_%"]:.2f}%)'
+        sector_ablation = ablation[ablation["sector"] == row.sector].dropna(
+            subset=["metric_spread_contribution_%"])
+        if sector_ablation.empty:
+            helpful = "n/a"
+        else:
+            contribution = sector_ablation.loc[
+                sector_ablation["metric_spread_contribution_%"].idxmax()]
+            helpful = (f'{contribution["excluded_metric"]} '
+                       f'({contribution["metric_spread_contribution_%"]:+.2f}%)')
+        driver_rows.append([row.sector, best_metric, worst_metric, helpful])
 
     spread_col = "nonoverlap_spread_%"
     validation_rows = []
     for _, row in summary.iterrows():
         validation_rows.append([
-            row["sector"], row["archetype"], int(row["names"]), int(row["months"]),
+            row["sector"], row["specification"], int(row["names"]), int(row["months"]),
             f'{row["avg_monthly_IC"]:.3f}', f'{row[spread_col]:.2f}%',
             int(row["nonoverlap_n"]), f'{row["spread_tstat_nonoverlap"]:.2f}',
         ])
@@ -560,15 +730,32 @@ def write_report(out: Path, summary: pd.DataFrame,
 - {unique_sector_names + len(semis_extras)} distinct SEC fact payloads in scope; semiconductor extras: {', '.join(semis_extras)}.
 - SEC facts are aligned to filing dates. Forward returns start at the first close strictly after each score date.
 - Companies need at least {MIN_METRICS} comparable metrics to receive a quality score.
+- Every book has a dedicated metric specification and separate standalone/ablation attribution.
+
+## Book specifications
+
+{_markdown_table(
+    ["Book", "Specification", "Higher-is-better metrics"],
+    specification_rows,
+)}
 
 ## Validation
 
 {_markdown_table(
-    ["Book", "Archetype", "Names", "Months", "Avg IC", "6m spread", "N", "t-stat"],
+    ["Book", "Specification", "Names", "Months", "Avg IC", "6m spread", "N", "t-stat"],
     validation_rows,
 )}
 
 {evidence} Positive rankings should therefore be treated as research leads, not established alpha.
+
+## Metric attribution
+
+{_markdown_table(
+    ["Book", "Best standalone", "Worst standalone", "Most helpful in composite"],
+    driver_rows,
+)}
+
+Standalone values are non-overlapping top-minus-bottom six-month spreads. The final column is the decline in composite spread when that metric is removed; positive values indicate that the metric helped the composite on the matched sample.
 
 ## Current scorecards
 
@@ -582,6 +769,7 @@ def write_report(out: Path, summary: pd.DataFrame,
 - The sector universe is the union of names observed in SEC N-PORT top-holdings snapshots available from 2019 onward. Applying that union back to 2010 is not point-in-time constituent selection and can introduce composition/survivorship bias.
 - The semiconductor book is a fixed research universe; SNDK price history begins in 2025, so it contributes only to recent cross-sections.
 - Six-month monthly observations overlap. The reported t-stat uses every sixth observation to reduce that dependence.
+- Metric attribution tests many sector/metric combinations and is not corrected for multiple testing; treat isolated strong values as hypotheses.
 - A missing historical share count does not automatically exclude a company from the top-holdings universe; the $5B screen is enforced only when a point-in-time share count is available.
 - SEC tag coverage differs by issuer. The scorecard exposes `n_metrics` and `eligible` so sparse rankings are not silently promoted.
 """
@@ -602,12 +790,20 @@ def main() -> None:
         universes = {args.sector.upper(): universes[args.sector.upper()]}
     summaries = []
     cards = {}
+    attributions = []
+    ablations = []
     for sector, tickers in sorted(universes.items()):
         panel, summary = event_study(sector, tickers, root)
-        summary.insert(1, "archetype", SECTOR_ARCHETYPE[sector])
+        summary.insert(1, "specification", SECTOR_SPECIFICATION[sector])
         summary.insert(2, "names", len(tickers))
         panel.to_csv(out / f"{sector}_panel.csv", index=False)
         summaries.append(summary)
+        attribution = metric_attribution(sector, panel)
+        attribution.to_csv(out / f"{sector}_metric_attribution.csv", index=False)
+        attributions.append(attribution)
+        ablation = metric_ablation(sector, panel)
+        ablation.to_csv(out / f"{sector}_metric_ablation.csv", index=False)
+        ablations.append(ablation)
         card = current_scorecard(sector, tickers, root)
         card.to_csv(out / f"{sector}_scorecard.csv")
         cards[sector] = card
@@ -616,8 +812,16 @@ def main() -> None:
         bottom = ", ".join(eligible.index[-3:])
         print(f"{sector}: top = {top} | bottom = {bottom}")
     combined = pd.concat(summaries)
+    combined_attribution = pd.concat(attributions, ignore_index=True)
+    combined_ablation = pd.concat(ablations, ignore_index=True)
     combined.to_csv(out / "summary.csv", index=False)
-    write_report(out, combined, universes, cards)
+    combined_attribution.to_csv(out / "metric_attribution.csv", index=False)
+    combined_ablation.to_csv(out / "metric_ablation.csv", index=False)
+    specifications = (combined_attribution[combined_attribution["kind"] == "standalone_metric"]
+                      .groupby(["sector", "specification"], as_index=False)["metric"]
+                      .agg(", ".join))
+    specifications.to_csv(out / "book_specifications.csv", index=False)
+    write_report(out, combined, universes, cards, combined_attribution, combined_ablation)
     print("\n=== Quality -> forward 6m vs sector peers (point-in-time, filed-date aligned) ===")
     print(combined.to_string(index=False))
 

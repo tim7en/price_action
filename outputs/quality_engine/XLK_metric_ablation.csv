@@ -1,0 +1,6 @@
+sector,specification,excluded_metric,observations,baseline_IC,without_metric_IC,metric_IC_contribution,baseline_nonoverlap_spread_%,without_metric_nonoverlap_spread_%,metric_spread_contribution_%
+XLK,technology,earnings_stability,3253,0.02,0.025,-0.005,-0.19,0.46,-0.65
+XLK,technology,fcf_margin,3184,0.016,-0.025,0.041,-0.71,-3.36,2.65
+XLK,technology,gross_margin,3170,0.035,0.024,0.011,-0.83,-1.8,0.97
+XLK,technology,net_cash_ratio,3150,0.037,0.045,-0.009,-0.62,-1.78,1.16
+XLK,technology,rev_growth,3199,0.041,0.045,-0.004,0.13,-0.64,0.78

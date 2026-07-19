@@ -1,0 +1,7 @@
+sector,specification,metric,kind,observations,months,avg_monthly_IC,IC_pos_share_%,avg_6m_top_minus_bottom_%,nonoverlap_spread_%,nonoverlap_n,spread_tstat_nonoverlap
+XLP,consumer_staples,composite,composite,1990,185,-0.017,46.0,0.35,0.34,31,0.35
+XLP,consumer_staples,earnings_stability,standalone_metric,1572,129,0.051,54.0,1.18,0.31,22,0.22
+XLP,consumer_staples,fcf_margin,standalone_metric,2255,185,-0.027,47.0,-0.44,0.55,31,0.5
+XLP,consumer_staples,low_leverage,standalone_metric,1648,185,0.05,52.0,1.3,0.95,31,0.82
+XLP,consumer_staples,margin_steadiness,standalone_metric,1978,183,0.081,60.0,2.12,1.22,31,0.94
+XLP,consumer_staples,ni_margin,standalone_metric,1951,185,-0.077,42.0,-2.12,-1.47,31,-1.44

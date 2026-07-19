@@ -1,0 +1,7 @@
+sector,specification,metric,kind,observations,months,avg_monthly_IC,IC_pos_share_%,avg_6m_top_minus_bottom_%,nonoverlap_spread_%,nonoverlap_n,spread_tstat_nonoverlap
+XLE,energy,composite,composite,1820,186,-0.144,34.0,-3.93,-3.61,31,-2.23
+XLE,energy,earnings_stability,standalone_metric,1934,177,-0.013,51.0,-2.04,-2.71,30,-1.24
+XLE,energy,fcf_margin,standalone_metric,1396,186,-0.127,34.0,-2.34,-2.25,31,-1.11
+XLE,energy,low_leverage,standalone_metric,1335,186,0.02,49.0,-0.81,-0.2,31,-0.08
+XLE,energy,ocf_margin,standalone_metric,1838,186,-0.146,40.0,-1.24,-2.1,31,-1.1
+XLE,energy,rev_growth,standalone_metric,1832,186,-0.04,44.0,-0.43,1.91,31,1.19

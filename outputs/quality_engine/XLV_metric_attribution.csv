@@ -1,0 +1,7 @@
+sector,specification,metric,kind,observations,months,avg_monthly_IC,IC_pos_share_%,avg_6m_top_minus_bottom_%,nonoverlap_spread_%,nonoverlap_n,spread_tstat_nonoverlap
+XLV,health_care,composite,composite,2352,184,0.018,54.0,-0.25,-0.5,31,-0.39
+XLV,health_care,earnings_stability,standalone_metric,2294,184,0.031,52.0,1.1,1.3,31,0.78
+XLV,health_care,fcf_margin,standalone_metric,2207,184,-0.045,44.0,0.39,-0.58,31,-0.36
+XLV,health_care,gross_margin,standalone_metric,1597,138,0.06,57.0,2.32,2.95,23,1.52
+XLV,health_care,net_cash_ratio,standalone_metric,2584,184,-0.008,50.0,-2.58,-2.34,31,-2.16
+XLV,health_care,rev_growth,standalone_metric,2342,184,0.029,57.0,0.2,-0.08,31,-0.06

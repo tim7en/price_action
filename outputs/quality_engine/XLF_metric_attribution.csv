@@ -1,0 +1,6 @@
+sector,specification,metric,kind,observations,months,avg_monthly_IC,IC_pos_share_%,avg_6m_top_minus_bottom_%,nonoverlap_spread_%,nonoverlap_n,spread_tstat_nonoverlap
+XLF,financials,composite,composite,2897,186,0.05,57.0,0.83,2.36,31,1.25
+XLF,financials,capital_ratio,standalone_metric,3317,186,0.042,52.0,0.67,0.86,31,0.38
+XLF,financials,earnings_stability,standalone_metric,3084,186,-0.03,47.0,-1.28,-0.88,31,-0.54
+XLF,financials,ni_growth,standalone_metric,2837,186,0.017,54.0,0.56,0.93,31,0.79
+XLF,financials,roe,standalone_metric,2936,186,0.072,59.0,1.53,2.55,31,1.4
