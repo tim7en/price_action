@@ -718,9 +718,13 @@ def write_report(out: Path, summary: pd.DataFrame,
     semis_extras = sorted(set(universes.get("SEMIS", [])) - sector_names)
     unique_sector_names = len(sector_names)
     strong = summary[summary["spread_tstat_nonoverlap"].abs() >= 1.96]
-    evidence = ("No book reaches |t| >= 1.96 on the non-overlapping test."
-                if strong.empty else
-                "Books reaching |t| >= 1.96: " + ", ".join(strong["sector"]))
+    if strong.empty:
+        evidence = "No composite reaches |t| >= 1.96 on the non-overlapping test."
+    else:
+        labels = [f'{row["sector"]} ({row["spread_tstat_nonoverlap"]:+.2f})'
+                  for _, row in strong.iterrows()]
+        evidence = ("Composites reaching |t| >= 1.96: " + ", ".join(labels)
+                    + ". The sign determines whether this supports or rejects the quality signal.")
     text = f"""# Sector quality books
 
 ## Scope
@@ -746,12 +750,12 @@ def write_report(out: Path, summary: pd.DataFrame,
     validation_rows,
 )}
 
-{evidence} Positive rankings should therefore be treated as research leads, not established alpha.
+{evidence} Positive rankings without positive significance should be treated as research leads, not established alpha.
 
 ## Metric attribution
 
 {_markdown_table(
-    ["Book", "Best standalone", "Worst standalone", "Most helpful in composite"],
+    ["Book", "Best standalone", "Worst standalone", "Largest matched contribution"],
     driver_rows,
 )}
 

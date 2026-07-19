@@ -1,0 +1,7 @@
+sector,specification,metric,kind,observations,months,avg_monthly_IC,IC_pos_share_%,avg_6m_top_minus_bottom_%,nonoverlap_spread_%,nonoverlap_n,spread_tstat_nonoverlap
+XLY,consumer_discretionary,composite,composite,1976,183,0.123,65.0,0.84,1.1,31,0.41
+XLY,consumer_discretionary,fcf_margin,standalone_metric,1954,183,0.014,50.0,-1.19,-1.97,31,-0.79
+XLY,consumer_discretionary,gross_margin,standalone_metric,1576,183,0.11,58.0,-0.08,0.02,31,0.01
+XLY,consumer_discretionary,low_leverage,standalone_metric,1323,182,0.023,51.0,-0.5,-1.66,31,-0.52
+XLY,consumer_discretionary,margin_steadiness,standalone_metric,1677,183,-0.01,47.0,-2.08,-1.93,31,-0.78
+XLY,consumer_discretionary,rev_growth,standalone_metric,1970,183,0.103,62.0,5.05,3.63,31,1.44

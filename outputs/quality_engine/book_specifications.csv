@@ -1,0 +1,13 @@
+sector,specification,metric
+SEMIS,semiconductors_memory,"fcf_margin, gm_trend, gross_margin, net_cash_ratio, rev_growth"
+XLB,materials,"earnings_stability, fcf_margin, gross_margin, low_leverage, rev_growth"
+XLC,communication_services,"fcf_margin, margin_steadiness, net_cash_ratio, ni_margin, rev_growth"
+XLE,energy,"earnings_stability, fcf_margin, low_leverage, ocf_margin, rev_growth"
+XLF,financials,"capital_ratio, earnings_stability, ni_growth, roe"
+XLI,industrials,"fcf_margin, gross_margin, low_leverage, margin_steadiness, rev_growth"
+XLK,technology,"earnings_stability, fcf_margin, gross_margin, net_cash_ratio, rev_growth"
+XLP,consumer_staples,"earnings_stability, fcf_margin, low_leverage, margin_steadiness, ni_margin"
+XLRE,real_estate,"low_leverage, ocf_growth, ocf_margin, ocf_stability"
+XLU,utilities,"capex_coverage, earnings_stability, low_leverage, ocf_margin, revenue_steadiness"
+XLV,health_care,"earnings_stability, fcf_margin, gross_margin, net_cash_ratio, rev_growth"
+XLY,consumer_discretionary,"fcf_margin, gross_margin, low_leverage, margin_steadiness, rev_growth"
