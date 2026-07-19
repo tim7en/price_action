@@ -1,0 +1,306 @@
+layer,column,role,family,availability_rule,coverage_pct,dtype
+company,breakeven_10y_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,cape_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,capex_coverage_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,6.62,float64
+company,capital_ratio_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,10.67,float64
+company,claims_yoy_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,copper_gold_ratio_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,copper_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,core_cpi_yoy_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,dxy_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,earnings_stability_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,52.66,float64
+company,fcf_margin_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,60.56,float64
+company,fed_path_2y_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,gm_trend_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,5.27,float64
+company,gold_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,gross_margin_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,33.71,float64
+company,hy_spread_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,indpro_yoy_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,infl_5y5y_fwd_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,infl_exp_1y_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,low_leverage_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,38.11,float64
+company,margin_steadiness_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,25.6,float64
+company,mktcap_to_gdp_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,0.0,float64
+company,net_cash_ratio_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,30.59,float64
+company,nfci_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,ni_growth_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,9.12,float64
+company,ni_margin_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,11.93,float64
+company,ocf_growth_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,8.22,float64
+company,ocf_margin_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,20.08,float64
+company,ocf_stability_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,8.26,float64
+company,permits_yoy_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,quality_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,88.37,float64
+company,rev_growth_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,56.34,float64
+company,revenue_steadiness_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,8.01,float64
+company,roe_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,9.44,float64
+company,vix_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,wti_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,yield_curve_10y2y_z,feature,company_fundamental,SEC filed date <= signal date; trade begins next close,98.77,float64
+company,company_50_200_age_months,feature,company_price_trend,known at or before signal date,100.0,float64
+company,company_50_200_cross,feature,company_price_trend,known at or before signal date,11.94,object
+company,company_50_200_state,feature,company_price_trend,known at or before signal date,99.45,object
+company,company_beta_252d,feature,company_price_trend,known at or before signal date,94.26,float64
+company,company_drawdown_12m,feature,company_price_trend,known at or before signal date,96.95,float64
+company,company_oscillator,feature,company_price_trend,known at or before signal date,77.08,float64
+company,company_price_sma200_gap,feature,company_price_trend,known at or before signal date,99.45,float64
+company,company_relative_oscillator,feature,company_price_trend,known at or before signal date,72.16,float64
+company,company_relative_return_12m,feature,company_price_trend,known at or before signal date,87.77,float64
+company,company_relative_return_1m,feature,company_price_trend,known at or before signal date,94.49,float64
+company,company_relative_return_3m,feature,company_price_trend,known at or before signal date,93.26,float64
+company,company_relative_return_6m,feature,company_price_trend,known at or before signal date,91.42,float64
+company,company_return_12m,feature,company_price_trend,known at or before signal date,92.69,float64
+company,company_return_1m,feature,company_price_trend,known at or before signal date,99.41,float64
+company,company_return_3m,feature,company_price_trend,known at or before signal date,98.18,float64
+company,company_return_6m,feature,company_price_trend,known at or before signal date,96.34,float64
+company,company_sma50_200_gap,feature,company_price_trend,known at or before signal date,99.45,float64
+company,company_volatility_63d,feature,company_price_trend,known at or before signal date,99.89,float64
+company,breakeven_10y,feature,forward_macro,publication lag applied upstream; market series known by close,98.77,float64
+company,claims_yoy,feature,forward_macro,publication lag applied upstream; market series known by close,98.77,float64
+company,fed_path_2y,feature,forward_macro,publication lag applied upstream; market series known by close,98.77,float64
+company,infl_5y5y_fwd,feature,forward_macro,publication lag applied upstream; market series known by close,98.77,float64
+company,infl_exp_1y,feature,forward_macro,publication lag applied upstream; market series known by close,98.77,float64
+company,permits_yoy,feature,forward_macro,publication lag applied upstream; market series known by close,98.77,float64
+company,cape,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,copper,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,copper_gold_ratio,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,copper_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,core_cpi_yoy,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,dxy,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,dxy_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,gold,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,gold_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,hy_spread,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,indpro_yoy,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,mktcap_to_gdp,feature,macro_nowcast,publication lag applied upstream; market series known by close,15.82,float64
+company,nfci,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,vix,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,vix3m,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,vix_curve_ratio,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,vix_curve_spread,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,wti,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,wti_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,yield_curve_10y2y,feature,macro_nowcast,publication lag applied upstream; market series known by close,98.77,float64
+company,macro_dalio_quadrant,feature,macro_regime,publication lag applied upstream; market series known by close,98.77,object
+company,growth_signal,feature,other,known at or before signal date,98.77,float64
+company,inflation_signal,feature,other,known at or before signal date,98.77,float64
+company,market_health,feature,other,known at or before signal date,98.77,float64
+company,parent_above_slow_ma,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_beat_rate_lag1,feature,parent_sector,known at or before signal date,93.65,float64
+company,parent_beat_rate_lag1_change,feature,parent_sector,known at or before signal date,93.65,float64
+company,parent_beta_36m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_cap_weighted_quarterly_eps_yoy_pct_lag1,feature,parent_sector,known at or before signal date,93.65,float64
+company,parent_cap_weighted_quarterly_eps_yoy_pct_lag1_change,feature,parent_sector,known at or before signal date,93.65,float64
+company,parent_cap_weighted_surprise_pct_lag1,feature,parent_sector,known at or before signal date,93.65,float64
+company,parent_cap_weighted_surprise_pct_lag1_change,feature,parent_sector,known at or before signal date,93.65,float64
+company,parent_corr_36m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_drawdown_12m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_drawdown_36m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_fast_slow_gap,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_last_cross_type,feature,parent_sector,known at or before signal date,98.77,object
+company,parent_months_since_cross,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_move_since_last_cross,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_relative_oscillator,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_relative_return_12m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_relative_return_1m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_relative_return_3m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_relative_return_6m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_relative_volatility_12m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_sector_oscillator,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_sector_return_12m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_sector_return_1m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_sector_return_3m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_sector_return_6m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_slow_ma_gap,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_volatility_12m,feature,parent_sector,known at or before signal date,98.77,float64
+company,parent_young_cross_risk,feature,parent_sector,known at or before signal date,98.77,float64
+company,sector_breadth,feature,sector_control,known at or before signal date,98.77,float64
+company,book,metadata,metadata,known at or before signal date,100.0,object
+company,book_specification,metadata,metadata,known at or before signal date,100.0,object
+company,date,metadata,metadata,known at or before signal date,100.0,datetime64[ns]
+company,entry_date,metadata,metadata,known at or before signal date,100.0,datetime64[ns]
+company,evaluation_fold,metadata,metadata,known at or before signal date,100.0,object
+company,membership_age_days,metadata,metadata,known at or before signal date,40.71,float64
+company,membership_basis,metadata,metadata,known at or before signal date,100.0,object
+company,membership_known_from,metadata,metadata,known at or before signal date,40.71,datetime64[ns]
+company,membership_snapshot_asof,metadata,metadata,known at or before signal date,40.71,datetime64[ns]
+company,n_metrics,metadata,metadata,known at or before signal date,100.0,int64
+company,parent_sector,metadata,metadata,known at or before signal date,100.0,object
+company,pit_member,metadata,metadata,known at or before signal date,40.71,boolean
+company,research_eligible,metadata,metadata,known at or before signal date,100.0,bool
+company,signal_date,metadata,metadata,known at or before signal date,100.0,datetime64[ns]
+company,source_contract,metadata,metadata,known at or before signal date,100.0,object
+company,strict_pit_eligible,metadata,metadata,known at or before signal date,100.0,boolean
+company,ticker,metadata,metadata,known at or before signal date,100.0,object
+company,target_company_fwd_6m,target,forward_target,future outcome; forbidden from predictive matrix,99.41,float64
+company,target_company_residual_6m,target,forward_target,future outcome; forbidden from predictive matrix,99.41,float64
+company,target_end_date_6m,target,forward_target,future outcome; forbidden from predictive matrix,100.0,datetime64[ns]
+company,target_parent_sector_fwd_6m,target,forward_target,future outcome; forbidden from predictive matrix,100.0,float64
+company,target_peer_residual_6m,target,forward_target,future outcome; forbidden from predictive matrix,99.41,float64
+macro,breakeven_10y,feature,forward_macro,publication lag applied upstream; market series known by close,88.06,float64
+macro,breakeven_10y_z,feature,forward_macro,publication lag applied upstream; market series known by close,76.77,float64
+macro,claims_yoy,feature,forward_macro,publication lag applied upstream; market series known by close,99.68,float64
+macro,claims_yoy_z,feature,forward_macro,publication lag applied upstream; market series known by close,88.39,float64
+macro,fed_path_2y,feature,forward_macro,publication lag applied upstream; market series known by close,100.0,float64
+macro,fed_path_2y_z,feature,forward_macro,publication lag applied upstream; market series known by close,92.26,float64
+macro,infl_5y5y_fwd,feature,forward_macro,publication lag applied upstream; market series known by close,88.06,float64
+macro,infl_5y5y_fwd_z,feature,forward_macro,publication lag applied upstream; market series known by close,76.77,float64
+macro,infl_exp_1y,feature,forward_macro,publication lag applied upstream; market series known by close,100.0,float64
+macro,infl_exp_1y_z,feature,forward_macro,publication lag applied upstream; market series known by close,92.26,float64
+macro,permits_yoy,feature,forward_macro,publication lag applied upstream; market series known by close,99.35,float64
+macro,permits_yoy_z,feature,forward_macro,publication lag applied upstream; market series known by close,88.06,float64
+macro,cape,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+macro,cape_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+macro,copper,feature,macro_nowcast,publication lag applied upstream; market series known by close,97.42,float64
+macro,copper_gold_ratio,feature,macro_nowcast,publication lag applied upstream; market series known by close,97.42,float64
+macro,copper_gold_ratio_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,86.13,float64
+macro,copper_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,95.48,float64
+macro,copper_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,86.13,float64
+macro,core_cpi_yoy,feature,macro_nowcast,publication lag applied upstream; market series known by close,99.35,float64
+macro,core_cpi_yoy_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,88.06,float64
+macro,dxy,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+macro,dxy_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+macro,dxy_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+macro,gold,feature,macro_nowcast,publication lag applied upstream; market series known by close,97.42,float64
+macro,gold_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,95.48,float64
+macro,gold_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,86.13,float64
+macro,hy_spread,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+macro,hy_spread_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,91.61,float64
+macro,indpro_yoy,feature,macro_nowcast,publication lag applied upstream; market series known by close,99.35,float64
+macro,indpro_yoy_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,88.06,float64
+macro,mktcap_to_gdp,feature,macro_nowcast,publication lag applied upstream; market series known by close,20.32,float64
+macro,mktcap_to_gdp_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,0.0,float64
+macro,nfci,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+macro,nfci_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+macro,vix,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+macro,vix3m,feature,macro_nowcast,publication lag applied upstream; market series known by close,74.52,float64
+macro,vix_curve_ratio,feature,macro_nowcast,publication lag applied upstream; market series known by close,74.52,float64
+macro,vix_curve_spread,feature,macro_nowcast,publication lag applied upstream; market series known by close,74.52,float64
+macro,vix_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+macro,wti,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+macro,wti_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+macro,wti_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+macro,yield_curve_10y2y,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+macro,yield_curve_10y2y_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+macro,dalio_quadrant,feature,macro_regime,publication lag applied upstream; market series known by close,100.0,object
+macro,growth_signal,feature,other,known at or before signal date,97.74,float64
+macro,inflation_signal,feature,other,known at or before signal date,97.42,float64
+macro,market_health,feature,other,known at or before signal date,84.52,float64
+macro,sector_breadth,feature,sector_control,known at or before signal date,99.68,float64
+macro,date,metadata,metadata,known at or before signal date,100.0,datetime64[ns]
+macro,evaluation_fold,metadata,metadata,known at or before signal date,100.0,object
+macro,gmm_regime,metadata,metadata,known at or before signal date,99.35,object
+macro,signal_date,metadata,metadata,known at or before signal date,100.0,datetime64[ns]
+macro,source_contract,metadata,metadata,known at or before signal date,100.0,object
+macro,target_end_date_3m,target,forward_target,future outcome; forbidden from predictive matrix,100.0,datetime64[ns]
+macro,target_growth_signal_3m,target,forward_target,future outcome; forbidden from predictive matrix,97.74,float64
+macro,target_inflation_signal_3m,target,forward_target,future outcome; forbidden from predictive matrix,97.42,float64
+macro,target_next_quadrant_3m,target,forward_target,future outcome; forbidden from predictive matrix,99.03,object
+macro,target_regime_change_3m,target,forward_target,future outcome; forbidden from predictive matrix,99.03,float64
+sector,dollar_volume_total_qoq_pct,diagnostic_only,diagnostic_only,known at or before signal date,77.48,float64
+sector,market_cap_proxy_total_qoq_pct,diagnostic_only,diagnostic_only,known at or before signal date,77.48,float64
+sector,market_cap_share,diagnostic_only,diagnostic_only,known at or before signal date,77.48,float64
+sector,turnover_proxy,diagnostic_only,diagnostic_only,known at or before signal date,77.48,float64
+sector,breakeven_10y,feature,forward_macro,publication lag applied upstream; market series known by close,88.06,float64
+sector,breakeven_10y_z,feature,forward_macro,publication lag applied upstream; market series known by close,76.77,float64
+sector,claims_yoy,feature,forward_macro,publication lag applied upstream; market series known by close,99.68,float64
+sector,claims_yoy_z,feature,forward_macro,publication lag applied upstream; market series known by close,88.39,float64
+sector,fed_path_2y,feature,forward_macro,publication lag applied upstream; market series known by close,100.0,float64
+sector,fed_path_2y_z,feature,forward_macro,publication lag applied upstream; market series known by close,92.26,float64
+sector,infl_5y5y_fwd,feature,forward_macro,publication lag applied upstream; market series known by close,88.06,float64
+sector,infl_5y5y_fwd_z,feature,forward_macro,publication lag applied upstream; market series known by close,76.77,float64
+sector,infl_exp_1y,feature,forward_macro,publication lag applied upstream; market series known by close,100.0,float64
+sector,infl_exp_1y_z,feature,forward_macro,publication lag applied upstream; market series known by close,92.26,float64
+sector,permits_yoy,feature,forward_macro,publication lag applied upstream; market series known by close,99.35,float64
+sector,permits_yoy_z,feature,forward_macro,publication lag applied upstream; market series known by close,88.06,float64
+sector,beat_rate_lag1,feature,fundamental,known at or before signal date,77.48,float64
+sector,beat_rate_lag1_change,feature,fundamental,known at or before signal date,77.48,float64
+sector,cap_weighted_quarterly_eps_yoy_pct_lag1,feature,fundamental,known at or before signal date,77.48,float64
+sector,cap_weighted_quarterly_eps_yoy_pct_lag1_change,feature,fundamental,known at or before signal date,77.48,float64
+sector,cap_weighted_surprise_pct_lag1,feature,fundamental,known at or before signal date,77.48,float64
+sector,cap_weighted_surprise_pct_lag1_change,feature,fundamental,known at or before signal date,77.48,float64
+sector,cape,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+sector,cape_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+sector,copper,feature,macro_nowcast,publication lag applied upstream; market series known by close,97.42,float64
+sector,copper_gold_ratio,feature,macro_nowcast,publication lag applied upstream; market series known by close,97.42,float64
+sector,copper_gold_ratio_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,86.13,float64
+sector,copper_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,95.48,float64
+sector,copper_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,86.13,float64
+sector,core_cpi_yoy,feature,macro_nowcast,publication lag applied upstream; market series known by close,99.35,float64
+sector,core_cpi_yoy_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,88.06,float64
+sector,dxy,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+sector,dxy_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+sector,dxy_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+sector,gold,feature,macro_nowcast,publication lag applied upstream; market series known by close,97.42,float64
+sector,gold_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,95.48,float64
+sector,gold_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,86.13,float64
+sector,hy_spread,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+sector,hy_spread_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,91.61,float64
+sector,indpro_yoy,feature,macro_nowcast,publication lag applied upstream; market series known by close,99.35,float64
+sector,indpro_yoy_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,88.06,float64
+sector,mktcap_to_gdp,feature,macro_nowcast,publication lag applied upstream; market series known by close,20.32,float64
+sector,mktcap_to_gdp_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,0.0,float64
+sector,nfci,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+sector,nfci_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+sector,vix,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+sector,vix3m,feature,macro_nowcast,publication lag applied upstream; market series known by close,74.52,float64
+sector,vix_curve_ratio,feature,macro_nowcast,publication lag applied upstream; market series known by close,74.52,float64
+sector,vix_curve_spread,feature,macro_nowcast,publication lag applied upstream; market series known by close,74.52,float64
+sector,vix_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+sector,wti,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+sector,wti_ret_6m,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+sector,wti_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+sector,yield_curve_10y2y,feature,macro_nowcast,publication lag applied upstream; market series known by close,100.0,float64
+sector,yield_curve_10y2y_z,feature,macro_nowcast,publication lag applied upstream; market series known by close,92.26,float64
+sector,dalio_quadrant,feature,macro_regime,publication lag applied upstream; market series known by close,100.0,object
+sector,fast_slow_gap,feature,other,known at or before signal date,96.77,float64
+sector,growth_signal,feature,other,known at or before signal date,97.74,float64
+sector,inflation_signal,feature,other,known at or before signal date,97.42,float64
+sector,market_health,feature,other,known at or before signal date,84.52,float64
+sector,sector,feature,other,known at or before signal date,100.0,object
+sector,t10y3m,feature,other,known at or before signal date,100.0,float64
+sector,t10y3m_z,feature,other,known at or before signal date,92.26,float64
+sector,above_slow_ma,feature,price_trend,known at or before signal date,100.0,float64
+sector,beta_36m,feature,price_trend,known at or before signal date,93.87,float64
+sector,corr_36m,feature,price_trend,known at or before signal date,93.87,float64
+sector,drawdown_12m,feature,price_trend,known at or before signal date,98.06,float64
+sector,drawdown_36m,feature,price_trend,known at or before signal date,96.13,float64
+sector,months_since_cross,feature,price_trend,known at or before signal date,94.34,float64
+sector,move_since_last_cross,feature,price_trend,known at or before signal date,94.34,float64
+sector,relative_oscillator,feature,price_trend,known at or before signal date,87.42,float64
+sector,relative_return_12m,feature,price_trend,known at or before signal date,95.81,float64
+sector,relative_return_1m,feature,price_trend,known at or before signal date,99.35,float64
+sector,relative_return_3m,feature,price_trend,known at or before signal date,98.71,float64
+sector,relative_return_6m,feature,price_trend,known at or before signal date,97.74,float64
+sector,relative_volatility_12m,feature,price_trend,known at or before signal date,97.74,float64
+sector,slow_ma_gap,feature,price_trend,known at or before signal date,96.77,float64
+sector,volatility_12m,feature,price_trend,known at or before signal date,97.74,float64
+sector,young_cross_risk,feature,price_trend,known at or before signal date,100.0,float64
+sector,last_cross_type,feature,regime_or_state_control,known at or before signal date,100.0,object
+sector,sector_breadth,feature,sector_control,known at or before signal date,99.68,float64
+sector,sector_oscillator,feature,sector_control,known at or before signal date,87.42,float64
+sector,sector_return_12m,feature,sector_control,known at or before signal date,95.81,float64
+sector,sector_return_1m,feature,sector_control,known at or before signal date,99.35,float64
+sector,sector_return_3m,feature,sector_control,known at or before signal date,98.71,float64
+sector,sector_return_6m,feature,sector_control,known at or before signal date,97.74,float64
+sector,date,metadata,metadata,known at or before signal date,100.0,datetime64[ns]
+sector,evaluation_fold,metadata,metadata,known at or before signal date,100.0,object
+sector,gmm_regime,metadata,metadata,known at or before signal date,99.35,object
+sector,sector_etf,metadata,metadata,known at or before signal date,100.0,object
+sector,sector_index,metadata,metadata,known at or before signal date,99.68,float64
+sector,signal_date,metadata,metadata,known at or before signal date,100.0,datetime64[ns]
+sector,source_contract,metadata,metadata,known at or before signal date,100.0,object
+sector,fwd_12m,target,forward_target,future outcome; forbidden from predictive matrix,95.81,float64
+sector,fwd_12m_broad,target,forward_target,future outcome; forbidden from predictive matrix,95.81,float64
+sector,fwd_12m_excess,target,forward_target,future outcome; forbidden from predictive matrix,95.81,float64
+sector,fwd_1m,target,forward_target,future outcome; forbidden from predictive matrix,99.35,float64
+sector,fwd_1m_broad,target,forward_target,future outcome; forbidden from predictive matrix,99.35,float64
+sector,fwd_1m_excess,target,forward_target,future outcome; forbidden from predictive matrix,99.35,float64
+sector,fwd_3m,target,forward_target,future outcome; forbidden from predictive matrix,98.71,float64
+sector,fwd_3m_broad,target,forward_target,future outcome; forbidden from predictive matrix,98.71,float64
+sector,fwd_3m_excess,target,forward_target,future outcome; forbidden from predictive matrix,98.71,float64
+sector,fwd_6m,target,forward_target,future outcome; forbidden from predictive matrix,97.74,float64
+sector,fwd_6m_broad,target,forward_target,future outcome; forbidden from predictive matrix,97.74,float64
+sector,fwd_6m_excess,target,forward_target,future outcome; forbidden from predictive matrix,97.74,float64
+sector,leader_rank_pct,target,forward_target,future outcome; forbidden from predictive matrix,97.74,float64
+sector,target_end_date_6m,target,forward_target,future outcome; forbidden from predictive matrix,100.0,datetime64[ns]
+sector,target_leader,target,forward_target,future outcome; forbidden from predictive matrix,97.74,float64

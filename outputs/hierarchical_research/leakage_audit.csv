@@ -1,0 +1,15 @@
+check,status,failures,detail
+macro_unique_keys,PASS,0,keys=['date']
+sector_unique_keys,PASS,0,"keys=['date', 'sector']"
+company_unique_keys,PASS,0,"keys=['date', 'book', 'ticker']"
+targets_excluded_from_features,PASS,0,"no future-return, rank, or label columns have feature role"
+full_history_gmm_excluded,PASS,0,GMM state remains descriptive metadata because its historical fit uses the full sample.
+sector_target_identity,PASS,0,max absolute identity error=1.67e-16
+company_target_identity,PASS,0,max absolute identity error=0
+target_dates_after_signal,PASS,0,every dated target ends strictly after its signal date
+walk_forward_label_purge,PASS,0,every training label matures before its test window starts
+sector_fundamentals_lagged,PASS,0,all predictive sector earnings fields carry lag1 naming and upstream lagging
+symbol_counts_excluded,PASS,0,"coverage counts are metadata, never a fundamental signal"
+historical_constituent_coverage,WARN,0,SEC N-PORT top-10 membership is point-in-time only from 2019-11-19; earlier company rows use a static research universe.
+macro_vintage_scope,WARN,0,"publication lags are applied, but full ALFRED vintages are not yet available for every macro series; GMM labels are descriptive only."
+company_book_overlap,WARN,0,book/ticker is the modeling key; downstream sizing must consolidate duplicate tickers across SEMIS and sector books.
