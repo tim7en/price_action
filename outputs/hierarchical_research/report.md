@@ -6,9 +6,9 @@ The macro, sector, and company studies now share one monthly signal clock and ex
 
 | layer   |   rows |   entities | start               | end                 |   target_rows |   predictive_features |   strict_pit_rows |
 |:--------|-------:|-----------:|:--------------------|:--------------------|--------------:|----------------------:|------------------:|
-| macro   |    310 |          1 | 1999-12-31 00:00:00 | 2025-09-30 00:00:00 |           307 |                    50 |               nan |
-| sector  |   3410 |         11 | 1999-12-31 00:00:00 | 2025-09-30 00:00:00 |          3333 |                    82 |               nan |
-| company |  31269 |        181 | 2010-02-28 00:00:00 | 2025-11-30 00:00:00 |         27456 |                   115 |              7364 |
+| macro   |    319 |          1 | 1999-12-31 00:00:00 | 2026-06-30 00:00:00 |           316 |                    50 |               nan |
+| sector  |   3509 |         11 | 1999-12-31 00:00:00 | 2026-06-30 00:00:00 |          3333 |                    82 |               nan |
+| company |  31269 |        181 | 2010-02-28 00:00:00 | 2025-11-30 00:00:00 |         26148 |                   115 |              7364 |
 
 ## Target definitions
 
@@ -19,7 +19,7 @@ The macro, sector, and company studies now share one monthly signal clock and ex
 
 ## Validation
 
-- Audit: 11 PASS, 3 WARN, 0 FAIL.
+- Audit: 14 PASS, 3 WARN, 0 FAIL.
 - Expanding annual walk-forward folds require every training label to mature before the test year.
 - The final holdout starts 2025-01-01.
 

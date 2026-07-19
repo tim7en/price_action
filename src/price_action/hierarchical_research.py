@@ -33,6 +33,7 @@ from .sector_dalio_regime_model import (
     EARNINGS_FUNDAMENTAL_FEATURES,
     SECTOR_ETF_MAP,
     TARGET_COLUMNS,
+    build_live_etf_overlay_panel,
     _feature_family,
     _is_excluded_predictive_feature,
 )
@@ -155,6 +156,21 @@ def load_sector_contract(root: Path, holdout_start: pd.Timestamp) -> pd.DataFram
     panel = pd.read_csv(path, parse_dates=["date"])
     if panel.duplicated(["date", "sector"]).any():
         raise ValueError("Sector source panel has duplicate date/sector keys.")
+
+    panel["price_source"] = "stock_reconstructed_sector_index"
+    live, _macro_bundle, latest_trade_date = build_live_etf_overlay_panel(root, fast=3, slow=10)
+    if not live.empty and latest_trade_date:
+        latest_trade = pd.Timestamp(latest_trade_date).normalize()
+        today = pd.Timestamp.now().normalize()
+        latest_period = latest_trade.to_period("M")
+        completed_period = today.to_period("M") - 1 if latest_period == today.to_period("M") else latest_period
+        completed_month_end = completed_period.to_timestamp("M")
+        extension = live.loc[
+            (live["date"] > panel["date"].max()) & (live["date"] <= completed_month_end)
+        ].copy()
+        if not extension.empty:
+            extension["price_source"] = "sector_etf_completed_month_extension"
+            panel = pd.concat([panel, extension], ignore_index=True, sort=False)
 
     panel = panel.sort_values(["date", "sector"]).reset_index(drop=True)
     panel.insert(1, "signal_date", panel["date"])
@@ -303,14 +319,18 @@ def _company_price_features(
     out = out.join(stock_fwd).join(parent_fwd)
     out["target_company_fwd_6m"] = out.pop("company_return")
     out["target_parent_sector_fwd_6m"] = out.pop("parent_return")
+    aligned_window = (
+        out["company_entry_date"].eq(out["parent_entry_date"])
+        & out["company_target_end_date"].eq(out["parent_target_end_date"])
+    )
     out["target_company_residual_6m"] = (
         out["target_company_fwd_6m"] - out["target_parent_sector_fwd_6m"]
-    )
+    ).where(aligned_window)
     out["target_end_date_6m"] = pd.concat(
-        [out.pop("company_target_end_date"), out.pop("parent_target_end_date")], axis=1
+        [out["company_target_end_date"], out["parent_target_end_date"]], axis=1
     ).max(axis=1)
     out["entry_date"] = pd.concat(
-        [out.pop("company_entry_date"), out.pop("parent_entry_date")], axis=1
+        [out["company_entry_date"], out["parent_entry_date"]], axis=1
     ).max(axis=1)
     out.index.name = "date"
     return out
@@ -454,10 +474,16 @@ def _role_for_column(layer: str, column: str) -> str:
         "date",
         "signal_date",
         "entry_date",
+        "company_entry_date",
+        "parent_entry_date",
+        "company_target_end_date",
+        "parent_target_end_date",
         "target_end_date_3m",
         "target_end_date_6m",
         "evaluation_fold",
         "source_contract",
+        "price_source",
+        "live_source",
         "sector_index",
         "sector_etf",
         "book",
@@ -486,15 +512,36 @@ def _family_for_column(layer: str, column: str, role: str) -> str:
     if role in {"metadata", "diagnostic_only"}:
         return role
     key = column.lower()
-    if layer == "company" and (column == "quality_z" or (column.endswith("_z") and not column.startswith("parent_"))):
+    base_family = _feature_family(column)
+    if column in {
+        "growth_signal",
+        "inflation_signal",
+        "market_health",
+        "sector_breadth",
+        "dalio_quadrant",
+        "macro_dalio_quadrant",
+    }:
+        return "macro_regime"
+    if key.startswith("t10y3m"):
+        return "macro_nowcast"
+    if layer == "company" and (
+        column == "quality_z"
+        or (
+            column.endswith("_z")
+            and not column.startswith("parent_")
+            and base_family not in {"macro_nowcast", "forward_macro"}
+        )
+    ):
         return "company_fundamental"
     if layer == "company" and key.startswith("company_"):
         return "company_price_trend"
     if layer == "company" and key.startswith("parent_"):
         return "parent_sector"
-    if column in {"dalio_quadrant", "macro_dalio_quadrant"}:
-        return "macro_regime"
-    return _feature_family(column)
+    if layer == "sector" and column == "sector":
+        return "sector_control"
+    if layer == "sector" and column in SECTOR_PRICE_FEATURES:
+        return "price_trend"
+    return base_family
 
 
 def build_feature_registry(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -665,6 +712,25 @@ def build_leakage_audit(
             int(max_company_error >= 1e-10) if not np.isnan(max_company_error) else 0,
         )
     )
+    labeled_company = company["target_company_residual_6m"].notna()
+    window_mismatches = int(
+        (
+            company.loc[labeled_company, "company_entry_date"].ne(
+                company.loc[labeled_company, "parent_entry_date"]
+            )
+            | company.loc[labeled_company, "company_target_end_date"].ne(
+                company.loc[labeled_company, "parent_target_end_date"]
+            )
+        ).sum()
+    )
+    rows.append(
+        _audit_row(
+            "company_benchmark_window_alignment",
+            "PASS" if window_mismatches == 0 else "FAIL",
+            "every company residual target uses identical stock and parent-ETF entry/exit dates",
+            window_mismatches,
+        )
+    )
 
     chronology_failures = 0
     for frame, end_column in [
@@ -717,6 +783,27 @@ def build_leakage_audit(
             "PASS" if symbol_count_features.empty else "FAIL",
             "coverage counts are metadata, never a fundamental signal",
             int(len(symbol_count_features)),
+        )
+    )
+    source_features = feature_names[feature_names.str.contains(r"(?:^|_)source(?:_|$)", case=False, regex=True)]
+    rows.append(
+        _audit_row(
+            "source_labels_excluded",
+            "PASS" if source_features.empty else "FAIL",
+            "data-source and extension labels are provenance metadata, not predictors",
+            int(len(source_features)),
+        )
+    )
+    future_signal_rows = sum(
+        int((pd.to_datetime(frame["signal_date"]) > pd.Timestamp.now().normalize()).sum())
+        for frame in (macro, sector, company)
+    )
+    rows.append(
+        _audit_row(
+            "no_future_dated_signals",
+            "PASS" if future_signal_rows == 0 else "FAIL",
+            "incomplete current-month ETF data are not stamped as a future month-end signal",
+            future_signal_rows,
         )
     )
 
