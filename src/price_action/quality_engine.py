@@ -49,14 +49,54 @@ import pandas as pd
 from .data import load_asset_daily, resolve_project_root
 
 SEC_DIR = Path("data") / "sec_facts"
+OHLCV_DIR = Path("cache") / "market_structure"
 OUTPUT_DIR = Path("outputs") / "quality_engine"
-SECTOR_UNIVERSE = {
-    "XLF": ["BRK-B", "JPM", "V", "MA", "BAC", "WFC", "GS", "MS", "C", "AXP"],
-    "XLK": ["NVDA", "AAPL", "MSFT", "AVGO", "PLTR", "AMD", "ORCL", "MU", "CSCO", "IBM"],
+# Every name that ever appeared in a top-10 sector snapshot (with data), plus
+# the dedicated semiconductor/memory book. Sector archetype decides metrics.
+SEMIS = ["NVDA", "AMD", "AVGO", "MU", "INTC", "TXN", "QCOM", "AMAT",
+         "LRCX", "ADI", "WDC", "STX", "SNDK"]
+SECTOR_ARCHETYPE = {
+    "XLF": "financial",
+    "XLK": "asset_light", "XLC": "asset_light",
+    "XLP": "defensive", "XLU": "defensive", "XLV": "defensive",
+    "XLI": "cyclical", "XLB": "cyclical", "XLE": "cyclical", "XLY": "cyclical",
+    "XLRE": "reit",
+    "SEMIS": "semis",
 }
 MIN_MARKET_CAP = 5e9
 FWD_DAYS = 126
 STALE_DAYS = 200
+
+
+def build_universes(root: Path) -> dict[str, list[str]]:
+    """Sector -> tickers with both SEC facts and price data."""
+    holdings = pd.read_csv(root / "data" / "sector_top_holdings.csv")
+    have_facts = {p.stem for p in (root / SEC_DIR).glob("*.json")}
+    universes: dict[str, list[str]] = {}
+    for etf, group in holdings.groupby("sector_symbol"):
+        names = sorted(set(group.holding_symbol) & have_facts)
+        names = [t for t in names if _has_price(root, t)]
+        if len(names) >= 8:
+            universes[etf] = names
+    semis = [t for t in SEMIS if t in have_facts and _has_price(root, t)]
+    if len(semis) >= 8:
+        universes["SEMIS"] = semis
+    return universes
+
+
+def _has_price(root: Path, ticker: str) -> bool:
+    return ((root / "cache" / "cache" / f"{ticker}_daily.json").exists()
+            or (root / OHLCV_DIR / f"{ticker}_ohlcv.csv").exists())
+
+
+def load_close(root: Path, ticker: str) -> pd.Series:
+    try:
+        c = load_asset_daily(ticker)["close"].astype(float)
+    except FileNotFoundError:
+        c = (pd.read_csv(root / OHLCV_DIR / f"{ticker}_ohlcv.csv",
+                         parse_dates=["date"]).set_index("date")["close"].astype(float))
+    c.index = pd.DatetimeIndex(c.index).normalize()
+    return c[~c.index.duplicated(keep="last")].sort_index()
 
 ALIASES = {
     "revenue": ["Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax",
@@ -238,7 +278,105 @@ def metrics_technology(f: dict, asof: pd.Timestamp) -> dict[str, float]:
     }
 
 
-SECTOR_METRICS = {"XLF": metrics_financials, "XLK": metrics_technology}
+def _ni_margin_series(f: dict, asof: pd.Timestamp) -> pd.Series:
+    ni = _known(f["net_income"], asof).tail(12)["val"]
+    rev = _known(f["revenue"], asof).tail(12)["val"]
+    joined = pd.concat([ni.rename("ni"), rev.rename("rev")], axis=1).dropna()
+    joined = joined[joined["rev"] > 0]
+    return joined["ni"] / joined["rev"]
+
+
+def metrics_defensive(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    """Staples / Utilities / Health Care: steadiness over growth (Graham's
+    defensive tests): margin level AND margin stability, cash conversion,
+    conservative leverage, unbroken earnings."""
+    rev = _ttm(f["revenue"], asof)
+    ni = _ttm(f["net_income"], asof)
+    ocf, capex = _ttm(f["ocf"], asof), _ttm(f["capex"], asof)
+    fcf = ocf - capex if not (np.isnan(ocf) or np.isnan(capex)) else np.nan
+    debt, assets = _latest(f["lt_debt"], asof), _latest(f["assets"], asof)
+    margins = _ni_margin_series(f, asof)
+    return {
+        "ni_margin": ni / rev if rev and rev > 0 and not np.isnan(ni) else np.nan,
+        "margin_steadiness": -float(margins.std()) if len(margins) >= 8 else np.nan,
+        "fcf_margin": fcf / rev if rev and rev > 0 and not np.isnan(fcf) else np.nan,
+        "low_leverage": -(debt / assets) if assets and assets > 0 and not np.isnan(debt) else np.nan,
+        "stability": _stability(f["net_income"], asof),
+    }
+
+
+def metrics_cyclical(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    """Industrials / Materials / Energy / Cons-Cyclical: survivability first
+    (leverage), cash through the cycle, then growth."""
+    rev, rev_ago = _ttm(f["revenue"], asof), _ttm_ago(f["revenue"], asof)
+    ni = _ttm(f["net_income"], asof)
+    ocf, capex = _ttm(f["ocf"], asof), _ttm(f["capex"], asof)
+    fcf = ocf - capex if not (np.isnan(ocf) or np.isnan(capex)) else np.nan
+    debt, assets = _latest(f["lt_debt"], asof), _latest(f["assets"], asof)
+    return {
+        "fcf_margin": fcf / rev if rev and rev > 0 and not np.isnan(fcf) else np.nan,
+        "ni_margin": ni / rev if rev and rev > 0 and not np.isnan(ni) else np.nan,
+        "low_leverage": -(debt / assets) if assets and assets > 0 and not np.isnan(debt) else np.nan,
+        "rev_growth": (rev / rev_ago - 1.0) if rev_ago and rev_ago > 0 and not np.isnan(rev) else np.nan,
+        "stability": _stability(f["net_income"], asof),
+    }
+
+
+def metrics_reit(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    """Real estate: GAAP net income is depreciation-distorted (FFO is the
+    industry metric but not a standard XBRL tag), so quality is read off
+    operating cash flow and leverage. Disclosed caveat."""
+    rev = _ttm(f["revenue"], asof)
+    ocf, ocf_ago = _ttm(f["ocf"], asof), _ttm_ago(f["ocf"], asof)
+    debt, assets = _latest(f["lt_debt"], asof), _latest(f["assets"], asof)
+    known_ocf = _known(f["ocf"], asof).tail(12)["val"]
+    return {
+        "ocf_margin": ocf / rev if rev and rev > 0 and not np.isnan(ocf) else np.nan,
+        "ocf_growth": (ocf / ocf_ago - 1.0) if ocf_ago and ocf_ago > 0 and not np.isnan(ocf) else np.nan,
+        "low_leverage": -(debt / assets) if assets and assets > 0 and not np.isnan(debt) else np.nan,
+        "ocf_stability": float((known_ocf > 0).mean()) if len(known_ocf) >= 8 else np.nan,
+    }
+
+
+def metrics_semis(f: dict, asof: pd.Timestamp) -> dict[str, float]:
+    """Semiconductors / memory: deep cyclicals where the CYCLE dominates.
+    Margin LEVEL rewards stable franchises (TXN/ADI); margin TREND (gross
+    margin now vs a year ago) is the cycle-turn signal the DRAM names live
+    and die by. Both included so the study can say which one pays."""
+    rev, rev_ago = _ttm(f["revenue"], asof), _ttm_ago(f["revenue"], asof)
+    gp = _ttm(f["gross_profit"], asof)
+    if np.isnan(gp):
+        cor = _ttm(f["cost_of_revenue"], asof)
+        gp = rev - cor if not (np.isnan(rev) or np.isnan(cor)) else np.nan
+    gp_ago = _ttm_ago(f["gross_profit"], asof)
+    if np.isnan(gp_ago):
+        cor_ago = _ttm_ago(f["cost_of_revenue"], asof)
+        gp_ago = rev_ago - cor_ago if not (np.isnan(rev_ago) or np.isnan(cor_ago)) else np.nan
+    gm = gp / rev if rev and rev > 0 and not np.isnan(gp) else np.nan
+    gm_ago = gp_ago / rev_ago if rev_ago and rev_ago > 0 and not np.isnan(gp_ago) else np.nan
+    ocf, capex = _ttm(f["ocf"], asof), _ttm(f["capex"], asof)
+    fcf = ocf - capex if not (np.isnan(ocf) or np.isnan(capex)) else np.nan
+    cash, debt = _latest(f["cash"], asof), _latest(f["lt_debt"], asof)
+    assets = _latest(f["assets"], asof)
+    return {
+        "gross_margin": gm,
+        "gm_trend": gm - gm_ago if not (np.isnan(gm) or np.isnan(gm_ago)) else np.nan,
+        "rev_growth": (rev / rev_ago - 1.0) if rev_ago and rev_ago > 0 and not np.isnan(rev) else np.nan,
+        "fcf_margin": fcf / rev if rev and rev > 0 and not np.isnan(fcf) else np.nan,
+        "net_cash_ratio": ((cash if not np.isnan(cash) else 0.0)
+                           - (debt if not np.isnan(debt) else 0.0)) / assets
+                          if assets and assets > 0 else np.nan,
+    }
+
+
+ARCHETYPE_METRICS = {
+    "financial": metrics_financials,
+    "asset_light": metrics_technology,
+    "defensive": metrics_defensive,
+    "cyclical": metrics_cyclical,
+    "reit": metrics_reit,
+    "semis": metrics_semis,
+}
 
 
 def quality_scores(sector: str, funds: dict[str, dict], asof: pd.Timestamp,
