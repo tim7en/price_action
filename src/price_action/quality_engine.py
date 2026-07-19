@@ -22,8 +22,15 @@ Sector metric sets (all computed trailing-twelve-months, point-in-time):
 
   Financials  : ROE, capital ratio (equity/assets), earnings stability,
                 TTM net-income growth.
-  Technology  : gross margin, FCF margin, revenue growth, net-cash ratio,
+  Asset-light : gross margin, FCF margin, revenue growth, net-cash ratio,
                 earnings stability.
+  Defensive   : net margin and stability, FCF margin, leverage, earnings
+                stability.
+  Cyclical    : FCF margin, net margin, leverage, revenue growth, earnings
+                stability.
+  Real estate : OCF margin and growth, leverage, OCF stability.
+  Semis       : gross-margin level and trend, revenue growth, FCF margin,
+                net cash.
 
 Universe rule: market cap >= $5B at observation (shares x price).
 
@@ -64,6 +71,7 @@ SECTOR_ARCHETYPE = {
     "SEMIS": "semis",
 }
 MIN_MARKET_CAP = 5e9
+MIN_METRICS = 3
 FWD_DAYS = 126
 STALE_DAYS = 200
 
@@ -91,10 +99,14 @@ def _has_price(root: Path, ticker: str) -> bool:
 
 def load_close(root: Path, ticker: str) -> pd.Series:
     try:
-        c = load_asset_daily(ticker)["close"].astype(float)
+        c = load_asset_daily(ticker, project_root=root)["close"].astype(float)
     except FileNotFoundError:
-        c = (pd.read_csv(root / OHLCV_DIR / f"{ticker}_ohlcv.csv",
-                         parse_dates=["date"]).set_index("date")["close"].astype(float))
+        frame = pd.read_csv(root / OHLCV_DIR / f"{ticker}_ohlcv.csv",
+                            parse_dates=["date"]).set_index("date")
+        # Match the main asset cache, whose `close` feature is dividend/split
+        # adjusted. WDC/SNDK currently enter through this OHLCV fallback.
+        price_col = "adjclose" if "adjclose" in frame.columns else "close"
+        c = frame[price_col].astype(float)
     c.index = pd.DatetimeIndex(c.index).normalize()
     return c[~c.index.duplicated(keep="last")].sort_index()
 
@@ -107,8 +119,12 @@ ALIASES = {
     "assets": ["Assets"],
     "gross_profit": ["GrossProfit"],
     "cost_of_revenue": ["CostOfRevenue", "CostOfGoodsAndServicesSold"],
-    "ocf": ["NetCashProvidedByUsedInOperatingActivities"],
-    "capex": ["PaymentsToAcquirePropertyPlantAndEquipment"],
+    "ocf": ["NetCashProvidedByUsedInOperatingActivities",
+            "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
+            "NetCashProvidedByUsedInContinuingOperations"],
+    "capex": ["PaymentsToAcquirePropertyPlantAndEquipment",
+              "PaymentsToAcquireProductiveAssets",
+              "PaymentsToAcquireOtherProductiveAssets"],
     "lt_debt": ["LongTermDebt", "LongTermDebtNoncurrent"],
     "cash": ["CashAndCashEquivalentsAtCarryingValue"],
 }
@@ -135,9 +151,15 @@ def _fact_entries(gaap: dict, names: list[str]) -> list[dict]:
 
 def _quarterly_flow(entries: list[dict]) -> pd.DataFrame:
     """Quarterly flow values with the EARLIEST filing date per period (no
-    restatement lookahead). Q4 derived as FY minus the three known quarters."""
-    rows = {}
-    annual = {}
+    restatement lookahead).
+
+    SEC cash-flow facts are normally cumulative year-to-date in 10-Qs. Convert
+    six- and nine-month values into discrete Q2/Q3 observations before forming
+    TTM metrics; otherwise most OCF/capex histories contain only Q1 and FY.
+    """
+    rows: dict[pd.Timestamp, tuple[float, pd.Timestamp]] = {}
+    annual: dict[pd.Timestamp, tuple[float, pd.Timestamp, pd.Timestamp]] = {}
+    by_start: dict[pd.Timestamp, dict[pd.Timestamp, tuple[float, pd.Timestamp, int]]] = {}
     for e in entries:
         if e.get("form") not in ("10-Q", "10-K") or "start" not in e:
             continue
@@ -147,10 +169,30 @@ def _quarterly_flow(entries: list[dict]) -> pd.DataFrame:
         if 60 <= dur <= 120:
             if end not in rows or filed < rows[end][1]:
                 rows[end] = (float(e["val"]), filed)
+            points = by_start.setdefault(start, {})
+            if end not in points or filed < points[end][1]:
+                points[end] = (float(e["val"]), filed, dur)
+        elif 150 <= dur <= 330:
+            points = by_start.setdefault(start, {})
+            if end not in points or filed < points[end][1]:
+                points[end] = (float(e["val"]), filed, dur)
         elif 340 <= dur <= 380:
             if end not in annual or filed < annual[end][1]:
                 annual[end] = (float(e["val"]), filed, start)
-    # derive missing Q4s
+            points = by_start.setdefault(start, {})
+            if end not in points or filed < points[end][1]:
+                points[end] = (float(e["val"]), filed, dur)
+
+    # De-cumulate adjacent Q1 -> H1 -> 9M -> FY points sharing a fiscal start.
+    for points in by_start.values():
+        ordered = sorted(points.items())
+        for (_, (prev_val, prev_filed, prev_dur)), \
+                (end, (value, filed, dur)) in zip(ordered, ordered[1:]):
+            if not 55 <= dur - prev_dur <= 125 or end in rows:
+                continue
+            rows[end] = (value - prev_val, max(filed, prev_filed))
+
+    # Fallback for issuers whose cumulative start dates do not match exactly.
     q_ends = sorted(rows)
     for fy_end, (fy_val, fy_filed, fy_start) in annual.items():
         if fy_end in rows:
@@ -193,6 +235,8 @@ def load_fundamentals(root: Path, ticker: str) -> dict[str, pd.DataFrame]:
         out[key] = _quarterly_flow(entries) if key in FLOWS else _instant(entries)
     dei = payload["facts"].get("dei", {})
     sh = dei.get("EntityCommonStockSharesOutstanding", {}).get("units", {}).get("shares", [])
+    if not sh:
+        sh = gaap.get("CommonStockSharesOutstanding", {}).get("units", {}).get("shares", [])
     rows = {}
     for e in sh:
         end, filed = pd.Timestamp(e["end"]), pd.Timestamp(e["filed"])
@@ -398,8 +442,9 @@ def quality_scores(sector: str, funds: dict[str, dict], asof: pd.Timestamp,
     if frame.empty:
         return frame
     z = frame.apply(lambda col: (col - col.mean()) / col.std() if col.std() and col.notna().sum() >= 4 else col * np.nan)
-    frame["quality_z"] = z.mean(axis=1)
     frame["n_metrics"] = z.notna().sum(axis=1)
+    frame["quality_z"] = z.mean(axis=1).where(frame["n_metrics"] >= MIN_METRICS)
+    frame["eligible"] = frame["quality_z"].notna()
     return frame
 
 
@@ -418,7 +463,10 @@ def event_study(sector: str, tickers: list[str], root: Path) -> tuple[pd.DataFra
         fwd = {}
         for t in scores.index:
             px = prices[t]
-            pos = px.index.searchsorted(asof)
+            # SEC Company Facts provides a filing date but not a safely usable
+            # market timestamp. Trade from the first close strictly after the
+            # score date so an after-close filing cannot enter at that close.
+            pos = px.index.searchsorted(asof, side="right")
             if pos >= len(px) or pos + FWD_DAYS >= len(px):
                 fwd[t] = np.nan
             else:
@@ -462,6 +510,84 @@ def current_scorecard(sector: str, tickers: list[str], root: Path) -> pd.DataFra
     return scores.sort_values("quality_z", ascending=False).round(3)
 
 
+def _markdown_table(headers: list[str], rows: list[list[object]]) -> str:
+    def clean(value: object) -> str:
+        return str(value).replace("|", "\\|")
+
+    lines = ["| " + " | ".join(headers) + " |",
+             "| " + " | ".join("---" for _ in headers) + " |"]
+    lines.extend("| " + " | ".join(clean(v) for v in row) + " |" for row in rows)
+    return "\n".join(lines)
+
+
+def write_report(out: Path, summary: pd.DataFrame,
+                 universes: dict[str, list[str]],
+                 cards: dict[str, pd.DataFrame]) -> None:
+    leadership_rows = []
+    for row in summary.itertuples(index=False):
+        card = cards[row.sector]
+        eligible = card[card["eligible"]]
+        top = ", ".join(eligible.index[:3]) or "n/a"
+        bottom = ", ".join(eligible.index[-3:]) or "n/a"
+        leadership_rows.append([
+            row.sector, f"{len(eligible)}/{len(card)}", top, bottom,
+        ])
+
+    spread_col = "nonoverlap_spread_%"
+    validation_rows = []
+    for _, row in summary.iterrows():
+        validation_rows.append([
+            row["sector"], row["archetype"], int(row["names"]), int(row["months"]),
+            f'{row["avg_monthly_IC"]:.3f}', f'{row[spread_col]:.2f}%',
+            int(row["nonoverlap_n"]), f'{row["spread_tstat_nonoverlap"]:.2f}',
+        ])
+
+    sector_names = set().union(*(
+        set(names) for sector, names in universes.items() if sector != "SEMIS"
+    ))
+    semis_extras = sorted(set(universes.get("SEMIS", [])) - sector_names)
+    unique_sector_names = len(sector_names)
+    strong = summary[summary["spread_tstat_nonoverlap"].abs() >= 1.96]
+    evidence = ("No book reaches |t| >= 1.96 on the non-overlapping test."
+                if strong.empty else
+                "Books reaching |t| >= 1.96: " + ", ".join(strong["sector"]))
+    text = f"""# Sector quality books
+
+## Scope
+
+- {unique_sector_names} unique sector names across 11 sector books.
+- {len(universes.get('SEMIS', []))} names in the dedicated semiconductor/memory book.
+- {unique_sector_names + len(semis_extras)} distinct SEC fact payloads in scope; semiconductor extras: {', '.join(semis_extras)}.
+- SEC facts are aligned to filing dates. Forward returns start at the first close strictly after each score date.
+- Companies need at least {MIN_METRICS} comparable metrics to receive a quality score.
+
+## Validation
+
+{_markdown_table(
+    ["Book", "Archetype", "Names", "Months", "Avg IC", "6m spread", "N", "t-stat"],
+    validation_rows,
+)}
+
+{evidence} Positive rankings should therefore be treated as research leads, not established alpha.
+
+## Current scorecards
+
+{_markdown_table(
+    ["Book", "Eligible", "Top three", "Bottom three"],
+    leadership_rows,
+)}
+
+## Interpretation limits
+
+- The sector universe is the union of names observed in SEC N-PORT top-holdings snapshots available from 2019 onward. Applying that union back to 2010 is not point-in-time constituent selection and can introduce composition/survivorship bias.
+- The semiconductor book is a fixed research universe; SNDK price history begins in 2025, so it contributes only to recent cross-sections.
+- Six-month monthly observations overlap. The reported t-stat uses every sixth observation to reduce that dependence.
+- A missing historical share count does not automatically exclude a company from the top-holdings universe; the $5B screen is enforced only when a point-in-time share count is available.
+- SEC tag coverage differs by issuer. The scorecard exposes `n_metrics` and `eligible` so sparse rankings are not silently promoted.
+"""
+    (out / "report.md").write_text(text, encoding="utf-8")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", default=None)
@@ -475,6 +601,7 @@ def main() -> None:
     if args.sector:
         universes = {args.sector.upper(): universes[args.sector.upper()]}
     summaries = []
+    cards = {}
     for sector, tickers in sorted(universes.items()):
         panel, summary = event_study(sector, tickers, root)
         summary.insert(1, "archetype", SECTOR_ARCHETYPE[sector])
@@ -483,11 +610,14 @@ def main() -> None:
         summaries.append(summary)
         card = current_scorecard(sector, tickers, root)
         card.to_csv(out / f"{sector}_scorecard.csv")
-        top = ", ".join(card.index[:3])
-        bottom = ", ".join(card.index[-3:])
+        cards[sector] = card
+        eligible = card[card["eligible"]]
+        top = ", ".join(eligible.index[:3])
+        bottom = ", ".join(eligible.index[-3:])
         print(f"{sector}: top = {top} | bottom = {bottom}")
     combined = pd.concat(summaries)
     combined.to_csv(out / "summary.csv", index=False)
+    write_report(out, combined, universes, cards)
     print("\n=== Quality -> forward 6m vs sector peers (point-in-time, filed-date aligned) ===")
     print(combined.to_string(index=False))
 
