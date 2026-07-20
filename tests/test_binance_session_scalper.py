@@ -9,6 +9,7 @@ from price_action.binance_session_scalper import (
     ScalperConfig,
     _simulate_trade,
     build_session_schedule,
+    cost_sensitivity,
     run_backtest,
     volume_profile_levels,
 )
@@ -179,6 +180,30 @@ class BinanceSessionScalperTests(unittest.TestCase):
 
         self.assertEqual(len(trades), 3)
         self.assertEqual(blocked["daily_loss_stop"], 1)
+
+    def test_cost_sensitivity_keeps_holdout_setups_separate(self) -> None:
+        trades = pd.DataFrame({
+            "entry_time": ["2025-01-02T14:35:00Z", "2025-01-03T14:35:00Z"],
+            "setup": ["opening_range_breakout", "value_area_bounce"],
+            "gross_return": [0.01, -0.005],
+            "one_way_turnover": [2.0, 1.0],
+        })
+
+        sensitivity = cost_sensitivity(trades)
+        holdout_zero_cost = sensitivity.loc[
+            sensitivity["scope"].eq("holdout_2025_plus")
+            & sensitivity["one_way_cost_bps"].eq(0.0)
+        ].set_index("setup")
+
+        self.assertEqual(
+            set(holdout_zero_cost.index),
+            {"all", "opening_range_breakout", "value_area_bounce"},
+        )
+        self.assertEqual(holdout_zero_cost.loc["opening_range_breakout", "trades"], 1)
+        self.assertAlmostEqual(
+            holdout_zero_cost.loc["value_area_bounce", "cumulative_net_return"],
+            -0.005,
+        )
 
 
 if __name__ == "__main__":

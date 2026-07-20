@@ -652,21 +652,33 @@ def cost_sensitivity(trades: pd.DataFrame) -> pd.DataFrame:
         "holdout_2025_plus": data.loc[data["entry_time"] >= HOLDOUT_START] if not data.empty else data,
     }
     for scope, scoped in scopes.items():
-        for cost_bps in [0.0, 2.5, 5.0, 10.0, 15.0, 20.0]:
-            if scoped.empty:
-                rows.append({"scope": scope, "one_way_cost_bps": cost_bps, "trades": 0})
-                continue
-            net = scoped["gross_return"] - scoped["one_way_turnover"] * cost_bps / 10_000.0
-            equity = (1.0 + net).cumprod()
-            rows.append({
-                "scope": scope,
-                "one_way_cost_bps": cost_bps,
-                "trades": int(len(scoped)),
-                "win_rate": float(net.gt(0.0).mean()),
-                "average_net_return_bps": float(net.mean() * 10_000.0),
-                "cumulative_net_return": float(equity.iloc[-1] - 1.0),
-                "max_drawdown": float((equity / equity.cummax() - 1.0).min()),
-            })
+        setup_groups = [("all", scoped)]
+        if not scoped.empty:
+            setup_groups.extend(
+                (str(setup), group) for setup, group in scoped.groupby("setup", sort=True)
+            )
+        for setup, group in setup_groups:
+            for cost_bps in [0.0, 1.0, 2.0, 2.5, 3.0, 5.0, 10.0, 15.0, 20.0]:
+                if group.empty:
+                    rows.append({
+                        "scope": scope,
+                        "setup": setup,
+                        "one_way_cost_bps": cost_bps,
+                        "trades": 0,
+                    })
+                    continue
+                net = group["gross_return"] - group["one_way_turnover"] * cost_bps / 10_000.0
+                equity = (1.0 + net).cumprod()
+                rows.append({
+                    "scope": scope,
+                    "setup": setup,
+                    "one_way_cost_bps": cost_bps,
+                    "trades": int(len(group)),
+                    "win_rate": float(net.gt(0.0).mean()),
+                    "average_net_return_bps": float(net.mean() * 10_000.0),
+                    "cumulative_net_return": float(equity.iloc[-1] - 1.0),
+                    "max_drawdown": float((equity / equity.cummax() - 1.0).min()),
+                })
     return pd.DataFrame(rows)
 
 
@@ -708,6 +720,11 @@ def build_report(
     funnel: pd.DataFrame,
     governance: dict[str, Any],
 ) -> str:
+    overall_sensitivity = sensitivity.loc[sensitivity["setup"].eq("all")]
+    holdout_setup_sensitivity = sensitivity.loc[
+        sensitivity["scope"].eq("holdout_2025_plus")
+        & sensitivity["setup"].ne("all")
+    ]
     return f"""# BTCUSDT 5-Minute Major-Session Scalper
 
 Generated {governance['generated_at_utc']}. This is a standalone strategy; no macro or hierarchical model inputs are used.
@@ -722,7 +739,11 @@ Generated {governance['generated_at_utc']}. This is a standalone strategy; no ma
 
 ## Cost sensitivity
 
-{_markdown_table(sensitivity)}
+{_markdown_table(overall_sensitivity)}
+
+## Holdout cost sensitivity by setup
+
+{_markdown_table(holdout_setup_sensitivity)}
 
 ## Signal funnel
 

@@ -135,6 +135,18 @@ value-area rules; signals enter on the next bar and pay the separate USD-M
 execution assumptions in `config/binance_session_scalper_execution.json`.
 Outputs and limitations are written under `outputs/binance_session_scalper/`.
 
+For the Fabio-style leveraged variant—BTC only, New York's first hour, 1% stop
+risk, up to 10x gross notional, repeat non-overlapping attempts, and a hard stop
+after three net losses in the UTC day—run:
+
+```bash
+python build_binance_session_scalper.py --preset leveraged_new_york_open
+```
+
+This writes setup-level holdout cost sensitivity and the full audit trail under
+`outputs/binance_ny_open_scalper_leveraged/`. Profit-based intraday risk scaling
+remains disabled until an exact, testable sizing equation is supplied.
+
 
 ## Run it
 
