@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-20T03:01:11.667758+00:00",
+  "generated_at_utc": "2026-07-20T17:49:48.045010+00:00",
   "holdout_start": "2025-01-01",
   "target_horizons_months": {
     "macro": 3,
@@ -7,17 +7,17 @@
     "company": 6
   },
   "rows": {
-    "macro": 319,
-    "sector": 3509,
+    "macro": 331,
+    "sector": 3641,
     "company": 31269
   },
   "date_ranges": {
     "macro": {
-      "start": "1999-12-31T00:00:00",
+      "start": "1998-12-31T00:00:00",
       "end": "2026-06-30T00:00:00"
     },
     "sector": {
-      "start": "1999-12-31T00:00:00",
+      "start": "1998-12-31T00:00:00",
       "end": "2026-06-30T00:00:00"
     },
     "company": {
@@ -289,15 +289,6 @@
       "target_regime_change_3m"
     ],
     "sector": [
-      "fwd_12m",
-      "fwd_12m_broad",
-      "fwd_12m_excess",
-      "fwd_1m",
-      "fwd_1m_broad",
-      "fwd_1m_excess",
-      "fwd_3m",
-      "fwd_3m_broad",
-      "fwd_3m_excess",
       "fwd_6m",
       "fwd_6m_broad",
       "fwd_6m_excess",

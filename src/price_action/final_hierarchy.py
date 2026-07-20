@@ -279,13 +279,26 @@ def _prepare_design(
         dtype=float,
     ) if categorical else pd.DataFrame(index=combined.index)
     design = pd.concat([numeric_frame, category_frame], axis=1).replace([np.inf, -np.inf], np.nan)
-    train_design = design.iloc[: len(panel)]
-    coverage = train_design.loc[model_mask].notna().mean()
-    variance = train_design.loc[model_mask].nunique(dropna=True)
+    # Return the complete encoded design.  Coverage and variance selection is
+    # performed inside each walk-forward training fold so the holdout cannot
+    # influence even unsupervised feature eligibility.
+    _ = model_mask, min_coverage
+    columns = design.columns.tolist()
+    return design.iloc[: len(panel)][columns], design.iloc[len(panel) :][columns].reset_index(drop=True), columns, raw_features
+
+
+def _select_design_columns(
+    design: pd.DataFrame,
+    train_mask: pd.Series,
+    min_coverage: float,
+) -> list[str]:
+    training = design.loc[train_mask]
+    coverage = training.notna().mean()
+    variance = training.nunique(dropna=True)
     selected = coverage[(coverage >= min_coverage) & (variance > 1)].index.tolist()
     if not selected:
-        raise ValueError("No predictive features survived coverage and variance filters.")
-    return design.iloc[: len(panel)][selected], design.iloc[len(panel) :][selected].reset_index(drop=True), selected, raw_features
+        raise ValueError("No predictive features survived fold-local coverage and variance filters.")
+    return selected
 
 
 def _regression_models(profile: str) -> dict[str, Pipeline]:
@@ -529,6 +542,12 @@ def _classification_metrics(
     probability = data[[f"prob::{label}" for label in classes]].to_numpy()
     encoded = pd.Categorical(data["target"], categories=classes).codes
     one_hot = np.eye(len(classes))[encoded]
+    class_prior = data["target"].value_counts(normalize=True).reindex(classes, fill_value=0.0).to_numpy()
+    baseline_probability = np.tile(class_prior, (len(data), 1))
+    model_log_loss = log_loss(data["target"], probability, labels=classes)
+    baseline_log_loss = log_loss(data["target"], baseline_probability, labels=classes)
+    model_brier = float(np.mean(np.sum((probability - one_hot) ** 2, axis=1)))
+    baseline_brier = float(np.mean(np.sum((baseline_probability - one_hot) ** 2, axis=1)))
     row = {
         "scope": scope,
         "observations": len(data),
@@ -537,8 +556,12 @@ def _classification_metrics(
             (data.loc[data["target"].eq(label), "predicted_class"] == label).mean()
             for label in sorted(data["target"].unique())
         ])),
-        "log_loss": log_loss(data["target"], probability, labels=classes),
-        "multiclass_brier": float(np.mean(np.sum((probability - one_hot) ** 2, axis=1))),
+        "log_loss": model_log_loss,
+        "baseline_log_loss": baseline_log_loss,
+        "log_loss_skill": 1.0 - model_log_loss / baseline_log_loss if baseline_log_loss > 0.0 else np.nan,
+        "multiclass_brier": model_brier,
+        "baseline_multiclass_brier": baseline_brier,
+        "brier_skill": 1.0 - model_brier / baseline_brier if baseline_brier > 0.0 else np.nan,
         "mean_confidence": float(data["ensemble_confidence"].mean()),
         "model_agreement": float(data["model_agreement"].mean()),
     }
@@ -580,7 +603,13 @@ def _classification_reliability(metrics: pd.DataFrame, classes: int) -> float:
     chance = 1.0 / classes
     if not np.isfinite(balanced) or balanced <= chance:
         return 0.0
-    return float(np.clip((balanced - chance) / (1.0 - chance), 0.0, 1.0))
+    discrimination = float(np.clip((balanced - chance) / (1.0 - chance), 0.0, 1.0))
+    log_skill = float(row.iloc[0].get("log_loss_skill", np.nan))
+    brier_skill = float(row.iloc[0].get("brier_skill", np.nan))
+    if not np.isfinite(log_skill) or not np.isfinite(brier_skill):
+        return 0.0
+    probability_skill = float(np.clip(min(log_skill, brier_skill), 0.0, 1.0))
+    return float(math.sqrt(discrimination * probability_skill))
 
 
 def run_regression_layer(
@@ -605,7 +634,7 @@ def run_regression_layer(
         & panel[target_end_column].notna()
         & panel[target_end_column].le(asof_date)
     )
-    x_panel, x_live, selected, _raw = _prepare_design(
+    x_panel, x_live, _candidate_columns, _raw = _prepare_design(
         panel,
         live,
         feature_columns=feature_columns,
@@ -620,9 +649,14 @@ def run_regression_layer(
         test = eligible & panel["date"].between(split.test_start, split.test_end)
         if train.sum() < int(config["min_train_rows"]) or not test.any():
             continue
+        fold_features = _select_design_columns(
+            x_panel,
+            train,
+            float(config["min_feature_coverage"]),
+        )
         weights = sample_weight_fn(panel.loc[train]) if sample_weight_fn else None
         models, bounds = _fit_regression_stack(
-            x_panel.loc[train], panel.loc[train, target_column], profile=layer, sample_weight=weights
+            x_panel.loc[train, fold_features], panel.loc[train, target_column], profile=layer, sample_weight=weights
         )
         pred = panel.loc[test, meta_columns].copy()
         pred["target"] = panel.loc[test, target_column]
@@ -630,10 +664,15 @@ def run_regression_layer(
         pred["train_rows"] = int(train.sum())
         pred["target_clip_lower"] = bounds[0]
         pred["target_clip_upper"] = bounds[1]
+        pred["selected_feature_count"] = len(fold_features)
         prior = pd.concat(predictions, ignore_index=True) if predictions else pd.DataFrame()
         causal_weights = _regression_model_weights(prior, group_columns)
-        raw_prediction = _predict_regression_stack(models, x_panel.loc[test], causal_weights)
+        raw_prediction = _predict_regression_stack(models, x_panel.loc[test, fold_features], causal_weights)
         pred = pred.join(raw_prediction)
+        target_std = float(panel.loc[train, target_column].std())
+        pred["agreement_confidence"] = (
+            1.0 / (1.0 + pred["model_dispersion"] / max(target_std, 1e-9))
+        ).clip(0.0, 1.0)
         predictions.append(pred)
     prediction_frame = pd.concat(predictions, ignore_index=True) if predictions else pd.DataFrame()
     metric_rows = []
@@ -661,14 +700,19 @@ def run_regression_layer(
     metrics = pd.DataFrame(metric_rows)
 
     final_train = eligible
+    selected = _select_design_columns(
+        x_panel,
+        final_train,
+        float(config["min_feature_coverage"]),
+    )
     final_weights = sample_weight_fn(panel.loc[final_train]) if sample_weight_fn else None
     final_models, _bounds = _fit_regression_stack(
-        x_panel.loc[final_train], panel.loc[final_train, target_column], profile=layer, sample_weight=final_weights
+        x_panel.loc[final_train, selected], panel.loc[final_train, target_column], profile=layer, sample_weight=final_weights
     )
     live_output = live[meta_columns].copy().reset_index(drop=True)
     validation_predictions = prediction_frame.loc[~prediction_frame["fold"].eq("holdout")]
     live_weights = _regression_model_weights(validation_predictions, group_columns)
-    live_output = live_output.join(_predict_regression_stack(final_models, x_live, live_weights))
+    live_output = live_output.join(_predict_regression_stack(final_models, x_live[selected], live_weights))
     target_std = float(panel.loc[final_train, target_column].std())
     live_output["agreement_confidence"] = (
         1.0 / (1.0 + live_output["model_dispersion"] / max(target_std, 1e-9))
@@ -718,7 +762,7 @@ def run_classification_layer(
     live = live.copy()
     panel[target_column] = panel[target_column].astype(str)
     classes = sorted(panel.loc[eligible, target_column].unique().tolist())
-    x_panel, x_live, selected, _raw = _prepare_design(
+    x_panel, x_live, _candidate_columns, _raw = _prepare_design(
         panel,
         live,
         feature_columns=feature_columns,
@@ -733,12 +777,20 @@ def run_classification_layer(
         test = eligible & panel["date"].between(split.test_start, split.test_end)
         if train.sum() < int(config["min_train_rows"]) or not test.any() or panel.loc[train, target_column].nunique() < 2:
             continue
-        models = _fit_classification_stack(x_panel.loc[train], panel.loc[train, target_column], profile=layer)
+        fold_features = _select_design_columns(
+            x_panel,
+            train,
+            float(config["min_feature_coverage"]),
+        )
+        models = _fit_classification_stack(
+            x_panel.loc[train, fold_features], panel.loc[train, target_column], profile=layer
+        )
         pred = panel.loc[test, meta_columns].copy()
         pred["target"] = panel.loc[test, target_column]
         pred["fold"] = split.fold
         pred["train_rows"] = int(train.sum())
-        pred = pred.join(_predict_classification_stack(models, x_panel.loc[test], classes))
+        pred["selected_feature_count"] = len(fold_features)
+        pred = pred.join(_predict_classification_stack(models, x_panel.loc[test, fold_features], classes))
         predictions.append(pred)
     prediction_frame = pd.concat(predictions, ignore_index=True) if predictions else pd.DataFrame()
     metric_rows = []
@@ -754,11 +806,24 @@ def run_classification_layer(
         ))
     metrics = pd.DataFrame(metric_rows)
 
-    final_models = _fit_classification_stack(x_panel.loc[eligible], panel.loc[eligible, target_column], profile=layer)
+    selected = _select_design_columns(
+        x_panel,
+        eligible,
+        float(config["min_feature_coverage"]),
+    )
+    final_models = _fit_classification_stack(
+        x_panel.loc[eligible, selected], panel.loc[eligible, target_column], profile=layer
+    )
     live_output = live[meta_columns].copy().reset_index(drop=True)
-    live_output = live_output.join(_predict_classification_stack(final_models, x_live, classes))
+    live_output = live_output.join(_predict_classification_stack(final_models, x_live[selected], classes))
     reliability = _classification_reliability(metrics, len(classes))
     live_output["validation_reliability"] = reliability
+    class_prior = panel.loc[eligible, target_column].value_counts(normalize=True).reindex(classes, fill_value=0.0)
+    for label in classes:
+        live_output[f"validated_prob::{label}"] = (
+            float(class_prior[label])
+            + reliability * (live_output[f"prob::{label}"] - float(class_prior[label]))
+        )
     return ClassificationResult(
         predictions=prediction_frame,
         live=live_output,
@@ -1020,8 +1085,14 @@ def _select_primary_company_rows(company: pd.DataFrame) -> pd.DataFrame:
 
 def _macro_risk_probabilities(macro_live: pd.DataFrame) -> tuple[float, float]:
     row = macro_live.iloc[0]
-    favorable = sum(float(row.get(f"prob::{label}", 0.0)) for label in FAVORABLE_REGIMES)
-    adverse = sum(float(row.get(f"prob::{label}", 0.0)) for label in ADVERSE_REGIMES)
+    favorable = sum(
+        float(row.get(f"validated_prob::{label}", row.get(f"prob::{label}", 0.0)))
+        for label in FAVORABLE_REGIMES
+    )
+    adverse = sum(
+        float(row.get(f"validated_prob::{label}", row.get(f"prob::{label}", 0.0)))
+        for label in ADVERSE_REGIMES
+    )
     return favorable, adverse
 
 
@@ -1096,9 +1167,14 @@ def build_sizing_advisor(
     gamma: dict[str, Any] | None,
 ) -> pd.DataFrame:
     sector_live = sector.live.copy()
+    survival_probability_column = (
+        "validated_prob::survives"
+        if "validated_prob::survives" in trend.live
+        else "prob::survives"
+    )
     sector_live = sector_live.merge(
-        trend.live[["sector", "symbol", "date", "type", "prob::survives"]].rename(
-            columns={"date": "last_sector_cross_date", "type": "last_sector_cross_type", "prob::survives": "sector_cross_survival_probability"}
+        trend.live[["sector", "symbol", "date", "type", survival_probability_column]].rename(
+            columns={"date": "last_sector_cross_date", "type": "last_sector_cross_type", survival_probability_column: "sector_cross_survival_probability"}
         ),
         on="sector",
         how="left",
@@ -1146,7 +1222,7 @@ def build_sizing_advisor(
         1.0,
         np.where(company_live["book"].eq("SEMIS"), 0.65, 0.40),
     )
-    company_live["confidence"] = (
+    company_live["technical_confidence"] = (
         company_live["company_model_agreement"].fillna(0.0)
         * company_live["sector_model_agreement"].fillna(0.0)
         * company_live["company_trend_confidence"]
@@ -1154,6 +1230,21 @@ def build_sizing_advisor(
         * company_live["sector_cross_survival_probability"].fillna(0.5).clip(0.25, 1.0)
         * company_live["point_in_time_confidence"]
     ).pow(1.0 / 6.0)
+    sector_raw = company_live["sector_predicted_alpha"].abs().fillna(0.0)
+    company_raw = company_live["company_predicted_alpha"].abs().fillna(0.0)
+    evidence_denominator = sector_raw + company_raw
+    company_live["model_evidence_confidence"] = np.where(
+        evidence_denominator > 0.0,
+        (
+            sector_raw * company_live["sector_validation_reliability"].fillna(0.0)
+            + company_raw * company_live["company_validation_reliability"].fillna(0.0)
+        ) / evidence_denominator,
+        0.0,
+    )
+    company_live["confidence"] = np.sqrt(
+        company_live["technical_confidence"]
+        * company_live["model_evidence_confidence"].clip(0.0, 1.0)
+    )
     volatility = pd.to_numeric(company_live["company_volatility_63d"], errors="coerce").clip(0.12, 1.50)
     company_live["risk_score"] = company_live["expected_total_alpha"].abs() * company_live["confidence"] / volatility
     company_live["allocation_eligible"] = (
@@ -1253,6 +1344,14 @@ def build_sizing_advisor(
         sizing_status = "ABSTAIN: one or more alpha layers lack positive validation evidence"
     elif realized_gross <= 1e-12:
         sizing_status = "NO_SIGNALS_ABOVE_HURDLE"
+    elif gross_budget > 0.0 and realized_gross / gross_budget < 0.10:
+        sizing_status = "ABSTAIN: insufficient balanced signal capacity"
+        company_live["suggested_weight"] = 0.0
+        company_live["side"] = "Watch"
+        company_live["feasible_gross_budget"] = 0.0
+        company_live["feasible_net_budget"] = 0.0
+        realized_gross = 0.0
+        realized_net = 0.0
     else:
         sizing_status = "ACTIVE_RESEARCH"
     company_live["sizing_status"] = sizing_status
@@ -1263,7 +1362,8 @@ def build_sizing_advisor(
     keep = [
         "ticker", "book", "book_specification", "parent_sector", "side", "suggested_weight",
         "sizing_status", "expected_total_alpha", "sector_predicted_alpha", "sector_validated_alpha",
-        "company_predicted_alpha", "company_validated_alpha", "confidence", "risk_score",
+        "company_predicted_alpha", "company_validated_alpha", "confidence", "technical_confidence",
+        "model_evidence_confidence", "risk_score",
         "quality_z", "n_metrics", "company_50_200_state", "company_50_200_age_months",
         "point_in_time_confidence",
         "company_sma50_200_gap", "company_relative_oscillator", "company_volatility_63d",

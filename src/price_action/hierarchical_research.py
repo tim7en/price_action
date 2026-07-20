@@ -148,29 +148,47 @@ def _evaluation_fold(date: pd.Series, first_validation_year: int, holdout_start:
 
 
 def load_sector_contract(root: Path, holdout_start: pd.Timestamp) -> pd.DataFrame:
-    path = root / SECTOR_PANEL_PATH
-    if not path.exists():
+    # The trained and live sector models must see the same instruments.  The
+    # old contract trained on reconstructed stock-sector indices and predicted
+    # live sector ETFs, a domain shift that its walk-forward results did not
+    # validate.  Build the full contract directly from the ETF cache instead.
+    panel, _macro_bundle, latest_trade_date = build_live_etf_overlay_panel(root, fast=3, slow=10)
+    if panel.empty or not latest_trade_date:
         raise FileNotFoundError(
-            f"Sector panel is missing: {path}. Run build_sector_dalio_regime_model.py first."
+            "Historical sector ETF cache is incomplete. Refresh cache/advise before building the hierarchy."
         )
-    panel = pd.read_csv(path, parse_dates=["date"])
-    if panel.duplicated(["date", "sector"]).any():
-        raise ValueError("Sector source panel has duplicate date/sector keys.")
 
-    panel["price_source"] = "stock_reconstructed_sector_index"
-    live, _macro_bundle, latest_trade_date = build_live_etf_overlay_panel(root, fast=3, slow=10)
-    if not live.empty and latest_trade_date:
-        latest_trade = pd.Timestamp(latest_trade_date).normalize()
-        today = pd.Timestamp.now().normalize()
-        latest_period = latest_trade.to_period("M")
-        completed_period = today.to_period("M") - 1 if latest_period == today.to_period("M") else latest_period
-        completed_month_end = completed_period.to_timestamp("M")
-        extension = live.loc[
-            (live["date"] > panel["date"].max()) & (live["date"] <= completed_month_end)
-        ].copy()
-        if not extension.empty:
-            extension["price_source"] = "sector_etf_completed_month_extension"
-            panel = pd.concat([panel, extension], ignore_index=True, sort=False)
+    latest_trade = pd.Timestamp(latest_trade_date).normalize()
+    today = pd.Timestamp.now().normalize()
+    latest_period = latest_trade.to_period("M")
+    completed_period = today.to_period("M") - 1 if latest_period == today.to_period("M") else latest_period
+    completed_month_end = completed_period.to_timestamp("M")
+    panel = panel.loc[pd.to_datetime(panel["date"]) <= completed_month_end].copy()
+    panel["price_source"] = "sector_etf_adjusted_close"
+
+    panel = panel.sort_values(["sector", "date"]).reset_index(drop=True)
+    panel["fwd_6m"] = panel.groupby("sector", sort=False)["sector_index"].transform(
+        lambda values: values.shift(-6) / values - 1.0
+    )
+    broad_monthly_return = (
+        panel.assign(
+            broad_return=pd.to_numeric(panel["sector_return_1m"], errors="coerce")
+            - pd.to_numeric(panel["relative_return_1m"], errors="coerce")
+        )
+        .groupby("date", sort=True)["broad_return"]
+        .median()
+    )
+    broad_level = (1.0 + broad_monthly_return.fillna(0.0)).cumprod()
+    broad_fwd_6m = broad_level.shift(-6) / broad_level - 1.0
+    panel["fwd_6m_broad"] = panel["date"].map(broad_fwd_6m)
+    panel["fwd_6m_excess"] = panel["fwd_6m"] - panel["fwd_6m_broad"]
+    count_by_date = panel.groupby("date")["fwd_6m_excess"].transform("count")
+    panel["leader_rank_pct"] = panel.groupby("date")["fwd_6m_excess"].rank(pct=True)
+    panel["target_leader"] = (
+        panel["leader_rank_pct"].ge(2.0 / 3.0)
+        .where(panel["fwd_6m_excess"].notna() & count_by_date.ge(6))
+        .astype("float64")
+    )
 
     panel = panel.sort_values(["date", "sector"]).reset_index(drop=True)
     panel.insert(1, "signal_date", panel["date"])

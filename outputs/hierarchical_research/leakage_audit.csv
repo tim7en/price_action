@@ -4,7 +4,7 @@ sector_unique_keys,PASS,0,"keys=['date', 'sector']"
 company_unique_keys,PASS,0,"keys=['date', 'book', 'ticker']"
 targets_excluded_from_features,PASS,0,"no future-return, rank, or label columns have feature role"
 full_history_gmm_excluded,PASS,0,GMM state remains descriptive metadata because its historical fit uses the full sample.
-sector_target_identity,PASS,0,max absolute identity error=1.67e-16
+sector_target_identity,PASS,0,max absolute identity error=0
 company_target_identity,PASS,0,max absolute identity error=0
 company_benchmark_window_alignment,PASS,0,every company residual target uses identical stock and parent-ETF entry/exit dates
 target_dates_after_signal,PASS,0,every dated target ends strictly after its signal date

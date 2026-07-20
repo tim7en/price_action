@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-20T03:44:34.622843+00:00",
+  "generated_at_utc": "2026-07-20T17:54:39.480272+00:00",
   "asof": "2026-07-15",
   "holdout_start": "2025-01-01",
   "models": {
@@ -56,22 +56,22 @@
   "layers": {
     "macro": {
       "features": 63,
-      "validation_reliability": 0.1260362388529463,
+      "validation_reliability": 0.0,
       "trained_through": "2026-06-30"
     },
     "sector": {
       "features": 107,
-      "validation_reliability": 0.014964289759210967,
-      "trained_through": "2025-09-30"
+      "validation_reliability": 0.010683772332175264,
+      "trained_through": "2026-06-30"
     },
     "company": {
-      "features": 157,
-      "validation_reliability": 0.2299200928586663,
+      "features": 158,
+      "validation_reliability": 0.03654655915134902,
       "trained_through": "2026-06-03"
     },
     "trend": {
       "features": 79,
-      "validation_reliability": 0.2150919567448102,
+      "validation_reliability": 0.0,
       "trained_through": "2026-06-30"
     }
   },
