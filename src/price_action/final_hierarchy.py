@@ -836,6 +836,9 @@ def run_classification_layer(
             float(class_prior[label])
             + reliability * (live_output[f"prob::{label}"] - float(class_prior[label]))
         )
+    live_output["validated_predicted_class"] = live_output[
+        [f"validated_prob::{label}" for label in classes]
+    ].rename(columns={f"validated_prob::{label}": label for label in classes}).idxmax(axis=1)
     return ClassificationResult(
         predictions=prediction_frame,
         live=live_output,
@@ -1088,8 +1091,9 @@ def build_model_audit(
 
 def _select_primary_company_rows(company: pd.DataFrame) -> pd.DataFrame:
     frame = company.copy()
+    verified_member = frame["pit_member"].astype("boolean").fillna(False)
     frame["priority"] = 3
-    frame.loc[frame["pit_member"].eq(True), "priority"] = 2
+    frame.loc[verified_member, "priority"] = 2
     frame.loc[frame["book"].eq("SEMIS"), "priority"] = 1
     frame["metric_priority"] = -pd.to_numeric(frame.get("n_metrics"), errors="coerce").fillna(0)
     return frame.sort_values(["ticker", "priority", "metric_priority", "book"]).drop_duplicates("ticker", keep="first")
@@ -1229,8 +1233,9 @@ def build_sizing_advisor(
     company_live["fundamental_confidence"] = (
         pd.to_numeric(company_live["n_metrics"], errors="coerce").fillna(0.0) / 5.0
     ).clip(0.0, 1.0)
+    verified_member = company_live["pit_member"].astype("boolean").fillna(False)
     company_live["point_in_time_confidence"] = np.where(
-        company_live["pit_member"].eq(True),
+        verified_member,
         1.0,
         np.where(company_live["book"].eq("SEMIS"), 0.65, 0.40),
     )
@@ -1260,7 +1265,7 @@ def build_sizing_advisor(
     volatility = pd.to_numeric(company_live["company_volatility_63d"], errors="coerce").clip(0.12, 1.50)
     company_live["risk_score"] = company_live["expected_total_alpha"].abs() * company_live["confidence"] / volatility
     company_live["allocation_eligible"] = (
-        (company_live["pit_member"].eq(True) | company_live["book"].eq("SEMIS"))
+        (verified_member | company_live["book"].eq("SEMIS"))
         & pd.to_numeric(company_live["n_metrics"], errors="coerce").ge(3)
         & company_live["quality_z"].notna()
     )
@@ -1597,7 +1602,10 @@ def _chart_live_sector(sector: RegressionResult) -> str:
 
 def _chart_macro_probabilities(macro: ClassificationResult) -> str:
     row = macro.live.iloc[0]
-    probabilities = pd.Series({label: float(row[f"prob::{label}"]) for label in macro.classes}).sort_values()
+    probabilities = pd.Series({
+        label: float(row.get(f"validated_prob::{label}", row[f"prob::{label}"]))
+        for label in macro.classes
+    }).sort_values()
     fig, ax = _vintage_figure(figsize=(10.5, 4.6))
     ax.barh(probabilities.index, probabilities * 100.0, color=[INK_AMBER, INK_RED, INK_NAVY, INK_GREEN, INK_MUTED][: len(probabilities)])
     ax.set_title("Next-three-month Dalio regime probabilities", loc="left", fontsize=12)
@@ -1642,7 +1650,10 @@ def _chart_oos_ic(sector: RegressionResult, company: RegressionResult) -> str:
 def build_html_report(result: FinalHierarchyResult) -> str:
     sizing = result.sizing
     active = sizing.loc[sizing["suggested_weight"].ne(0.0)]
-    macro_view = result.macro.live[["predicted_class", "ensemble_confidence", "model_agreement", "validation_reliability"]]
+    macro_view = result.macro.live[[
+        "predicted_class", "validated_predicted_class", "ensemble_confidence",
+        "model_agreement", "validation_reliability",
+    ]]
     metrics = pd.concat([
         result.macro.metrics.assign(layer="macro"),
         result.sector.metrics.assign(layer="sector"),
@@ -1714,7 +1725,7 @@ def build_html_report(result: FinalHierarchyResult) -> str:
 *{{box-sizing:border-box}} body{{margin:0;color:var(--ink);background:#eadcb8;font:14px/1.48 Georgia,"Times New Roman",serif;letter-spacing:0}} main{{max-width:1320px;margin:0 auto;padding:30px 38px 64px;background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px),linear-gradient(var(--major) 1px,transparent 1px),linear-gradient(90deg,var(--major) 1px,transparent 1px);background-size:10px 10px,10px 10px,50px 50px,50px 50px}}
 header,.band{{background:rgba(244,236,211,.95)}} header{{border-top:4px solid var(--ink);border-bottom:1px solid var(--ink);padding:16px 0 14px}} h1{{font-size:31px;line-height:1.08;margin:0 0 7px}} h2{{font-size:20px;margin:34px 0 10px;border-bottom:2px solid var(--ink);padding-bottom:5px}} p{{max-width:980px}} .meta{{color:var(--muted);font-size:12px}} .kpis{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--ink);margin:22px 0;background:rgba(244,236,211,.96)}} .kpi{{padding:13px 15px;border-right:1px solid var(--ink)}} .kpi:last-child{{border-right:0}} .kpi b{{display:block;font:22px/1.05 Arial,sans-serif;color:var(--navy)}} .kpi span{{font-size:11px;text-transform:uppercase}} .band{{padding:1px 12px 12px;margin:0 -12px}} .charts{{display:grid;grid-template-columns:1fr 1fr;gap:18px}} .charts>*{{min-width:0}} figure{{margin:10px 0;background:var(--paper);border:1px solid var(--ink);padding:8px}} img{{width:100%;display:block}} figcaption{{font-size:11px;color:var(--muted);padding-top:5px}} .table-wrap{{overflow-x:auto;border:1px solid var(--ink);background:rgba(244,236,211,.97)}} table{{border-collapse:collapse;width:100%;font-size:12px}} th,td{{padding:7px 9px;border-bottom:1px solid #c9b77f;text-align:left;white-space:nowrap}} thead th{{background:#e1cd91;border-bottom:2px solid var(--ink);font-family:Arial,sans-serif}} tbody tr:nth-child(even){{background:rgba(225,205,145,.25)}} .warn{{color:#925c00;font-weight:bold}} .active{{color:var(--green);font-weight:bold}} code{{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}} @media(max-width:800px){{main{{padding:18px 14px 44px}}.kpis{{grid-template-columns:1fr 1fr}}.kpi:nth-child(2){{border-right:0}}.charts{{grid-template-columns:1fr}}h1{{font-size:25px}}}}
 </style></head><body><main><header><h1>Final Hierarchical Macro -> Sector -> Company Model</h1><p>Walk-forward regime probabilities, sector excess-return forecasts, company residual alpha, trend survival, positioning, and constrained long/short sizing.</p><p class="meta">Data as of {positioning.get('asof', 'n/a')}. Generated {generated}. Research output, not personalized investment advice. <a href="../factor_driver_model/index.html">Open 6/12-month factor attribution</a>.</p></header>
-<div class="kpis"><div class="kpi"><b>{result.macro.live.iloc[0]['predicted_class'].split(' ')[0]}</b><span>Forecast regime</span></div><div class="kpi"><b>{result.sector.validation_reliability:.2f}</b><span>Sector reliability</span></div><div class="kpi"><b>{result.company.validation_reliability:.2f}</b><span>Company reliability</span></div><div class="kpi"><b>{float(sizing['realized_gross'].iloc[0]) * 100.0 if len(sizing) else 0.0:.2f}%</b><span>Realized gross / {len(active)} names</span></div></div>
+<div class="kpis"><div class="kpi"><b>{result.macro.live.iloc[0]['validated_predicted_class'].split(' ')[0]}</b><span>Calibrated regime</span></div><div class="kpi"><b>{result.sector.validation_reliability:.2f}</b><span>Sector reliability</span></div><div class="kpi"><b>{result.company.validation_reliability:.2f}</b><span>Company reliability</span></div><div class="kpi"><b>{float(sizing['realized_gross'].iloc[0]) * 100.0 if len(sizing) else 0.0:.2f}%</b><span>Realized gross / {len(active)} names</span></div></div>
 <section class="band"><h2>Decision State</h2><p class="{'active' if status == 'ACTIVE_RESEARCH' else 'warn'}">{status}</p><div class="table-wrap">{_html_table(macro_view)}</div><div class="charts">{_img(_chart_macro_probabilities(result.macro), 'Macro regime probability ensemble')}{_img(_chart_live_sector(result.sector), 'Sector forecasts after validation shrinkage')}</div></section>
 <section class="band"><h2>Company Selection And Sizing</h2><p>Expected alpha is sector excess alpha plus company residual alpha. Nonzero weights require current point-in-time book membership or the dedicated SEMIS specification, at least three fundamentals, directional 50/200 confirmation, a 1.0% long or 1.5% short six-month alpha hurdle, volatility scaling, 6% long-name caps, 5% short-name caps, and one shared 20% gross sector cap. Long and short sleeves are solved jointly so missing signals cannot violate the macro net target; unused risk budget stays unallocated.</p>{_img(_chart_company_alpha(result.company), 'Company residual forecasts after validation shrinkage')}<h3>Highest expected alpha</h3><div class="table-wrap">{_html_table(top_sizing)}</div><h3>Lowest expected alpha</h3><div class="table-wrap">{_html_table(bottom_sizing)}</div></section>
 <section class="band"><h2>Out-Of-Sample Validation</h2>{_img(_chart_oos_ic(result.sector, result.company), 'Walk-forward cross-sectional information coefficients')}<div class="table-wrap">{_html_table(metrics)}</div></section>
@@ -1899,6 +1910,7 @@ def build_final_hierarchy(
         "execution": portfolio_summary,
         "reliability_policy": {
             "regression": "mean of positive validation rank-IC and top-minus-bottom spread evidence, sampled at non-overlapping horizons",
+            "classification": "requires both above-chance balanced accuracy and positive log-loss and Brier skill versus the causal class-prior baseline",
             "company": "geometric mean of broad-universe and strict point-in-time regression reliability",
             "holdout_use": "reporting only; never used for model weighting, calibration, or sizing confidence",
         },

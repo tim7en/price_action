@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-20T17:54:39.480272+00:00",
+  "generated_at_utc": "2026-07-20T18:14:05.697644+00:00",
   "asof": "2026-07-15",
   "holdout_start": "2025-01-01",
   "models": {
@@ -96,6 +96,44 @@
     "live_risk_overlay": true,
     "status": "unavailable_neutral"
   },
+  "execution": {
+    "status": "RESEARCH_ONLY",
+    "periods": 94,
+    "period_start": "2018-02-01",
+    "period_end": "2025-12-01",
+    "cumulative_gross_return_before_costs": 0.0,
+    "cumulative_net_return": 0.0,
+    "benchmark_cumulative_return": 1.729286218526077,
+    "annualized_net_return": 0.0,
+    "annualized_volatility": 0.0,
+    "sharpe_zero_cash_rate": NaN,
+    "sortino_zero_cash_rate": NaN,
+    "max_drawdown": 0.0,
+    "average_one_way_turnover": 0.0,
+    "annualized_one_way_turnover": 0.0,
+    "total_commission_and_slippage": 0.0,
+    "total_funding_paid": 0.0,
+    "average_gross_exposure": 0.0,
+    "active_period_fraction": 0.0,
+    "execution": {
+      "product": "tradfi_perp",
+      "maker_fee_bps": 10.0,
+      "taker_fee_bps": 10.0,
+      "maker_fill_fraction": 0.0,
+      "bnb_fee_discount_fraction": 0.0,
+      "slippage_bps": 5.0,
+      "annual_funding_bps": 0.0,
+      "annual_cash_yield_bps": 0.0,
+      "funding_history_supplied": false,
+      "venue_instrument_mapping_supplied": false,
+      "commission_bps": 10.0,
+      "all_in_trade_cost_bps": 15.0,
+      "turnover_definition": "sum(abs(target_weight - prior_weight))",
+      "funding_note": "Positive funding means longs pay and shorts receive; supply historical rates for investable results.",
+      "research_only": true
+    },
+    "price_source_note": "Adjusted underlying closes, executed on the first observation strictly after each signal; Binance mark-price history is not present."
+  },
   "reliability_policy": {
     "regression": "mean of positive validation rank-IC and top-minus-bottom spread evidence, sampled at non-overlapping horizons",
     "company": "geometric mean of broad-universe and strict point-in-time regression reliability",
@@ -105,7 +143,8 @@
     "Company universe before November 2019 is not strict point-in-time constituent history.",
     "The dedicated semiconductor book overlaps XLK and is consolidated by a predeclared priority rule.",
     "Gamma has no historical point-in-time chain archive and is not a trained feature.",
-    "Monthly six-month targets overlap; inference uses non-overlapping IC and spread samples."
+    "Monthly six-month targets overlap; inference uses non-overlapping IC and spread samples.",
+    "The portfolio replay uses adjusted underlying closes, not Binance mark prices; it remains research-only until venue symbols and historical funding are supplied."
   ],
   "audit_status": {
     "PASS": 11,

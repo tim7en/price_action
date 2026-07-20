@@ -89,8 +89,8 @@ class BinanceExecutionCosts:
                     else "Positive funding means longs pay and shorts receive; supply historical rates for investable results."
                 ),
                 "research_only": bool(
-                    self.product != "spot"
-                    and (not self.funding_history_supplied or not self.venue_instrument_mapping_supplied)
+                    not self.venue_instrument_mapping_supplied
+                    or (self.product != "spot" and not self.funding_history_supplied)
                 ),
             }
         )
@@ -185,8 +185,8 @@ def _portfolio_statistics(periods: pd.DataFrame, execution: BinanceExecutionCost
         "benchmark_cumulative_return": float(benchmark_equity.iloc[-1] - 1.0),
         "annualized_net_return": annualized_return,
         "annualized_volatility": annualized_volatility,
-        "sharpe_zero_cash_rate": float(annualized_return / annualized_volatility) if annualized_volatility > 0.0 else np.nan,
-        "sortino_zero_cash_rate": float(annualized_return / downside) if downside > 0.0 else np.nan,
+        "sharpe_zero_cash_rate": float(annualized_return / annualized_volatility) if annualized_volatility > 0.0 else None,
+        "sortino_zero_cash_rate": float(annualized_return / downside) if downside > 0.0 else None,
         "max_drawdown": float((equity / equity.cummax() - 1.0).min()),
         "average_one_way_turnover": float(periods["one_way_turnover"].mean()),
         "annualized_one_way_turnover": float(periods["one_way_turnover"].sum() / years),

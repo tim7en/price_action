@@ -118,16 +118,26 @@ asymmetry is cheap insurance against health-score whipsaw.
 
 ## 4 · Costs and carry (believe nothing before deducting these)
 
-- Spot fees ~7.5–10 bps/side (BNB discount on). Weekly cadence + hysteresis
-  keeps turnover near the study's ~0.1×/month; at that rate fees cost
-  ~0.5%/yr. Fine. If your turnover is 3× that, your signal is too fast.
-- **Perp funding matters only for the hedge short** now that the leverage
-  overlay is gone. The hedge usually *earns* funding in stress — a tailwind
-  the study's borrow-fee model didn't have, but never a reason to short above
-  the H floor.
-- Stablecoin yield is the rf leg. Idle cash earning 3–5% was a real
-  contributor in the study's fair accounting; leave no idle USDT unstaked
-  (subject to your counterparty comfort — see risks).
+- Do not hard-code a generic Binance fee. Product, maker/taker mix, VIP tier,
+  BNB discount, spread, and impact are inputs in
+  `config/binance_execution.json`. The conservative default is 10 bps taker
+  commission plus 5 bps slippage on every unit of traded notional.
+- Turnover is `sum(abs(target_weight - drifted_pretrade_weight))`. Moving from
+  20% long to 10% short is 30% turnover, not 10%. The replay also charges the
+  initial entry and terminal liquidation; it never estimates cost from the
+  number of names or from gross exposure alone.
+- **Perp funding is signed.** Positive funding is paid by longs and received
+  by shorts. A scalar funding scenario is useful for stress testing, but an
+  investable result requires point-in-time funding and mark-price history for
+  every Binance contract actually traded.
+- Stablecoin yield is the rf leg, but it defaults to zero until an achievable
+  net yield is configured. Do not insert an advertised yield without its
+  tier limits, lockup, counterparty risk, and date history.
+- The final hierarchy writes its causal, next-session replay to
+  `outputs/final_hierarchy/portfolio_walkforward_periods.csv` and the summary
+  to `portfolio_backtest_summary.json`. `RESEARCH_ONLY` means venue symbol
+  mapping or historical funding/mark prices are incomplete. It is a blocker,
+  not a footnote.
 
 ---
 

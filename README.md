@@ -97,8 +97,15 @@ python build_final_hierarchy.py
 ```
 
 The final dashboard and auditable model artifacts are written under
-`outputs/final_hierarchy/`. Dealer gamma remains a live-only sizing overlay
-until a historical point-in-time options-chain archive is available.
+`outputs/final_hierarchy/`. The build also replays the complete sizing policy
+using only causally matured outcomes and next-session prices. Binance
+commission, slippage, drift-aware turnover, funding, cash carry, and terminal
+liquidation come from `config/binance_execution.json`; signals, targets,
+period returns, and a JSON summary are written beside the dashboard. Perpetual
+results remain `RESEARCH_ONLY` until point-in-time Binance contract mapping,
+mark prices, and funding histories are supplied. Dealer gamma remains a
+live-only sizing overlay until a historical point-in-time options-chain archive
+is available.
 
 To fit the interpretable 6/12-month broad-market and sector factor models:
 
