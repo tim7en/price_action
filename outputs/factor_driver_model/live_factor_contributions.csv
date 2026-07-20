@@ -1,0 +1,1693 @@
+date,feature,standardized_value,coefficient,contribution,domain,family,scope,horizon_months,sector
+2026-07-15,nfci_z,-0.6694034582315118,-0.0,0.0,macro,financial_conditions,market,6,
+2026-07-15,hy_spread_z,-1.0949599245045134,0.0,-0.0,macro,financial_conditions,market,6,
+2026-07-15,vix_z,-0.38387119289300803,0.0,-0.0,macro,volatility,market,6,
+2026-07-15,vix_curve_spread,-0.5399626729519253,-0.0,0.0,macro,volatility,market,6,
+2026-07-15,t10y3m_z,0.738878080472499,-0.0,-0.0,macro,rates_curve,market,6,
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,-0.0,-0.0,macro,rates_curve,market,6,
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,-0.0,0.0,macro,inflation,market,6,
+2026-07-15,indpro_yoy_z,0.4669663261381696,-0.0,-0.0,macro,growth,market,6,
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,market,6,
+2026-07-15,gold_ret_6m,-1.6557364561081596,0.0,-0.0,macro,dollar_commodities,market,6,
+2026-07-15,copper_ret_6m,0.24706541912372731,0.0,0.0,macro,dollar_commodities,market,6,
+2026-07-15,wti_ret_6m,0.6748865671592656,-0.0,-0.0,macro,dollar_commodities,market,6,
+2026-07-15,copper_gold_ratio_z,-0.5573328786695313,-0.025264181891528636,0.014080559220836298,macro,dollar_commodities,market,6,
+2026-07-15,fed_path_2y_z,0.8924083666165701,-0.0,-0.0,macro,rates_curve,market,6,
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,market,6,
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,-0.0,-0.0,macro,inflation,market,6,
+2026-07-15,infl_exp_1y_z,0.9088752228258464,-0.015064443379336646,-0.013691699333141941,macro,inflation,market,6,
+2026-07-15,claims_yoy_z,-0.20991767480431797,0.0,-0.0,macro,growth,market,6,
+2026-07-15,permits_yoy_z,-0.09006508471965563,0.0,-0.0,macro,growth,market,6,
+2026-07-15,cape_z,1.6639436160815837,0.0,0.0,macro,valuation,market,6,
+2026-07-15,growth_signal,0.10996883968445266,0.0,0.0,macro,growth,market,6,
+2026-07-15,inflation_signal,-0.14616596407372134,-0.004860653693153459,0.0007104621330882694,macro,inflation,market,6,
+2026-07-15,market_health,0.8853082320876845,-0.0,-0.0,price,market_trend,market,6,
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,market,6,
+2026-07-15,cot_lev_funds_net_pct_oi,-1.215565586238025,0.0,-0.0,positioning,cftc_positioning,market,6,
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,market,6,
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,market,6,
+2026-07-15,cot_asset_mgr_net_pct_oi,2.349396058039521,-0.0,-0.0,positioning,cftc_positioning,market,6,
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,market,6,
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245924,0.0,0.0,positioning,cftc_positioning,market,6,
+2026-07-15,cot_dealer_net_pct_oi,-1.944717667214117,0.0,-0.0,positioning,cftc_positioning,market,6,
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866642,0.0,-0.0,positioning,cftc_positioning,market,6,
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,-0.0,-0.0,positioning,cftc_positioning,market,6,
+2026-07-15,cot_open_interest_yoy,0.04602930035199665,-0.0,-0.0,positioning,cftc_positioning,market,6,
+2026-07-15,cot_crowding_abs_z,-0.5837799566961518,-0.0,0.0,positioning,cftc_positioning,market,6,
+2026-07-15,market_sector_return_1m,0.05738056412522964,-0.0,-0.0,price,market_trend,market,6,
+2026-07-15,market_sector_return_3m,-0.004342300397963482,0.0,-0.0,price,market_trend,market,6,
+2026-07-15,market_sector_return_6m,0.14944520266878028,-0.0,-0.0,price,market_trend,market,6,
+2026-07-15,market_sector_return_12m,0.4237999952018354,-0.0,-0.0,price,market_trend,market,6,
+2026-07-15,market_fast_slow_gap,0.33462292715963965,-0.0,-0.0,price,market_trend,market,6,
+2026-07-15,market_drawdown_12m,0.4391265805837289,-0.0,-0.0,price,market_trend,market,6,
+2026-07-15,market_volatility_12m,-0.19062424885477114,0.010706476019324274,-0.00204091394906531,price,market_trend,market,6,
+2026-07-15,market_pct_above_slow_ma,0.386301940470194,-0.0,-0.0,price,market_trend,market,6,
+2026-07-15,nfci_z,-0.6710209528585493,-0.0,0.0,macro,financial_conditions,market,12,
+2026-07-15,hy_spread_z,-1.1332266958550705,0.0,-0.0,macro,financial_conditions,market,12,
+2026-07-15,vix_z,-0.3805570509843629,0.0,-0.0,macro,volatility,market,12,
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,market,12,
+2026-07-15,t10y3m_z,0.7250384841327272,-0.0,-0.0,macro,rates_curve,market,12,
+2026-07-15,yield_curve_10y2y_z,0.3475231492631419,-0.022434623139356034,-0.007796550885920764,macro,rates_curve,market,12,
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,0.0,-0.0,macro,inflation,market,12,
+2026-07-15,indpro_yoy_z,0.46326035290682527,-0.0,-0.0,macro,growth,market,12,
+2026-07-15,dxy_ret_6m,0.45881187154813585,0.0,0.0,macro,dollar_commodities,market,12,
+2026-07-15,gold_ret_6m,-1.628865543820835,-0.0,0.0,macro,dollar_commodities,market,12,
+2026-07-15,copper_ret_6m,0.2391491635256437,0.0,0.0,macro,dollar_commodities,market,12,
+2026-07-15,wti_ret_6m,0.6545576748019363,-0.0,-0.0,macro,dollar_commodities,market,12,
+2026-07-15,copper_gold_ratio_z,-0.6053043673811995,-0.09260653156090475,0.05605513800184053,macro,dollar_commodities,market,12,
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,market,12,
+2026-07-15,breakeven_10y_z,0.5286874158186982,0.0,0.0,macro,inflation,market,12,
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,-0.0,-0.0,macro,inflation,market,12,
+2026-07-15,infl_exp_1y_z,0.9016994430297365,-0.0,-0.0,macro,inflation,market,12,
+2026-07-15,claims_yoy_z,-0.21196003157566976,0.0,-0.0,macro,growth,market,12,
+2026-07-15,permits_yoy_z,-0.10349631214689381,0.0,-0.0,macro,growth,market,12,
+2026-07-15,cape_z,1.7038918586450178,0.0,0.0,macro,valuation,market,12,
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,market,12,
+2026-07-15,inflation_signal,-0.15304616484585687,-0.008460727667382735,0.0012948819212981603,macro,inflation,market,12,
+2026-07-15,market_health,0.8979498242575723,-0.0,-0.0,price,market_trend,market,12,
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,market,12,
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533416,0.0,-0.0,positioning,cftc_positioning,market,12,
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,market,12,
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9943787838838712,-0.0,0.0,positioning,cftc_positioning,market,12,
+2026-07-15,cot_asset_mgr_net_pct_oi,2.5439373921740325,-0.0,-0.0,positioning,cftc_positioning,market,12,
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988674,-0.0012853518188084886,-0.0008490119109064359,positioning,cftc_positioning,market,12,
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658306,-0.0,-0.0,positioning,cftc_positioning,market,12,
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,0.0,-0.0,positioning,cftc_positioning,market,12,
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,0.0,-0.0,positioning,cftc_positioning,market,12,
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708641,0.0,0.0,positioning,cftc_positioning,market,12,
+2026-07-15,cot_open_interest_yoy,0.033097295692831694,-0.0,-0.0,positioning,cftc_positioning,market,12,
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,0.0,-0.0,positioning,cftc_positioning,market,12,
+2026-07-15,market_sector_return_1m,0.052323289648378686,-0.0,-0.0,price,market_trend,market,12,
+2026-07-15,market_sector_return_3m,-0.004854462325487241,-0.0,0.0,price,market_trend,market,12,
+2026-07-15,market_sector_return_6m,0.15397484320683602,-0.0,-0.0,price,market_trend,market,12,
+2026-07-15,market_sector_return_12m,0.4404866060409056,-0.0,-0.0,price,market_trend,market,12,
+2026-07-15,market_fast_slow_gap,0.34175665746403266,-0.0,-0.0,price,market_trend,market,12,
+2026-07-15,market_drawdown_12m,0.4446948194832386,-0.0,-0.0,price,market_trend,market,12,
+2026-07-15,market_volatility_12m,-0.20451301376962616,0.03367527498360089,-0.0068870319764171165,price,market_trend,market,12,
+2026-07-15,market_pct_above_slow_ma,0.3895339753870161,-0.0,-0.0,price,market_trend,market,12,
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Communication Svcs
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Communication Svcs
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Communication Svcs
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Communication Svcs
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Communication Svcs
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Communication Svcs
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Communication Svcs
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Communication Svcs
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Communication Svcs
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Communication Svcs
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Communication Svcs
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Communication Svcs
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Communication Svcs
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Communication Svcs
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Communication Svcs
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Communication Svcs
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Communication Svcs
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Communication Svcs
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Communication Svcs
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Communication Svcs
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Communication Svcs
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Communication Svcs
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Communication Svcs
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Communication Svcs
+2026-07-15,sector_return_1m,0.8803720058381226,-0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,sector_return_3m,-0.47222728784030704,-0.0,0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,sector_return_6m,-0.6613369522007634,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,sector_return_12m,-0.12565150144183224,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,relative_return_1m,1.350347178017749,0.0,0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,relative_return_3m,-0.8283269737710625,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,relative_return_6m,-1.36297748929214,0.0016700804908480165,-0.0022762821143318145,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,relative_return_12m,-0.8433318840250428,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,sector_oscillator,-0.917403763190841,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,relative_oscillator,-1.0633252150220023,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,above_slow_ma,-1.5170836420575489,0.0006304349942689555,-0.0009564226171860769,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,fast_slow_gap,-0.5527911943772122,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,slow_ma_gap,-0.378585837080494,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,volatility_12m,-0.3311271934064483,-0.0,0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,drawdown_12m,0.19864990319468784,0.0,0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,drawdown_36m,0.43742796246993476,0.0013255768939089377,0.0005798443997998115,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,relative_volatility_12m,0.7487978311678606,0.0020857519250551907,0.0015618065178355169,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,beta_36m,-0.015270493291854296,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,corr_36m,-0.3971217651059357,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,months_since_cross,-0.6916245179194702,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,move_since_last_cross,-0.6683710590203146,0.0,-0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,young_cross_risk,1.5771516754603558,0.0,0.0,price,sector_price_trend,sector,6,Communication Svcs
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Communication Svcs
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Communication Svcs
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Communication Svcs
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Communication Svcs
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Communication Svcs
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Communication Svcs
+2026-07-15,sector_Consumer Cyclical,-0.31622776601683794,0.003958327651089826,-0.0012517331102668134,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,sector_Consumer Defensive,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,sector_Energy,-0.31622776601683794,-0.0032916981274318073,0.001040926345239569,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,sector_Financials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,sector_Health Care,-0.31622776601683794,-0.004700009088516321,0.001486273374320351,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,sector_Materials,-0.31622776601683794,-0.002379141754170849,0.0007523506819588286,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,sector_Real Estate,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,sector_Technology,-0.31622776601683794,0.007964319930676474,-0.002518539099521199,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Communication Svcs
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Consumer Cyclical
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Consumer Cyclical
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Consumer Cyclical
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Consumer Cyclical
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Consumer Cyclical
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Consumer Cyclical
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Consumer Cyclical
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Consumer Cyclical
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Consumer Cyclical
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Consumer Cyclical
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Consumer Cyclical
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Consumer Cyclical
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Consumer Cyclical
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Consumer Cyclical
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Consumer Cyclical
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Consumer Cyclical
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Consumer Cyclical
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Consumer Cyclical
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Consumer Cyclical
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Consumer Cyclical
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Consumer Cyclical
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Consumer Cyclical
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Consumer Cyclical
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Cyclical
+2026-07-15,sector_return_1m,-0.11016473547215332,-0.0,0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,sector_return_3m,-0.2871011200702674,-0.0,0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,sector_return_6m,-0.5028225694544609,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,sector_return_12m,-0.12625590458613803,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,relative_return_1m,-0.293628600111768,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,relative_return_3m,-0.532457048863451,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,relative_return_6m,-1.1108884233258303,0.0016700804908480165,-0.0018552730833053819,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,relative_return_12m,-0.8442527888896428,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,sector_oscillator,-0.8387191257193692,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,relative_oscillator,-1.0911614568635355,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,above_slow_ma,-1.5170836420575489,0.0006304349942689555,-0.0009564226171860769,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,fast_slow_gap,-0.17066637974495233,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,slow_ma_gap,-0.2918819328897792,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,volatility_12m,-0.5237004795851047,-0.0,0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,drawdown_12m,0.4168285025577907,0.0,0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,drawdown_36m,0.6004558116289866,0.0013255768939089377,0.0007959503497087223,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,relative_volatility_12m,0.4685379740887039,0.0020857519250551907,0.0009772539814169733,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,beta_36m,0.8455274312350656,0.0,0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,corr_36m,-0.3664350094976004,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,months_since_cross,-0.7762926813799952,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,move_since_last_cross,-0.7301113236953535,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,young_cross_risk,1.5771516754603558,0.0,0.0,price,sector_price_trend,sector,6,Consumer Cyclical
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Consumer Cyclical
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Consumer Cyclical
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Consumer Cyclical
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Consumer Cyclical
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Consumer Cyclical
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Consumer Cyclical
+2026-07-15,sector_Consumer Cyclical,3.1622776601683795,0.003958327651089826,0.012517331102668134,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,sector_Consumer Defensive,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,sector_Energy,-0.31622776601683794,-0.0032916981274318073,0.001040926345239569,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,sector_Financials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,sector_Health Care,-0.31622776601683794,-0.004700009088516321,0.001486273374320351,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,sector_Materials,-0.31622776601683794,-0.002379141754170849,0.0007523506819588286,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,sector_Real Estate,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,sector_Technology,-0.31622776601683794,0.007964319930676474,-0.002518539099521199,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Consumer Cyclical
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Consumer Defensive
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Consumer Defensive
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Consumer Defensive
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Consumer Defensive
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Consumer Defensive
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Consumer Defensive
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Consumer Defensive
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Consumer Defensive
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Consumer Defensive
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Consumer Defensive
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Consumer Defensive
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Consumer Defensive
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Consumer Defensive
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Consumer Defensive
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Consumer Defensive
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Consumer Defensive
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Consumer Defensive
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Consumer Defensive
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Consumer Defensive
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Consumer Defensive
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Consumer Defensive
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Consumer Defensive
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Consumer Defensive
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Consumer Defensive
+2026-07-15,sector_return_1m,0.030222529361907592,-0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,sector_return_3m,-0.21419076808171536,-0.0,0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,sector_return_6m,-0.2039951705358073,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,sector_return_12m,-0.0740333001159837,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,relative_return_1m,-0.06063041506740715,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,relative_return_3m,-0.41593121878935413,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,relative_return_6m,-0.6356563429718949,0.0016700804908480165,-0.0010615972572811574,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,relative_return_12m,-0.7646832979766044,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,sector_oscillator,-0.3628318442347027,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,relative_oscillator,-0.48620858860176464,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,above_slow_ma,0.6591594374083072,0.0006304349942689555,0.00041555717614483406,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,fast_slow_gap,-0.023824715270851244,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,slow_ma_gap,0.001750388954190735,0.0,0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,volatility_12m,-0.30250883947168805,-0.0,0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,drawdown_12m,0.1372837134852479,0.0,0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,drawdown_36m,0.3915737955231273,0.0013255768939089377,0.0005190611756056806,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,relative_volatility_12m,0.7904473036505376,0.0020857519250551907,0.0016486769852437936,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,beta_36m,-0.419784380505513,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,corr_36m,-0.3297408877624136,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,months_since_cross,-0.3529518640773707,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,move_since_last_cross,-0.674585608286193,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,young_cross_risk,-0.6340544258104467,0.0,-0.0,price,sector_price_trend,sector,6,Consumer Defensive
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Consumer Defensive
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Consumer Defensive
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Consumer Defensive
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Consumer Defensive
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Consumer Defensive
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Consumer Defensive
+2026-07-15,sector_Consumer Cyclical,-0.31622776601683794,0.003958327651089826,-0.0012517331102668134,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,sector_Consumer Defensive,3.1622776601683795,0.0,0.0,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,sector_Energy,-0.31622776601683794,-0.0032916981274318073,0.001040926345239569,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,sector_Financials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,sector_Health Care,-0.31622776601683794,-0.004700009088516321,0.001486273374320351,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,sector_Materials,-0.31622776601683794,-0.002379141754170849,0.0007523506819588286,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,sector_Real Estate,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,sector_Technology,-0.31622776601683794,0.007964319930676474,-0.002518539099521199,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Consumer Defensive
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Energy
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Energy
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Energy
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Energy
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Energy
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Energy
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Energy
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Energy
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Energy
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Energy
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Energy
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Energy
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Energy
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Energy
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Energy
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Energy
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Energy
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Energy
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Energy
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Energy
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Energy
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Energy
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Energy
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Energy
+2026-07-15,sector_return_1m,0.8808060153145755,-0.0,-0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,sector_return_3m,-0.7395514359210734,-0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,sector_return_6m,0.47760040206742194,0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,sector_return_12m,1.0807951466266568,0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,relative_return_1m,1.351067495636481,0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,relative_return_3m,-1.2555662807333048,0.0,-0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,relative_return_6m,0.4483007610299391,0.0016700804908480165,0.0007486983550284201,price,sector_price_trend,sector,6,Energy
+2026-07-15,relative_return_12m,0.9948825553833579,0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,sector_oscillator,0.11156023519593332,0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,relative_oscillator,0.13537148432812732,0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,above_slow_ma,0.6591594374083072,0.0006304349942689555,0.00041555717614483406,price,sector_price_trend,sector,6,Energy
+2026-07-15,fast_slow_gap,0.4259670326665634,0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,slow_ma_gap,0.4766218899984761,0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,volatility_12m,0.4593134882802442,-0.0,-0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,drawdown_12m,-0.041350392932135674,0.0,-0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,drawdown_36m,0.25809446143313025,0.0013255768939089377,0.00034212405452162893,price,sector_price_trend,sector,6,Energy
+2026-07-15,relative_volatility_12m,1.8991588021778494,0.0020857519250551907,0.00396117412762796,price,sector_price_trend,sector,6,Energy
+2026-07-15,beta_36m,-1.42765785159865,0.0,-0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,corr_36m,-3.0798340584753268,0.0,-0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,months_since_cross,0.07038895322525368,0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,move_since_last_cross,0.2811878875904615,0.0,0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,young_cross_risk,-0.6340544258104467,0.0,-0.0,price,sector_price_trend,sector,6,Energy
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Energy
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Energy
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Energy
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Energy
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Energy
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Energy
+2026-07-15,sector_Consumer Cyclical,-0.31622776601683794,0.003958327651089826,-0.0012517331102668134,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,sector_Consumer Defensive,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,sector_Energy,3.1622776601683795,-0.0032916981274318073,-0.010409263452395692,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,sector_Financials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,sector_Health Care,-0.31622776601683794,-0.004700009088516321,0.001486273374320351,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,sector_Materials,-0.31622776601683794,-0.002379141754170849,0.0007523506819588286,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,sector_Real Estate,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,sector_Technology,-0.31622776601683794,0.007964319930676474,-0.002518539099521199,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Energy
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Financials
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Financials
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Financials
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Financials
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Financials
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Financials
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Financials
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Financials
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Financials
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Financials
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Financials
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Financials
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Financials
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Financials
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Financials
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Financials
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Financials
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Financials
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Financials
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Financials
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Financials
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Financials
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Financials
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Financials
+2026-07-15,sector_return_1m,0.8229928103601086,-0.0,-0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,sector_return_3m,0.6669074961187215,-0.0,-0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,sector_return_6m,0.14455399953750026,0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,sector_return_12m,0.0036692400470015553,0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,relative_return_1m,1.2551159729544876,0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,relative_return_3m,0.9922461361755847,0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,relative_return_6m,-0.08135058721130482,0.0016700804908480165,-0.00013586202862063033,price,sector_price_trend,sector,6,Financials
+2026-07-15,relative_return_12m,-0.646291049521203,0.0,-0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,sector_oscillator,0.1214072603025656,0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,relative_oscillator,0.22763036505800205,0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,above_slow_ma,0.6591594374083072,0.0006304349942689555,0.00041555717614483406,price,sector_price_trend,sector,6,Financials
+2026-07-15,fast_slow_gap,0.04746303003822608,0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,slow_ma_gap,0.47741853851840704,0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,volatility_12m,-0.7445411807119381,-0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,drawdown_12m,0.6763393346849502,0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,drawdown_36m,0.7943680143778754,0.0013255768939089377,0.0010529958851196344,price,sector_price_trend,sector,6,Financials
+2026-07-15,relative_volatility_12m,0.14713938052860248,0.0020857519250551907,0.00030689624618896084,price,sector_price_trend,sector,6,Financials
+2026-07-15,beta_36m,0.2938202140606786,0.0,0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,corr_36m,-0.06955640594707542,0.0,-0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,months_since_cross,-0.7762926813799952,0.0,-0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,move_since_last_cross,-0.5363598149274162,0.0,-0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,young_cross_risk,-0.6340544258104467,0.0,-0.0,price,sector_price_trend,sector,6,Financials
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Financials
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Financials
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Financials
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Financials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Financials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Financials
+2026-07-15,sector_Consumer Cyclical,-0.31622776601683794,0.003958327651089826,-0.0012517331102668134,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,sector_Consumer Defensive,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,sector_Energy,-0.31622776601683794,-0.0032916981274318073,0.001040926345239569,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,sector_Financials,3.1622776601683795,-0.0,-0.0,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,sector_Health Care,-0.31622776601683794,-0.004700009088516321,0.001486273374320351,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,sector_Materials,-0.31622776601683794,-0.002379141754170849,0.0007523506819588286,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,sector_Real Estate,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,sector_Technology,-0.31622776601683794,0.007964319930676474,-0.002518539099521199,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Financials
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Health Care
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Health Care
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Health Care
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Health Care
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Health Care
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Health Care
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Health Care
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Health Care
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Health Care
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Health Care
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Health Care
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Health Care
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Health Care
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Health Care
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Health Care
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Health Care
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Health Care
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Health Care
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Health Care
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Health Care
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Health Care
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Health Care
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Health Care
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Health Care
+2026-07-15,sector_return_1m,-0.12197922566791757,-0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,sector_return_3m,0.699959271943776,-0.0,-0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,sector_return_6m,-0.08110584427190103,0.0,-0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,sector_return_12m,0.659133857096781,0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,relative_return_1m,-0.3132368941838211,0.0,-0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,relative_return_3m,1.0450697134646119,0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,relative_return_6m,-0.44022262308870724,0.0016700804908480165,-0.0007352072144503896,price,sector_price_trend,sector,6,Health Care
+2026-07-15,relative_return_12m,0.35241413608415506,0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,sector_oscillator,0.9891521378962327,0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,relative_oscillator,0.9522692878582697,0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,above_slow_ma,0.6591594374083072,0.0006304349942689555,0.00041555717614483406,price,sector_price_trend,sector,6,Health Care
+2026-07-15,fast_slow_gap,0.0017287582267426758,0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,slow_ma_gap,0.14728155587252104,0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,volatility_12m,-0.3340170164052975,-0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,drawdown_12m,0.6654583758922918,0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,drawdown_36m,0.7862375225975924,0.0013255768939089377,0.0010422182930795749,price,sector_price_trend,sector,6,Health Care
+2026-07-15,relative_volatility_12m,0.7445921524015432,0.0020857519250551907,0.0015530345152525067,price,sector_price_trend,sector,6,Health Care
+2026-07-15,beta_36m,-0.6029763125625444,0.0,-0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,corr_36m,-1.2107959672356348,0.0,-0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,months_since_cross,-0.7762926813799952,0.0,-0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,move_since_last_cross,-0.7325643663899949,0.0,-0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,young_cross_risk,1.5771516754603558,0.0,0.0,price,sector_price_trend,sector,6,Health Care
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Health Care
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Health Care
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Health Care
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Health Care
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Health Care
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Health Care
+2026-07-15,sector_Consumer Cyclical,-0.31622776601683794,0.003958327651089826,-0.0012517331102668134,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,sector_Consumer Defensive,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,sector_Energy,-0.31622776601683794,-0.0032916981274318073,0.001040926345239569,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,sector_Financials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,sector_Health Care,3.1622776601683795,-0.004700009088516321,-0.014862733743203509,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,sector_Materials,-0.31622776601683794,-0.002379141754170849,0.0007523506819588286,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,sector_Real Estate,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,sector_Technology,-0.31622776601683794,0.007964319930676474,-0.002518539099521199,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Health Care
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Industrials
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Industrials
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Industrials
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Industrials
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Industrials
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Industrials
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Industrials
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Industrials
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Industrials
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Industrials
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Industrials
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Industrials
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Industrials
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Industrials
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Industrials
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Industrials
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Industrials
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Industrials
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Industrials
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Industrials
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Industrials
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Industrials
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Industrials
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Industrials
+2026-07-15,sector_return_1m,-0.6311048391898052,-0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,sector_return_3m,0.10318491699893802,-0.0,-0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,sector_return_6m,0.31805241312325677,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,sector_return_12m,0.47499493888013694,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,relative_return_1m,-1.1582233967017868,0.0,-0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,relative_return_3m,0.09130080163985864,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,relative_return_6m,0.19456792737213052,0.0016700804908480165,0.000324944099648929,price,sector_price_trend,sector,6,Industrials
+2026-07-15,relative_return_12m,0.07184904117109588,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,sector_oscillator,0.180437144232348,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,relative_oscillator,0.34662730622291016,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,above_slow_ma,0.6591594374083072,0.0006304349942689555,0.00041555717614483406,price,sector_price_trend,sector,6,Industrials
+2026-07-15,fast_slow_gap,0.6315814976887418,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,slow_ma_gap,0.45431719787192176,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,volatility_12m,-0.14008036575011235,-0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,drawdown_12m,0.39958082939865963,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,drawdown_36m,0.587567970812611,0.0013255768939089377,0.0007788665257101583,price,sector_price_trend,sector,6,Industrials
+2026-07-15,relative_volatility_12m,1.0268361701133655,0.0020857519250551907,0.0021417255185302514,price,sector_price_trend,sector,6,Industrials
+2026-07-15,beta_36m,1.3477829281262226,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,corr_36m,0.6650354681516792,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,months_since_cross,0.3243934436068283,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,move_since_last_cross,0.2704764711021315,0.0,0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,young_cross_risk,-0.6340544258104467,0.0,-0.0,price,sector_price_trend,sector,6,Industrials
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Industrials
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Industrials
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Industrials
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Industrials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Industrials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Industrials
+2026-07-15,sector_Consumer Cyclical,-0.31622776601683794,0.003958327651089826,-0.0012517331102668134,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,sector_Consumer Defensive,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,sector_Energy,-0.31622776601683794,-0.0032916981274318073,0.001040926345239569,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,sector_Financials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,sector_Health Care,-0.31622776601683794,-0.004700009088516321,0.001486273374320351,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,sector_Industrials,3.16227766016838,0.0,0.0,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,sector_Materials,-0.31622776601683794,-0.002379141754170849,0.0007523506819588286,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,sector_Real Estate,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,sector_Technology,-0.31622776601683794,0.007964319930676474,-0.002518539099521199,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Industrials
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Materials
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Materials
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Materials
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Materials
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Materials
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Materials
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Materials
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Materials
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Materials
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Materials
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Materials
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Materials
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Materials
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Materials
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Materials
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Materials
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Materials
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Materials
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Materials
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Materials
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Materials
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Materials
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Materials
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Materials
+2026-07-15,sector_return_1m,-0.23271890639388215,-0.0,0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,sector_return_3m,-0.37466346803959266,-0.0,0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,sector_return_6m,-0.08530538152943418,0.0,-0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,sector_return_12m,0.35626376020803324,0.0,0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,relative_return_1m,-0.4970295241780028,0.0,-0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,relative_return_3m,-0.6723998005040495,0.0,-0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,relative_return_6m,-0.44690124370597073,0.0016700804908480165,-0.0007463610484490567,price,sector_price_trend,sector,6,Materials
+2026-07-15,relative_return_12m,-0.10905690058145619,0.0,-0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,sector_oscillator,-0.218711303033566,0.0,-0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,relative_oscillator,-0.4323176517851311,0.0,-0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,above_slow_ma,0.6591594374083072,0.0006304349942689555,0.00041555717614483406,price,sector_price_trend,sector,6,Materials
+2026-07-15,fast_slow_gap,0.2835633990278403,0.0,0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,slow_ma_gap,0.09815524303504002,0.0,0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,volatility_12m,-0.2344168623105574,-0.0,0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,drawdown_12m,0.23728725878083706,0.0,0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,drawdown_36m,0.4662986445477877,0.0013255768939089377,0.0006181147088736043,price,sector_price_trend,sector,6,Materials
+2026-07-15,relative_volatility_12m,0.889544370362643,0.0020857519250551907,0.0018553688829058901,price,sector_price_trend,sector,6,Materials
+2026-07-15,beta_36m,1.103737899783654,0.0,0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,corr_36m,0.5039861024868074,0.0,0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,months_since_cross,0.07038895322525368,0.0,0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,move_since_last_cross,-0.3206576841719004,0.0,-0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,young_cross_risk,-0.6340544258104467,0.0,-0.0,price,sector_price_trend,sector,6,Materials
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Materials
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Materials
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Materials
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Materials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Materials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Materials
+2026-07-15,sector_Consumer Cyclical,-0.31622776601683794,0.003958327651089826,-0.0012517331102668134,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,sector_Consumer Defensive,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,sector_Energy,-0.31622776601683794,-0.0032916981274318073,0.001040926345239569,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,sector_Financials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,sector_Health Care,-0.31622776601683794,-0.004700009088516321,0.001486273374320351,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,sector_Materials,3.1622776601683795,-0.002379141754170849,-0.007523506819588286,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,sector_Real Estate,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,sector_Technology,-0.31622776601683794,0.007964319930676474,-0.002518539099521199,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Materials
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Real Estate
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Real Estate
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Real Estate
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Real Estate
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Real Estate
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Real Estate
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Real Estate
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Real Estate
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Real Estate
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Real Estate
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Real Estate
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Real Estate
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Real Estate
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Real Estate
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Real Estate
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Real Estate
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Real Estate
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Real Estate
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Real Estate
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Real Estate
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Real Estate
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Real Estate
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Real Estate
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Real Estate
+2026-07-15,sector_return_1m,0.09830298717424082,-0.0,-0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,sector_return_3m,-0.09095064024087052,-0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,sector_return_6m,0.3218763230234664,0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,sector_return_12m,0.08541705494963137,0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,relative_return_1m,0.05236148007359864,0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,relative_return_3m,-0.21896799198519473,0.0,-0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,relative_return_6m,0.2006491791701202,0.0016700804908480165,0.00033510027963668595,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,relative_return_12m,-0.5217351779584776,0.0,-0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,sector_oscillator,0.34123146303292057,0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,relative_oscillator,0.4782974438762622,0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,above_slow_ma,0.6591594374083072,0.0006304349942689555,0.00041555717614483406,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,fast_slow_gap,0.3346401937455109,0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,slow_ma_gap,0.31278602412313494,0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,volatility_12m,-0.5611405840466218,-0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,drawdown_12m,0.6763393346849502,0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,drawdown_36m,0.7943680143778754,0.0013255768939089377,0.0010529958851196344,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,relative_volatility_12m,0.41404984370659664,0.0020857519250551907,0.0008636052585798348,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,beta_36m,1.469399048995654,0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,corr_36m,0.6556598881444383,0.0,0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,months_since_cross,-0.3529518640773707,0.0,-0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,move_since_last_cross,-0.3981224942205976,0.0,-0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,young_cross_risk,-0.6340544258104467,0.0,-0.0,price,sector_price_trend,sector,6,Real Estate
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Real Estate
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Real Estate
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Real Estate
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Real Estate
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Real Estate
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Real Estate
+2026-07-15,sector_Consumer Cyclical,-0.31622776601683794,0.003958327651089826,-0.0012517331102668134,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,sector_Consumer Defensive,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,sector_Energy,-0.31622776601683794,-0.0032916981274318073,0.001040926345239569,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,sector_Financials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,sector_Health Care,-0.31622776601683794,-0.004700009088516321,0.001486273374320351,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,sector_Materials,-0.31622776601683794,-0.002379141754170849,0.0007523506819588286,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,sector_Real Estate,3.1622776601683795,0.0,0.0,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,sector_Technology,-0.31622776601683794,0.007964319930676474,-0.002518539099521199,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Real Estate
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Technology
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Technology
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Technology
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Technology
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Technology
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Technology
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Technology
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Technology
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Technology
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Technology
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Technology
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Technology
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Technology
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Technology
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Technology
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Technology
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Technology
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Technology
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Technology
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Technology
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Technology
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Technology
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Technology
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Technology
+2026-07-15,sector_return_1m,-0.9655982180342156,-0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,sector_return_3m,1.1641885317019693,-0.0,-0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,sector_return_6m,1.4828640208845303,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,sector_return_12m,1.3506138884500243,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,relative_return_1m,-1.71337596180251,0.0,-0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,relative_return_3m,1.7870041351568933,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,relative_return_6m,2.04699459768388,0.0016700804908480165,0.0034186457424631323,price,sector_price_trend,sector,6,Technology
+2026-07-15,relative_return_12m,1.4059945660444086,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,sector_oscillator,1.1371145215322362,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,relative_oscillator,1.37341400024532,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,above_slow_ma,0.6591594374083072,0.0006304349942689555,0.00041555717614483406,price,sector_price_trend,sector,6,Technology
+2026-07-15,fast_slow_gap,2.1957418591704356,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,slow_ma_gap,1.2399076823120532,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,volatility_12m,1.5378405832950546,-0.0,-0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,drawdown_12m,0.20495948424577498,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,drawdown_36m,0.4421426202358944,0.0013255768939089377,0.000586094041197056,price,sector_price_trend,sector,6,Technology
+2026-07-15,relative_volatility_12m,3.468783829111363,0.0020857519250551907,0.007235022549169341,price,sector_price_trend,sector,6,Technology
+2026-07-15,beta_36m,0.43867467590430226,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,corr_36m,-1.7563335844397088,0.0,-0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,months_since_cross,0.23972528014630345,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,move_since_last_cross,0.8458914887637137,0.0,0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,young_cross_risk,-0.6340544258104467,0.0,-0.0,price,sector_price_trend,sector,6,Technology
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Technology
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Technology
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Technology
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Technology
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Technology
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Technology
+2026-07-15,sector_Consumer Cyclical,-0.31622776601683794,0.003958327651089826,-0.0012517331102668134,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,sector_Consumer Defensive,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,sector_Energy,-0.31622776601683794,-0.0032916981274318073,0.001040926345239569,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,sector_Financials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,sector_Health Care,-0.31622776601683794,-0.004700009088516321,0.001486273374320351,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,sector_Materials,-0.31622776601683794,-0.002379141754170849,0.0007523506819588286,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,sector_Real Estate,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,sector_Technology,3.1622776601683795,0.007964319930676474,0.02518539099521199,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Technology
+2026-07-15,nfci_z,-0.6694034582315117,0.0,-0.0,macro,financial_conditions,sector,6,Utilities
+2026-07-15,hy_spread_z,-1.0949599245045134,-0.0,0.0,macro,financial_conditions,sector,6,Utilities
+2026-07-15,vix_z,-0.38387119289300803,-0.0,0.0,macro,volatility,sector,6,Utilities
+2026-07-15,vix_curve_spread,-0.5399626729519256,0.0,-0.0,macro,volatility,sector,6,Utilities
+2026-07-15,t10y3m_z,0.7388780804724991,0.009954904629755252,0.007355460824120356,macro,rates_curve,sector,6,Utilities
+2026-07-15,yield_curve_10y2y_z,0.3515210225801829,0.0021980592250578374,0.0007726640264841355,macro,rates_curve,sector,6,Utilities
+2026-07-15,core_cpi_yoy_z,-0.4804563627703676,0.0,-0.0,macro,inflation,sector,6,Utilities
+2026-07-15,indpro_yoy_z,0.4669663261381696,0.0,0.0,macro,growth,sector,6,Utilities
+2026-07-15,dxy_ret_6m,0.4557904992882991,-0.0,-0.0,macro,dollar_commodities,sector,6,Utilities
+2026-07-15,gold_ret_6m,-1.6557364561081598,-0.0016595272800353517,0.002747739817460547,macro,dollar_commodities,sector,6,Utilities
+2026-07-15,copper_ret_6m,0.24706541912372723,-0.0,-0.0,macro,dollar_commodities,sector,6,Utilities
+2026-07-15,wti_ret_6m,0.6748865671592656,0.0,0.0,macro,dollar_commodities,sector,6,Utilities
+2026-07-15,copper_gold_ratio_z,-0.5573328786695312,0.0037441502207098062,-0.002086738020679357,macro,dollar_commodities,sector,6,Utilities
+2026-07-15,fed_path_2y_z,0.8924083666165703,0.0,0.0,macro,rates_curve,sector,6,Utilities
+2026-07-15,breakeven_10y_z,0.49913995332932165,-0.0,-0.0,macro,inflation,sector,6,Utilities
+2026-07-15,infl_5y5y_fwd_z,0.6068895473787604,0.0,0.0,macro,inflation,sector,6,Utilities
+2026-07-15,infl_exp_1y_z,0.9088752228258464,0.0,0.0,macro,inflation,sector,6,Utilities
+2026-07-15,claims_yoy_z,-0.209917674804318,-0.0,0.0,macro,growth,sector,6,Utilities
+2026-07-15,permits_yoy_z,-0.09006508471965562,-0.0,0.0,macro,growth,sector,6,Utilities
+2026-07-15,cape_z,1.6639436160815837,-0.0,-0.0,macro,valuation,sector,6,Utilities
+2026-07-15,growth_signal,0.10996883968445266,-0.0,-0.0,macro,growth,sector,6,Utilities
+2026-07-15,inflation_signal,-0.14616596407372132,0.0011485492513311408,-0.00016787880860696705,macro,inflation,sector,6,Utilities
+2026-07-15,market_health,0.8853082320876838,-0.0,-0.0,price,market_trend,sector,6,Utilities
+2026-07-15,sector_breadth,0.386301940470194,-0.0,-0.0,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2155655862380248,-0.0,0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4170527249028895,0.0,-0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.9989232463527841,0.0,-0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,cot_asset_mgr_net_pct_oi,2.3493960580395203,-0.0,-0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6402931036942378,-0.0,-0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.058966498274245875,-0.0,-0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,cot_dealer_net_pct_oi,-1.9447176672141175,-0.0,0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,cot_dealer_net_pct_oi_z,-0.5961597080866641,0.0,-0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5458016120449107,0.0,0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,cot_open_interest_yoy,0.046029300351996656,0.0,0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,cot_crowding_abs_z,-0.5837799566961512,0.0,-0.0,positioning,cftc_positioning,sector,6,Utilities
+2026-07-15,sector_return_1m,-0.13725936893075608,-0.0,0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,sector_return_3m,-0.493856911180562,-0.0,0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,sector_return_6m,0.10609846819801837,0.0,0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,sector_return_12m,-0.03918824394089431,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,relative_return_1m,-0.3385970694936502,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,relative_return_3m,-0.8628955877630647,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,relative_return_6m,-0.14250730251154012,0.0016700804908480165,-0.0002379986657278997,price,sector_price_trend,sector,6,Utilities
+2026-07-15,relative_return_12m,-0.7115912814290065,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,sector_oscillator,-0.47550450440364705,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,relative_oscillator,-0.4991894801722309,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,above_slow_ma,0.6591594374083072,0.0006304349942689555,0.00041555717614483406,price,sector_price_trend,sector,6,Utilities
+2026-07-15,fast_slow_gap,-0.2027819677500985,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,slow_ma_gap,-0.1432807969452486,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,volatility_12m,-0.4010214002450783,-0.0,0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,drawdown_12m,0.3169434481916436,0.0,0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,drawdown_36m,0.5258195016334895,0.0013255768939089377,0.0006970141817320666,price,sector_price_trend,sector,6,Utilities
+2026-07-15,relative_volatility_12m,0.647077905170012,0.0020857519250551907,0.0013496439863690327,price,sector_price_trend,sector,6,Utilities
+2026-07-15,beta_36m,-0.221469831478794,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,corr_36m,-0.9802190293078219,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,months_since_cross,1.5944158955147016,0.0,0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,move_since_last_cross,1.3137669518152022,0.0,0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,young_cross_risk,-0.6340544258104467,0.0,-0.0,price,sector_price_trend,sector,6,Utilities
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07210055804130579,-0.001810585958223301,0.00013054425796965238,fundamental,earnings_breadth,sector,6,Utilities
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012135870970278427,-0.0,0.0,fundamental,earnings_breadth,sector,6,Utilities
+2026-07-15,beat_rate_lag1,-0.009456574591891278,0.00048225044879798986,-4.560437341031236e-06,fundamental,earnings_breadth,sector,6,Utilities
+2026-07-15,beat_rate_lag1_change,0.010412015890598468,-0.0,-0.0,fundamental,earnings_breadth,sector,6,Utilities
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.14179591323532437,0.0,-0.0,fundamental,earnings_breadth,sector,6,Utilities
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03005134778271353,-0.0,0.0,fundamental,earnings_breadth,sector,6,Utilities
+2026-07-15,sector_Consumer Cyclical,-0.31622776601683794,0.003958327651089826,-0.0012517331102668134,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,sector_Consumer Defensive,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,sector_Energy,-0.31622776601683794,-0.0032916981274318073,0.001040926345239569,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,sector_Financials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,sector_Health Care,-0.31622776601683794,-0.004700009088516321,0.001486273374320351,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,sector_Materials,-0.31622776601683794,-0.002379141754170849,0.0007523506819588286,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,sector_Real Estate,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,sector_Technology,-0.31622776601683794,0.007964319930676474,-0.002518539099521199,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,sector_Utilities,3.1622776601683795,-0.0,-0.0,control,sector_fixed_effect,sector,6,Utilities
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Communication Svcs
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Communication Svcs
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Communication Svcs
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Communication Svcs
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Communication Svcs
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Communication Svcs
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Communication Svcs
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Communication Svcs
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Communication Svcs
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Communication Svcs
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Communication Svcs
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Communication Svcs
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Communication Svcs
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Communication Svcs
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Communication Svcs
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Communication Svcs
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Communication Svcs
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Communication Svcs
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Communication Svcs
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Communication Svcs
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Communication Svcs
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Communication Svcs
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Communication Svcs
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Communication Svcs
+2026-07-15,sector_return_1m,0.873125263295857,0.0,0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,sector_return_3m,-0.46886407775725125,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,sector_return_6m,-0.6505578399670071,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,sector_return_12m,-0.11039126878040385,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,relative_return_1m,1.350485361140564,0.0,0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,relative_return_3m,-0.8318831673647079,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,relative_return_6m,-1.3628729473343977,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,relative_return_12m,-0.8488242704486773,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,sector_oscillator,-0.9052989244813155,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,relative_oscillator,-1.062509511697256,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,above_slow_ma,-1.50928359255334,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,fast_slow_gap,-0.5390573540884225,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,slow_ma_gap,-0.36988038935171536,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,volatility_12m,-0.3395452307780896,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,drawdown_12m,0.20495828425258728,0.0,0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,drawdown_36m,0.4473781725072455,0.0,0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,relative_volatility_12m,0.7474620228778894,0.0,0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,beta_36m,-0.014571764182976378,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,corr_36m,-0.3918529765453896,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,months_since_cross,-0.6796123681020225,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,move_since_last_cross,-0.660798079595842,0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,young_cross_risk,1.5655607277128738,-0.0,-0.0,price,sector_price_trend,sector,12,Communication Svcs
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Communication Svcs
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Communication Svcs
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Communication Svcs
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Communication Svcs
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Communication Svcs
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Communication Svcs
+2026-07-15,sector_Consumer Cyclical,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,sector_Consumer Defensive,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,sector_Energy,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,sector_Financials,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,sector_Health Care,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,sector_Materials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,sector_Real Estate,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,sector_Technology,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Communication Svcs
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Consumer Cyclical
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Consumer Cyclical
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Consumer Cyclical
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Consumer Cyclical
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Consumer Cyclical
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Consumer Cyclical
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Consumer Cyclical
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Consumer Cyclical
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Consumer Cyclical
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Consumer Cyclical
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Consumer Cyclical
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Consumer Cyclical
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Consumer Cyclical
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Consumer Cyclical
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Consumer Cyclical
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Consumer Cyclical
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Consumer Cyclical
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Consumer Cyclical
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Consumer Cyclical
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Consumer Cyclical
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Consumer Cyclical
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Consumer Cyclical
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Consumer Cyclical
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Cyclical
+2026-07-15,sector_return_1m,-0.11361909430635603,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,sector_return_3m,-0.28523490506774496,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,sector_return_6m,-0.49342599013109706,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,sector_return_12m,-0.11099275103590449,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,relative_return_1m,-0.29371768460547276,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,relative_return_3m,-0.5358972755294183,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,relative_return_6m,-1.1118215763564936,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,relative_return_12m,-0.8497414681881483,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,sector_oscillator,-0.8268904048389094,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,relative_oscillator,-1.0902885894378427,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,above_slow_ma,-1.50928359255334,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,fast_slow_gap,-0.16033272599363851,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,slow_ma_gap,-0.2839384697086246,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,volatility_12m,-0.53015053995539,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,drawdown_12m,0.4207441201917152,0.0,0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,drawdown_36m,0.6088494395737983,0.0,0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,relative_volatility_12m,0.470106149412564,0.0,0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,beta_36m,0.8429146241772961,0.0,0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,corr_36m,-0.3613411402363867,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,months_since_cross,-0.7636275560325082,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,move_since_last_cross,-0.7226040781239413,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,young_cross_risk,1.5655607277128738,-0.0,-0.0,price,sector_price_trend,sector,12,Consumer Cyclical
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Consumer Cyclical
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Consumer Cyclical
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Consumer Cyclical
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Consumer Cyclical
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Consumer Cyclical
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Consumer Cyclical
+2026-07-15,sector_Consumer Cyclical,3.16227766016838,0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,sector_Consumer Defensive,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,sector_Energy,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,sector_Financials,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,sector_Health Care,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,sector_Materials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,sector_Real Estate,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,sector_Technology,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Cyclical
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Consumer Defensive
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Consumer Defensive
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Consumer Defensive
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Consumer Defensive
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Consumer Defensive
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Consumer Defensive
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Consumer Defensive
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Consumer Defensive
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Consumer Defensive
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Consumer Defensive
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Consumer Defensive
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Consumer Defensive
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Consumer Defensive
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Consumer Defensive
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Consumer Defensive
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Consumer Defensive
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Consumer Defensive
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Consumer Defensive
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Consumer Defensive
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Consumer Defensive
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Consumer Defensive
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Consumer Defensive
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Consumer Defensive
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Consumer Defensive
+2026-07-15,sector_return_1m,0.026230681756443417,0.0,0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,sector_return_3m,-0.2129141317409324,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,sector_return_6m,-0.1972049081054235,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,sector_return_12m,-0.05902252185897963,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,relative_return_1m,-0.060687289267704336,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,relative_return_3m,-0.4193257728763561,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,relative_return_6m,-0.638545732962787,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,relative_return_12m,-0.7704922862132041,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,sector_oscillator,-0.35267309308742184,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,relative_oscillator,-0.4865780435781476,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,above_slow_ma,0.6625660047812777,0.0,0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,fast_slow_gap,-0.014797673996839919,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,slow_ma_gap,0.00711330753338724,0.0,0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,volatility_12m,-0.3112193382925671,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,drawdown_12m,0.14426509718700922,0.0,0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,drawdown_36m,0.4019618189494022,0.0,0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,relative_volatility_12m,0.7886799337845529,0.0,0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,beta_36m,-0.41752946459686396,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,corr_36m,-0.32485618072562866,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,months_since_cross,-0.3435516163800801,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,move_since_last_cross,-0.6670192453909891,0.0,-0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,young_cross_risk,-0.6387487769068525,-0.0,0.0,price,sector_price_trend,sector,12,Consumer Defensive
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Consumer Defensive
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Consumer Defensive
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Consumer Defensive
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Consumer Defensive
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Consumer Defensive
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Consumer Defensive
+2026-07-15,sector_Consumer Cyclical,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,sector_Consumer Defensive,3.16227766016838,-0.0,-0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,sector_Energy,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,sector_Financials,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,sector_Health Care,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,sector_Materials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,sector_Real Estate,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,sector_Technology,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Consumer Defensive
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Energy
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Energy
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Energy
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Energy
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Energy
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Energy
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Energy
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Energy
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Energy
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Energy
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Energy
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Energy
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Energy
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Energy
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Energy
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Energy
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Energy
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Energy
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Energy
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Energy
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Energy
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Energy
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Energy
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Energy
+2026-07-15,sector_return_1m,0.8735576111171698,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,sector_return_3m,-0.7340265490777567,0.0,-0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,sector_return_6m,0.47844591491498817,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,sector_return_12m,1.0902250050725284,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,relative_return_1m,1.3512057783379339,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,relative_return_3m,-1.2592899317994433,0.0,-0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,relative_return_6m,0.44094938911945114,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,relative_return_12m,0.9819903916289877,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,sector_oscillator,0.12005426352936338,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,relative_oscillator,0.13372556156425605,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,above_slow_ma,0.6625660047812777,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,fast_slow_gap,0.4309917799584987,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,slow_ma_gap,0.4778114700264257,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,volatility_12m,0.4428176478375557,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,drawdown_12m,-0.03240993002940002,0.0,-0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,drawdown_36m,0.2697569391458043,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,relative_volatility_12m,1.8859032368287705,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,beta_36m,-1.421525591942032,0.0,-0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,corr_36m,-3.0592733908821423,0.0,-0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,months_since_cross,0.07652432327234798,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,move_since_last_cross,0.28977184694184527,0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,young_cross_risk,-0.6387487769068525,-0.0,0.0,price,sector_price_trend,sector,12,Energy
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Energy
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Energy
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Energy
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Energy
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Energy
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Energy
+2026-07-15,sector_Consumer Cyclical,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,sector_Consumer Defensive,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,sector_Energy,3.16227766016838,-0.0,-0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,sector_Financials,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,sector_Health Care,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,sector_Materials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,sector_Real Estate,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,sector_Technology,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Energy
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Financials
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Financials
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Financials
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Financials
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Financials
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Financials
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Financials
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Financials
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Financials
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Financials
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Financials
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Financials
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Financials
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Financials
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Financials
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Financials
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Financials
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Financials
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Financials
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Financials
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Financials
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Financials
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Financials
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Financials
+2026-07-15,sector_return_1m,0.8159657506595162,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,sector_return_3m,0.6610592630644172,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,sector_return_6m,0.1483042810515307,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,sector_return_12m,0.01830450655852162,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,relative_return_1m,1.2552409910603475,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,relative_return_3m,0.9894035205849749,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,relative_return_6m,-0.08652171164630044,0.0,-0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,relative_return_12m,-0.6525766286589911,0.0,-0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,sector_oscillator,0.12986673374341978,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,relative_oscillator,0.22579498079996424,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,above_slow_ma,0.6625660047812777,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,fast_slow_gap,0.055855745504005835,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,slow_ma_gap,0.47860111731766064,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,volatility_12m,-0.7487343890057742,0.0,-0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,drawdown_12m,0.6774088985397606,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,drawdown_36m,0.8009101779018968,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,relative_volatility_12m,0.15203780892164637,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,beta_36m,0.2933298545030904,0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,corr_36m,-0.06615479108977002,0.0,-0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,months_since_cross,-0.7636275560325082,0.0,-0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,move_since_last_cross,-0.5286462852839385,0.0,-0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,young_cross_risk,-0.6387487769068525,-0.0,0.0,price,sector_price_trend,sector,12,Financials
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Financials
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Financials
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Financials
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Financials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Financials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Financials
+2026-07-15,sector_Consumer Cyclical,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,sector_Consumer Defensive,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,sector_Energy,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,sector_Financials,3.16227766016838,-0.0,-0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,sector_Health Care,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,sector_Materials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,sector_Real Estate,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,sector_Technology,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Financials
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Health Care
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Health Care
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Health Care
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Health Care
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Health Care
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Health Care
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Health Care
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Health Care
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Health Care
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Health Care
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Health Care
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Health Care
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Health Care
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Health Care
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Health Care
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Health Care
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Health Care
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Health Care
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Health Care
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Health Care
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Health Care
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Health Care
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Health Care
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Health Care
+2026-07-15,sector_return_1m,-0.12538835136914409,0.0,-0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,sector_return_3m,0.6938437706452847,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,sector_return_6m,-0.0753873996472725,0.0,-0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,sector_return_12m,0.6706014708914776,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,relative_return_1m,-0.31332868938063785,0.0,-0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,relative_return_3m,1.0422478022019903,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,relative_return_6m,-0.44391649299986446,0.0,-0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,relative_return_12m,0.3421082447161414,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,sector_oscillator,0.9945665463856102,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,relative_oscillator,0.948945795659199,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,above_slow_ma,0.6625660047812777,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,fast_slow_gap,0.0105284220229111,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,slow_ma_gap,0.15136549513210665,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,volatility_12m,-0.3424055216164166,0.0,-0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,drawdown_12m,0.6666472711585828,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,drawdown_36m,0.7928573156675698,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,relative_volatility_12m,0.7432999223191317,0.0,0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,beta_36m,-0.6000166473844565,0.0,-0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,corr_36m,-1.200889108651069,0.0,-0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,months_since_cross,-0.7636275560325082,0.0,-0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,move_since_last_cross,-0.7250597325331403,0.0,-0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,young_cross_risk,1.5655607277128738,-0.0,-0.0,price,sector_price_trend,sector,12,Health Care
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Health Care
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Health Care
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Health Care
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Health Care
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Health Care
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Health Care
+2026-07-15,sector_Consumer Cyclical,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,sector_Consumer Defensive,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,sector_Energy,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,sector_Financials,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,sector_Health Care,3.16227766016838,-0.0,-0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,sector_Materials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,sector_Real Estate,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,sector_Technology,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Health Care
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Industrials
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Industrials
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Industrials
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Industrials
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Industrials
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Industrials
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Industrials
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Industrials
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Industrials
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Industrials
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Industrials
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Industrials
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Industrials
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Industrials
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Industrials
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Industrials
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Industrials
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Industrials
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Industrials
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Industrials
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Industrials
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Industrials
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Industrials
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Industrials
+2026-07-15,sector_return_1m,-0.6325647189907496,0.0,-0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,sector_return_3m,0.10189514230788453,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,sector_return_6m,0.3202894738018816,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,sector_return_12m,0.4873524376959156,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,relative_return_1m,-1.1584320050968109,0.0,-0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,relative_return_3m,0.08810505836151702,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,relative_return_6m,0.18826101682640434,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,relative_return_12m,0.06267257147697648,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,sector_oscillator,0.18868947173055742,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,relative_oscillator,0.3445475515791059,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,above_slow_ma,0.6625660047812777,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,fast_slow_gap,0.6347766659815965,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,slow_ma_gap,0.45570279941584096,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,volatility_12m,-0.15045078068392967,0.0,-0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,drawdown_12m,0.40368560216330873,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,drawdown_36m,0.596084651244033,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,relative_volatility_12m,1.0226193970333264,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,beta_36m,1.3432379170104956,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,corr_36m,0.6642497946050655,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,months_since_cross,0.32856988706380486,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,move_since_last_cross,0.27904902618304095,0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,young_cross_risk,-0.6387487769068525,-0.0,0.0,price,sector_price_trend,sector,12,Industrials
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Industrials
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Industrials
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Industrials
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Industrials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Industrials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Industrials
+2026-07-15,sector_Consumer Cyclical,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,sector_Consumer Defensive,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,sector_Energy,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,sector_Financials,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,sector_Health Care,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,sector_Industrials,3.16227766016838,0.0,0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,sector_Materials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,sector_Real Estate,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,sector_Technology,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Industrials
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Materials
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Materials
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Materials
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Materials
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Materials
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Materials
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Materials
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Materials
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Materials
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Materials
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Materials
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Materials
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Materials
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Materials
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Materials
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Materials
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Materials
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Materials
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Materials
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Materials
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Materials
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Materials
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Materials
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Materials
+2026-07-15,sector_return_1m,-0.23570405250555232,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,sector_return_3m,-0.37208919320020883,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,sector_return_6m,-0.07955030932334352,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,sector_return_12m,0.3691950491734391,0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,relative_return_1m,-0.49714672736045307,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,relative_return_3m,-0.6758948780676322,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,relative_return_6m,-0.450567621860921,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,relative_return_12m,-0.11750512896809964,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,sector_oscillator,-0.20905829547536448,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,relative_oscillator,-0.4327977764047022,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,above_slow_ma,0.6625660047812777,0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,fast_slow_gap,0.2898552687348745,0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,slow_ma_gap,0.10267092169106112,0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,volatility_12m,-0.2438232180059234,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,drawdown_12m,0.2431719041858561,0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,drawdown_36m,0.475973198695921,0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,relative_volatility_12m,0.8867501810980122,0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,beta_36m,1.1001317430896438,0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,corr_36m,0.5041184354756381,0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,months_since_cross,0.07652432327234798,0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,move_since_last_cross,-0.31271449998705464,0.0,-0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,young_cross_risk,-0.6387487769068525,-0.0,0.0,price,sector_price_trend,sector,12,Materials
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Materials
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Materials
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Materials
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Materials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Materials
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Materials
+2026-07-15,sector_Consumer Cyclical,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,sector_Consumer Defensive,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,sector_Energy,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,sector_Financials,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,sector_Health Care,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,sector_Materials,3.1622776601683795,-0.0,-0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,sector_Real Estate,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,sector_Technology,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Materials
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Real Estate
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Real Estate
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Real Estate
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Real Estate
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Real Estate
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Real Estate
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Real Estate
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Real Estate
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Real Estate
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Real Estate
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Real Estate
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Real Estate
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Real Estate
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Real Estate
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Real Estate
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Real Estate
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Real Estate
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Real Estate
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Real Estate
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Real Estate
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Real Estate
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Real Estate
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Real Estate
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Real Estate
+2026-07-15,sector_return_1m,0.09405048571488384,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,sector_return_3m,-0.09067056677028758,0.0,-0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,sector_return_6m,0.3240800322724492,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,sector_return_12m,0.09965726018517254,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,relative_return_1m,0.05232022617564191,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,relative_return_3m,-0.222285345862391,0.0,-0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,relative_return_6m,0.19431723586666683,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,relative_return_12m,-0.5285221598135116,0.0,-0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,sector_oscillator,0.3489195358092422,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,relative_oscillator,0.4759472933549061,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,above_slow_ma,0.6625660047812777,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,fast_slow_gap,0.3404775767949759,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,slow_ma_gap,0.3154154516332579,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,volatility_12m,-0.567208030265325,0.0,-0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,drawdown_12m,0.6774088985397606,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,drawdown_36m,0.8009101779018968,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,relative_volatility_12m,0.41618261161759,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,beta_36m,1.464386174086078,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,corr_36m,0.6549276568680544,0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,months_since_cross,-0.3435516163800801,0.0,-0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,move_since_last_cross,-0.39026178555586644,0.0,-0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,young_cross_risk,-0.6387487769068525,-0.0,0.0,price,sector_price_trend,sector,12,Real Estate
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Real Estate
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Real Estate
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Real Estate
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Real Estate
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Real Estate
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Real Estate
+2026-07-15,sector_Consumer Cyclical,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,sector_Consumer Defensive,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,sector_Energy,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,sector_Financials,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,sector_Health Care,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,sector_Materials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,sector_Real Estate,3.1622776601683795,-0.0,-0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,sector_Technology,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Real Estate
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Technology
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Technology
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Technology
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Technology
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Technology
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Technology
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Technology
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Technology
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Technology
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Technology
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Technology
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Technology
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Technology
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Technology
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Technology
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Technology
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Technology
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Technology
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Technology
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Technology
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Technology
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Technology
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Technology
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Technology
+2026-07-15,sector_return_1m,-0.9657774515072849,0.0,-0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,sector_return_3m,1.1543191098936507,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,sector_return_6m,1.4749418117591375,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,sector_return_12m,1.3587397984471854,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,relative_return_1m,-1.713661315975637,0.0,-0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,relative_return_3m,1.7844730268728075,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,relative_return_6m,2.0330623906390644,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,relative_return_12m,1.391447460803526,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,sector_oscillator,1.142009704751398,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,relative_oscillator,1.3692256513968089,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,above_slow_ma,0.6625660047812777,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,fast_slow_gap,2.185018965092277,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,slow_ma_gap,1.2343892370833256,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,volatility_12m,1.5103228791222152,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,drawdown_12m,0.21119866816516622,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,drawdown_36m,0.4520478149467525,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,relative_volatility_12m,3.4392641958162757,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,beta_36m,0.4376270533984338,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,corr_36m,-1.743317076240215,0.0,-0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,months_since_cross,0.24455469913331923,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,move_since_last_cross,0.8550766788311877,0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,young_cross_risk,-0.6387487769068525,-0.0,0.0,price,sector_price_trend,sector,12,Technology
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Technology
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Technology
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Technology
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Technology
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Technology
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Technology
+2026-07-15,sector_Consumer Cyclical,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,sector_Consumer Defensive,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,sector_Energy,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,sector_Financials,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,sector_Health Care,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,sector_Materials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,sector_Real Estate,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,sector_Technology,3.1622776601683795,0.0,0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,sector_Utilities,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Technology
+2026-07-15,nfci_z,-0.6710209528585491,-0.0,0.0,macro,financial_conditions,sector,12,Utilities
+2026-07-15,hy_spread_z,-1.1332266958550703,0.0,-0.0,macro,financial_conditions,sector,12,Utilities
+2026-07-15,vix_z,-0.38055705098436293,0.0,-0.0,macro,volatility,sector,12,Utilities
+2026-07-15,vix_curve_spread,-0.5289281498175255,0.0,-0.0,macro,volatility,sector,12,Utilities
+2026-07-15,t10y3m_z,0.7250384841327271,0.0038738851304868037,0.002808715802712464,macro,rates_curve,sector,12,Utilities
+2026-07-15,yield_curve_10y2y_z,0.3475231492631418,0.0,0.0,macro,rates_curve,sector,12,Utilities
+2026-07-15,core_cpi_yoy_z,-0.47510880352075524,-0.0,0.0,macro,inflation,sector,12,Utilities
+2026-07-15,indpro_yoy_z,0.46326035290682527,0.0,0.0,macro,growth,sector,12,Utilities
+2026-07-15,dxy_ret_6m,0.45881187154813585,-0.0,-0.0,macro,dollar_commodities,sector,12,Utilities
+2026-07-15,gold_ret_6m,-1.6288655438208353,-0.0,0.0,macro,dollar_commodities,sector,12,Utilities
+2026-07-15,copper_ret_6m,0.2391491635256436,0.0,0.0,macro,dollar_commodities,sector,12,Utilities
+2026-07-15,wti_ret_6m,0.6545576748019363,0.0,0.0,macro,dollar_commodities,sector,12,Utilities
+2026-07-15,copper_gold_ratio_z,-0.6053043673811993,0.0,-0.0,macro,dollar_commodities,sector,12,Utilities
+2026-07-15,fed_path_2y_z,0.8683817961363945,0.0,0.0,macro,rates_curve,sector,12,Utilities
+2026-07-15,breakeven_10y_z,0.5286874158186982,-0.0,-0.0,macro,inflation,sector,12,Utilities
+2026-07-15,infl_5y5y_fwd_z,0.6287097140213109,0.0,0.0,macro,inflation,sector,12,Utilities
+2026-07-15,infl_exp_1y_z,0.9016994430297366,0.0,0.0,macro,inflation,sector,12,Utilities
+2026-07-15,claims_yoy_z,-0.2119600315756697,-0.0,0.0,macro,growth,sector,12,Utilities
+2026-07-15,permits_yoy_z,-0.10349631214689375,0.0,-0.0,macro,growth,sector,12,Utilities
+2026-07-15,cape_z,1.7038918586450178,-0.0,-0.0,macro,valuation,sector,12,Utilities
+2026-07-15,growth_signal,0.10970813482204354,0.0,0.0,macro,growth,sector,12,Utilities
+2026-07-15,inflation_signal,-0.15304616484585684,0.0,-0.0,macro,inflation,sector,12,Utilities
+2026-07-15,market_health,0.8979498242575725,0.0,0.0,price,market_trend,sector,12,Utilities
+2026-07-15,sector_breadth,0.3895339753870164,-0.0,-0.0,control,sector_fixed_effect,sector,12,Utilities
+2026-07-15,cot_lev_funds_net_pct_oi,-1.2251044380533418,0.0,-0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,cot_lev_funds_net_pct_oi_z,-0.4110618181411301,0.0,-0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,cot_lev_funds_net_pct_oi_change_13w,-0.994378783883871,0.0,-0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,cot_asset_mgr_net_pct_oi,2.543937392174032,0.0,0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,cot_asset_mgr_net_pct_oi_z,0.6605288127988672,0.0,0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,cot_asset_mgr_net_pct_oi_change_13w,0.04942896644658303,-0.0,-0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,cot_dealer_net_pct_oi,-2.138035999003528,-0.0,0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,cot_dealer_net_pct_oi_z,-0.6340062185698403,-0.0,0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,cot_dealer_net_pct_oi_change_13w,0.5409488326708644,0.0,0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,cot_open_interest_yoy,0.03309729569283174,0.0,0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,cot_crowding_abs_z,-0.5774881278447438,-0.0,0.0,positioning,cftc_positioning,sector,12,Utilities
+2026-07-15,sector_return_1m,-0.14060999284810105,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,sector_return_3m,-0.49031879638185105,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,sector_return_6m,0.11018415169098818,0.0,0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,sector_return_12m,-0.024345860794762423,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,relative_return_1m,-0.3386923705490531,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,relative_return_3m,-0.86646533060799,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,relative_return_6m,-0.14742668252148047,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,relative_return_12m,-0.7176139928809556,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,sector_oscillator,-0.4649503656518648,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,relative_oscillator,-0.4995322777786881,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,above_slow_ma,0.6625660047812777,0.0,0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,fast_slow_gap,-0.1921625461402296,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,slow_ma_gap,-0.13664329305630796,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,volatility_12m,-0.40872516309653084,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,drawdown_12m,0.32195450463297975,0.0,0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,drawdown_36m,0.5349257534900345,0.0,0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,relative_volatility_12m,0.6467960937006216,0.0,0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,beta_36m,-0.21997784236488055,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,corr_36m,-0.9716264952787528,0.0,-0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,months_since_cross,1.588797706021089,0.0,0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,move_since_last_cross,1.3234502812589917,0.0,0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,young_cross_risk,-0.6387487769068525,-0.0,0.0,price,sector_price_trend,sector,12,Utilities
+2026-07-15,cap_weighted_surprise_pct_lag1,-0.07339475831771965,-0.0,0.0,fundamental,earnings_breadth,sector,12,Utilities
+2026-07-15,cap_weighted_surprise_pct_lag1_change,-0.012279577405206212,-0.0,0.0,fundamental,earnings_breadth,sector,12,Utilities
+2026-07-15,beat_rate_lag1,-0.008471958288667477,0.0,-0.0,fundamental,earnings_breadth,sector,12,Utilities
+2026-07-15,beat_rate_lag1_change,0.009025095182419268,-0.0,-0.0,fundamental,earnings_breadth,sector,12,Utilities
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1,-0.13828293469660816,-0.0,0.0,fundamental,earnings_breadth,sector,12,Utilities
+2026-07-15,cap_weighted_quarterly_eps_yoy_pct_lag1_change,-0.03213713614262478,0.0,-0.0,fundamental,earnings_breadth,sector,12,Utilities
+2026-07-15,sector_Consumer Cyclical,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Utilities
+2026-07-15,sector_Consumer Defensive,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Utilities
+2026-07-15,sector_Energy,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Utilities
+2026-07-15,sector_Financials,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Utilities
+2026-07-15,sector_Health Care,-0.316227766016838,-0.0,0.0,control,sector_fixed_effect,sector,12,Utilities
+2026-07-15,sector_Industrials,-0.316227766016838,0.0,-0.0,control,sector_fixed_effect,sector,12,Utilities
+2026-07-15,sector_Materials,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Utilities
+2026-07-15,sector_Real Estate,-0.31622776601683794,-0.0,0.0,control,sector_fixed_effect,sector,12,Utilities
+2026-07-15,sector_Technology,-0.31622776601683794,0.0,-0.0,control,sector_fixed_effect,sector,12,Utilities
+2026-07-15,sector_Utilities,3.1622776601683795,-0.0,-0.0,control,sector_fixed_effect,sector,12,Utilities

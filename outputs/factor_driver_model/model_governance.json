@@ -1,0 +1,100 @@
+{
+  "generated_at_utc": "2026-07-20T05:32:36.771596+00:00",
+  "asof": "2026-07-15",
+  "holdout_start": "2022-01-01",
+  "algorithm": "Elastic Net with nested purged expanding-window selection",
+  "parameter_grid": [
+    {
+      "alpha": 0.001,
+      "l1_ratio": 0.1
+    },
+    {
+      "alpha": 0.001,
+      "l1_ratio": 0.5
+    },
+    {
+      "alpha": 0.001,
+      "l1_ratio": 0.9
+    },
+    {
+      "alpha": 0.003,
+      "l1_ratio": 0.1
+    },
+    {
+      "alpha": 0.003,
+      "l1_ratio": 0.5
+    },
+    {
+      "alpha": 0.003,
+      "l1_ratio": 0.9
+    },
+    {
+      "alpha": 0.01,
+      "l1_ratio": 0.1
+    },
+    {
+      "alpha": 0.01,
+      "l1_ratio": 0.5
+    },
+    {
+      "alpha": 0.01,
+      "l1_ratio": 0.9
+    },
+    {
+      "alpha": 0.03,
+      "l1_ratio": 0.1
+    },
+    {
+      "alpha": 0.03,
+      "l1_ratio": 0.5
+    },
+    {
+      "alpha": 0.03,
+      "l1_ratio": 0.9
+    }
+  ],
+  "model_start": "first complete CFTC z-score month, no earlier than 2007-01-01",
+  "interpretation": "predictive conditional association; not causal attribution",
+  "models": {
+    "market_6m": {
+      "features": 43,
+      "params": {
+        "alpha": 0.03,
+        "l1_ratio": 0.9
+      },
+      "validation_reliability": 0.0,
+      "trained_through": "2025-09-30"
+    },
+    "market_12m": {
+      "features": 43,
+      "params": {
+        "alpha": 0.03,
+        "l1_ratio": 0.9
+      },
+      "validation_reliability": 0.0,
+      "trained_through": "2025-09-30"
+    },
+    "sector_6m": {
+      "features": 73,
+      "params": {
+        "alpha": 0.03,
+        "l1_ratio": 0.1
+      },
+      "validation_reliability": 0.0,
+      "trained_through": "2025-09-30"
+    },
+    "sector_12m": {
+      "features": 73,
+      "params": {
+        "alpha": 0.03,
+        "l1_ratio": 0.9
+      },
+      "validation_reliability": 0.0,
+      "trained_through": "2025-09-30"
+    }
+  },
+  "audit_status": {
+    "PASS": 8,
+    "WARN": 2
+  }
+}

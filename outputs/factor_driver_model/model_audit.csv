@@ -1,0 +1,11 @@
+check,status,detail
+targets_excluded,PASS,"leaked features={'market_6m': [], 'market_12m': [], 'sector_6m': [], 'sector_12m': []}"
+purged_walk_forward,PASS,rows violating target maturity=0
+cftc_in_every_model,PASS,"selected CFTC features={'market_6m': 11, 'market_12m': 11, 'sector_6m': 11, 'sector_12m': 11}"
+cftc_release_alignment,PASS,minimum CFTC age=0.0 days
+shadow_holdout_present,PASS,"holdout rows={'market_6m': 39, 'market_12m': 33, 'sector_6m': 429, 'sector_12m': 363}"
+matured_labels_only,PASS,"asof=2026-07-15, later target ends={}"
+regularized_dimension,PASS,"selected features={'market_6m': 43, 'market_12m': 43, 'sector_6m': 73, 'sector_12m': 73}"
+holdout_not_used_for_tuning,PASS,hyperparameters selected only with dates before 2022-01-01
+predictive_evidence,WARN,"low-reliability models={'market_6m': 0.0, 'market_12m': 0.0, 'sector_6m': 0.0, 'sector_12m': 0.0}"
+coefficient_stability,WARN,"active coefficients below 60% sign consistency={'market_6m': 0, 'market_12m': 0, 'sector_6m': 2, 'sector_12m': 0}"

@@ -32,6 +32,7 @@ price-action-spy-drawdown-regime = "price_action.spy_drawdown_regime_research:ma
 price-action-sector-dalio-regime = "price_action.sector_dalio_regime_model:main"
 price-action-hierarchical-research = "price_action.hierarchical_research:main"
 price-action-final-hierarchy = "price_action.final_hierarchy:main"
+price-action-factor-drivers = "price_action.factor_driver_model:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]

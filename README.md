@@ -100,6 +100,17 @@ The final dashboard and auditable model artifacts are written under
 `outputs/final_hierarchy/`. Dealer gamma remains a live-only sizing overlay
 until a historical point-in-time options-chain archive is available.
 
+To fit the interpretable 6/12-month broad-market and sector factor models:
+
+```bash
+python build_factor_driver_model.py
+```
+
+This writes purged walk-forward Elastic Net forecasts, signed coefficient
+stability, CFTC attribution, live factor contributions, and the millimetre-paper
+dashboard under `outputs/factor_driver_model/`. The importance values are
+predictive conditional associations, not causal estimates.
+
 
 ## Run it
 
