@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-20T03:19:09.563189+00:00",
+  "generated_at_utc": "2026-07-20T03:44:34.622843+00:00",
   "asof": "2026-07-15",
   "holdout_start": "2025-01-01",
   "models": {
@@ -32,7 +32,7 @@
         "extra_trees",
         "hist_gradient"
       ],
-      "min_feature_coverage": 0.45,
+      "min_feature_coverage": 0.05,
       "min_train_rows": 5000,
       "label_horizon_months": 6,
       "training_target_winsorization": [
@@ -61,12 +61,12 @@
     },
     "sector": {
       "features": 107,
-      "validation_reliability": 0.029928579518421934,
+      "validation_reliability": 0.014964289759210967,
       "trained_through": "2025-09-30"
     },
     "company": {
-      "features": 142,
-      "validation_reliability": 0.49640032222048713,
+      "features": 157,
+      "validation_reliability": 0.2299200928586663,
       "trained_through": "2026-06-03"
     },
     "trend": {
@@ -96,6 +96,11 @@
     "live_risk_overlay": true,
     "status": "unavailable_neutral"
   },
+  "reliability_policy": {
+    "regression": "mean of positive validation rank-IC and top-minus-bottom spread evidence, sampled at non-overlapping horizons",
+    "company": "geometric mean of broad-universe and strict point-in-time regression reliability",
+    "holdout_use": "reporting only; never used for model weighting, calibration, or sizing confidence"
+  },
   "known_limitations": [
     "Company universe before November 2019 is not strict point-in-time constituent history.",
     "The dedicated semiconductor book overlaps XLK and is consolidated by a predeclared priority rule.",
@@ -103,7 +108,7 @@
     "Monthly six-month targets overlap; inference uses non-overlapping IC and spread samples."
   ],
   "audit_status": {
-    "PASS": 9,
+    "PASS": 11,
     "WARN": 3
   }
 }

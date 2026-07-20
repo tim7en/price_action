@@ -13,7 +13,9 @@ from price_action.hierarchical_research import (
 )
 from price_action.final_hierarchy import (
     _capped_budget,
+    _feasible_side_budgets,
     _regression_model_weights,
+    _regression_reliability,
     join_positioning,
 )
 from price_action.quality_engine import FWD_DAYS
@@ -84,6 +86,20 @@ class HierarchicalResearchContractTests(unittest.TestCase):
         self.assertEqual(weights["ridge"], 0.0)
         self.assertAlmostEqual(weights["extra_trees"] + weights["hist_gradient"], 1.0)
 
+    def test_regression_reliability_uses_rank_and_spread_evidence(self) -> None:
+        metrics = pd.DataFrame([{
+            "scope": "validation",
+            "avg_cross_sectional_rank_ic": 0.05,
+            "rank_ic_tstat_nonoverlap": 2.0,
+            "avg_top_minus_bottom": 0.025,
+            "spread_tstat_nonoverlap": 2.0,
+        }])
+
+        self.assertAlmostEqual(_regression_reliability(metrics), 0.5)
+
+        metrics.loc[0, "spread_tstat_nonoverlap"] = -2.0
+        self.assertAlmostEqual(_regression_reliability(metrics), 0.25)
+
     def test_shared_sector_cap_includes_existing_book(self) -> None:
         scores = pd.Series([2.0, 1.0], index=[0, 1])
         sectors = pd.Series(["Technology", "Financials"], index=[0, 1])
@@ -99,6 +115,18 @@ class HierarchicalResearchContractTests(unittest.TestCase):
 
         self.assertLessEqual(weights.loc[0] + 0.15, 0.20 + 1e-12)
         self.assertLessEqual(weights.max(), 0.10 + 1e-12)
+
+    def test_side_budgets_do_not_deploy_unmatched_gross(self) -> None:
+        long_budget, short_budget, feasible_net = _feasible_side_budgets(
+            gross_budget=0.70,
+            net_budget=0.02,
+            long_capacity=0.35,
+            short_capacity=0.0,
+        )
+
+        self.assertAlmostEqual(long_budget, 0.02)
+        self.assertEqual(short_budget, 0.0)
+        self.assertAlmostEqual(long_budget - short_budget, feasible_net)
 
 
 if __name__ == "__main__":

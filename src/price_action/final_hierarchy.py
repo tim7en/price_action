@@ -20,7 +20,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import (
@@ -33,7 +32,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import (
     accuracy_score,
-    balanced_accuracy_score,
     brier_score_loss,
     log_loss,
     mean_absolute_error,
@@ -48,7 +46,6 @@ from .data import resolve_project_root
 from .hierarchical_research import (
     BOOK_PARENT_SECTOR,
     EARNINGS_FUNDAMENTAL_FEATURES,
-    HOLDINGS_PATH,
     INK,
     INK_AMBER,
     INK_GREEN,
@@ -76,6 +73,8 @@ COT_CACHE = Path("cache") / "market_structure" / "cot_tff_es.csv"
 CROSS_EVENTS = Path("outputs") / "sector_dalio_regime_model" / "daily_50_200_cross_events.csv"
 HOLDOUT_START = pd.Timestamp("2025-01-01")
 RANDOM_STATE = 42
+LONG_ALPHA_HURDLE = 0.010
+SHORT_ALPHA_HURDLE = 0.015
 
 REGRESSION_MODEL_NAMES = ("ridge", "extra_trees", "hist_gradient")
 CLASSIFICATION_MODEL_NAMES = ("logit", "extra_trees", "hist_gradient")
@@ -86,6 +85,12 @@ FAVORABLE_REGIMES = {
 ADVERSE_REGIMES = {
     "Deflation (growth down, inflation down)",
     "Stagflation (growth down, inflation up)",
+}
+COMPANY_FUNDAMENTAL_FEATURES = {
+    "capital_ratio_z", "capex_coverage_z", "earnings_stability_z", "fcf_margin_z",
+    "gm_trend_z", "gross_margin_z", "low_leverage_z", "margin_steadiness_z",
+    "net_cash_ratio_z", "ni_growth_z", "ni_margin_z", "ocf_growth_z", "ocf_margin_z",
+    "ocf_stability_z", "quality_z", "rev_growth_z", "revenue_steadiness_z", "roe_z",
 }
 
 MODEL_CONFIG = {
@@ -106,7 +111,7 @@ MODEL_CONFIG = {
     "company": {
         "task": "next-126-trading-day stock return minus parent-sector ETF",
         "models": list(REGRESSION_MODEL_NAMES),
-        "min_feature_coverage": 0.45,
+        "min_feature_coverage": 0.05,
         "min_train_rows": 5_000,
         "label_horizon_months": 6,
         "training_target_winsorization": [0.005, 0.995],
@@ -546,14 +551,25 @@ def _classification_metrics(
 
 
 def _regression_reliability(metrics: pd.DataFrame) -> float:
+    """Score pre-holdout ranking and portfolio-spread evidence conservatively."""
     row = metrics.loc[metrics["scope"].eq("validation")]
     if row.empty:
         return 0.0
     ic = float(row.iloc[0].get("avg_cross_sectional_rank_ic", np.nan))
-    tstat = float(row.iloc[0].get("rank_ic_tstat_nonoverlap", np.nan))
-    if not np.isfinite(ic) or not np.isfinite(tstat) or ic <= 0.0:
-        return 0.0
-    return float(np.clip((ic / 0.10) * (tstat / 2.0), 0.0, 1.0))
+    ic_tstat = float(row.iloc[0].get("rank_ic_tstat_nonoverlap", np.nan))
+    spread = float(row.iloc[0].get("avg_top_minus_bottom", np.nan))
+    spread_tstat = float(row.iloc[0].get("spread_tstat_nonoverlap", np.nan))
+
+    def positive_evidence(value: float, tstat: float, scale: float) -> float:
+        if not np.isfinite(value) or not np.isfinite(tstat) or value <= 0.0 or tstat <= 0.0:
+            return 0.0
+        magnitude = np.clip(value / scale, 0.0, 1.0)
+        significance = np.clip(tstat / 2.0, 0.0, 1.0)
+        return float(magnitude * significance)
+
+    rank_evidence = positive_evidence(ic, ic_tstat, 0.10)
+    spread_evidence = positive_evidence(spread, spread_tstat, 0.05)
+    return float((rank_evidence + spread_evidence) / 2.0)
 
 
 def _classification_reliability(metrics: pd.DataFrame, classes: int) -> float:
@@ -662,7 +678,8 @@ def run_regression_layer(
         strict = metrics.loc[metrics["scope"].eq("validation_strict_pit")].copy()
         if not strict.empty and int(strict.iloc[0].get("observations", 0)) >= 500:
             strict.loc[:, "scope"] = "validation"
-            reliability = _regression_reliability(strict)
+            strict_reliability = _regression_reliability(strict)
+            reliability = float(math.sqrt(reliability * strict_reliability))
     live_output["validation_reliability"] = reliability
     live_output["validated_alpha"] = live_output["predicted_alpha"] * reliability
     return RegressionResult(
@@ -938,6 +955,12 @@ def build_model_audit(
         for layer, model in models.items()
     }
     add("cftc_in_all_layers", all(count > 0 for count in cftc_counts.values()), f"selected CFTC features={cftc_counts}")
+    selected_fundamentals = sorted(COMPANY_FUNDAMENTAL_FEATURES.intersection(company.feature_columns))
+    add(
+        "sector_specific_fundamentals_retained",
+        len(selected_fundamentals) == len(COMPANY_FUNDAMENTAL_FEATURES),
+        f"selected {len(selected_fundamentals)}/{len(COMPANY_FUNDAMENTAL_FEATURES)} company fundamental fields",
+    )
     immature = {layer: model.trained_through.strftime("%Y-%m-%d") for layer, model in models.items() if model.trained_through > asof}
     add("matured_labels_only", not immature, f"asof={asof.date()}, later cutoffs={immature}")
     holdout_counts = {
@@ -957,6 +980,13 @@ def build_model_audit(
     sector_gross = active.assign(abs_weight=active["suggested_weight"].abs()).groupby("parent_sector")["abs_weight"].sum()
     sector_cap_ok = sector_gross.max() <= 0.2000001 if len(sector_gross) else True
     add("shared_sector_gross_cap", sector_cap_ok, f"maximum sector gross={sector_gross.max() if len(sector_gross) else 0.0:.3f}")
+    realized_net = float(sizing["realized_net"].iloc[0]) if len(sizing) else 0.0
+    feasible_net = float(sizing["feasible_net_budget"].iloc[0]) if len(sizing) else 0.0
+    add(
+        "net_budget_respected",
+        abs(realized_net - feasible_net) <= 1e-6,
+        f"realized net={realized_net:.4f}, feasible target net={feasible_net:.4f}",
+    )
     add("gamma_not_trained", not any("gamma" in feature.lower() for model in models.values() for feature in model.feature_columns), "gamma is live-only")
     add(
         "sector_evidence_strength",
@@ -967,7 +997,7 @@ def build_model_audit(
     add(
         "company_universe_scope",
         True,
-        "sizing confidence uses strict point-in-time validation; static SEMIS/nonmember rows receive explicit haircuts",
+        "confidence requires broad and strict point-in-time validation evidence; static SEMIS/nonmember rows receive explicit haircuts",
         warning=True,
     )
     add(
@@ -1034,6 +1064,27 @@ def _capped_budget(
         remaining -= added
         active = next_active
     return weights
+
+
+def _feasible_side_budgets(
+    gross_budget: float,
+    net_budget: float,
+    long_capacity: float,
+    short_capacity: float,
+) -> tuple[float, float, float]:
+    """Solve the largest gross book that respects signal capacity and target net."""
+    long_capacity = max(float(long_capacity), 0.0)
+    short_capacity = max(float(short_capacity), 0.0)
+    feasible_net = float(np.clip(net_budget, -short_capacity, long_capacity))
+    feasible_gross = min(
+        max(float(gross_budget), 0.0),
+        2.0 * long_capacity - feasible_net,
+        2.0 * short_capacity + feasible_net,
+    )
+    feasible_gross = max(float(feasible_gross), abs(feasible_net), 0.0)
+    long_budget = min((feasible_gross + feasible_net) / 2.0, long_capacity)
+    short_budget = min((feasible_gross - feasible_net) / 2.0, short_capacity)
+    return float(long_budget), float(short_budget), feasible_net
 
 
 def build_sizing_advisor(
@@ -1132,23 +1183,49 @@ def build_sizing_advisor(
 
     long_candidates = company_live.loc[
         company_live["allocation_eligible"]
-        & company_live["expected_total_alpha"].gt(0.0)
+        & company_live["expected_total_alpha"].ge(LONG_ALPHA_HURDLE)
         & state.eq("golden")
     ].nlargest(18, "risk_score")
     short_candidates = company_live.loc[
         company_live["allocation_eligible"]
-        & company_live["expected_total_alpha"].lt(0.0)
+        & company_live["expected_total_alpha"].le(-SHORT_ALPHA_HURDLE)
         & state.eq("death")
     ].nlargest(12, "risk_score")
-    long_weights = _capped_budget(
+    long_capacity_weights = _capped_budget(
         long_candidates["risk_score"], long_candidates["parent_sector"], long_budget,
         max_position=0.06, max_sector=0.20,
     )
-    long_sector_usage = long_weights.groupby(long_candidates["parent_sector"]).sum().to_dict()
-    short_weights = _capped_budget(
+    short_capacity_weights = _capped_budget(
         short_candidates["risk_score"], short_candidates["parent_sector"], short_budget,
-        max_position=0.05, max_sector=0.20, existing_sector_usage=long_sector_usage,
+        max_position=0.05, max_sector=0.20,
     )
+    feasible_long_budget, feasible_short_budget, feasible_net_budget = _feasible_side_budgets(
+        gross_budget,
+        net_budget,
+        long_capacity_weights.sum(),
+        short_capacity_weights.sum(),
+    )
+    target_long = feasible_long_budget
+    target_short = feasible_short_budget
+    for _ in range(4):
+        long_weights = _capped_budget(
+            long_candidates["risk_score"], long_candidates["parent_sector"], target_long,
+            max_position=0.06, max_sector=0.20,
+        )
+        long_sector_usage = long_weights.groupby(long_candidates["parent_sector"]).sum().to_dict()
+        short_weights = _capped_budget(
+            short_candidates["risk_score"], short_candidates["parent_sector"], target_short,
+            max_position=0.05, max_sector=0.20, existing_sector_usage=long_sector_usage,
+        )
+        allocated_long = float(long_weights.sum())
+        allocated_short = float(short_weights.sum())
+        realized_net = allocated_long - allocated_short
+        if abs(realized_net - feasible_net_budget) <= 1e-9:
+            break
+        if realized_net > feasible_net_budget:
+            target_long = max(allocated_short + feasible_net_budget, 0.0)
+        else:
+            target_short = max(allocated_long - feasible_net_budget, 0.0)
     company_live["suggested_weight"] = 0.0
     company_live.loc[long_weights.index, "suggested_weight"] = long_weights
     company_live.loc[short_weights.index, "suggested_weight"] = -short_weights
@@ -1162,14 +1239,26 @@ def build_sizing_advisor(
     company_live["gamma_gross_scalar"] = gamma_scalar
     company_live["gross_budget"] = gross_budget
     company_live["net_budget"] = net_budget
-    company_live["sizing_status"] = np.where(
-        (sector.validation_reliability <= 0.0) | (company.validation_reliability <= 0.0),
-        "ABSTAIN: one or more alpha layers lack positive validation evidence",
-        "ACTIVE_RESEARCH",
-    )
-    if (sector.validation_reliability <= 0.0) or (company.validation_reliability <= 0.0):
+    company_live["feasible_gross_budget"] = feasible_long_budget + feasible_short_budget
+    company_live["feasible_net_budget"] = feasible_net_budget
+    lacks_validation = (sector.validation_reliability <= 0.0) or (company.validation_reliability <= 0.0)
+    if lacks_validation:
         company_live["suggested_weight"] = 0.0
         company_live["side"] = "Watch"
+        company_live["feasible_gross_budget"] = 0.0
+        company_live["feasible_net_budget"] = 0.0
+    realized_gross = float(company_live["suggested_weight"].abs().sum())
+    realized_net = float(company_live["suggested_weight"].sum())
+    if lacks_validation:
+        sizing_status = "ABSTAIN: one or more alpha layers lack positive validation evidence"
+    elif realized_gross <= 1e-12:
+        sizing_status = "NO_SIGNALS_ABOVE_HURDLE"
+    else:
+        sizing_status = "ACTIVE_RESEARCH"
+    company_live["sizing_status"] = sizing_status
+    company_live["realized_gross"] = realized_gross
+    company_live["realized_net"] = realized_net
+    company_live["unallocated_risk_budget"] = max(gross_budget - realized_gross, 0.0)
 
     keep = [
         "ticker", "book", "book_specification", "parent_sector", "side", "suggested_weight",
@@ -1181,7 +1270,8 @@ def build_sizing_advisor(
         "company_beta_252d", "sector_cross_survival_probability", "last_sector_cross_type",
         "macro_favorable_probability", "macro_adverse_probability", "positioning_gross_scalar",
         "gamma_gross_scalar", "gross_budget", "net_budget", "pit_member",
-        "allocation_eligible",
+        "feasible_gross_budget", "feasible_net_budget", "allocation_eligible",
+        "realized_gross", "realized_net", "unallocated_risk_budget",
     ]
     return company_live[[column for column in keep if column in company_live]].sort_values(
         ["suggested_weight", "expected_total_alpha"], ascending=[False, False]
@@ -1253,10 +1343,58 @@ def build_html_report(result: FinalHierarchyResult) -> str:
         result.company.metrics.assign(layer="company"),
         result.trend.metrics.assign(layer="trend"),
     ], ignore_index=True, sort=False)
-    top_sizing = sizing.sort_values("expected_total_alpha", ascending=False).head(20)
-    bottom_sizing = sizing.sort_values("expected_total_alpha").head(12)
+    def sizing_view(frame: pd.DataFrame) -> pd.DataFrame:
+        columns = [
+            "ticker", "book", "parent_sector", "side", "suggested_weight",
+            "expected_total_alpha", "quality_z", "n_metrics", "company_50_200_state",
+        ]
+        view = frame[[column for column in columns if column in frame]].copy()
+        view["suggested_weight"] = view["suggested_weight"] * 100.0
+        view["expected_total_alpha"] = view["expected_total_alpha"] * 100.0
+        return view.rename(columns={
+            "suggested_weight": "weight_pct",
+            "expected_total_alpha": "expected_6m_alpha_pct",
+            "n_metrics": "fundamental_metrics",
+            "company_50_200_state": "50_200_state",
+        })
+
+    top_sizing = sizing_view(sizing.sort_values("expected_total_alpha", ascending=False).head(20))
+    bottom_sizing = sizing_view(sizing.sort_values("expected_total_alpha").head(12))
     positioning = result.positioning_snapshot
+    cftc = positioning.get("cftc", {})
     gex = positioning.get("gamma", {})
+    positioning_view = pd.DataFrame([
+        {
+            "participant": "Asset managers",
+            "net_pct_open_interest": cftc.get("asset_manager_net_pct_oi"),
+            "rolling_z_score": cftc.get("asset_manager_z"),
+        },
+        {
+            "participant": "Leveraged funds",
+            "net_pct_open_interest": cftc.get("leveraged_funds_net_pct_oi"),
+            "rolling_z_score": cftc.get("leveraged_funds_z"),
+        },
+        {
+            "participant": "Dealers",
+            "net_pct_open_interest": cftc.get("dealer_net_pct_oi"),
+            "rolling_z_score": cftc.get("dealer_z"),
+        },
+    ])
+    cftc_attribution_rows = []
+    for model in [result.macro, result.sector, result.company, result.trend]:
+        selected = model.importance.loc[model.importance["feature"].str.startswith("cot_")]
+        cftc_attribution_rows.append({
+            "layer": selected["layer"].iloc[0] if len(selected) else "unknown",
+            "selected_features": int(selected["feature"].nunique()),
+            "importance_pct": float(selected["importance"].sum() * 100.0),
+            "top_feature": selected.nlargest(1, "importance")["feature"].iloc[0] if len(selected) else "none",
+        })
+    cftc_attribution = pd.DataFrame(cftc_attribution_rows)
+    governance_view = pd.DataFrame(result.governance["layers"]).T.reset_index(names="layer")
+    governance_view["features"] = pd.to_numeric(governance_view["features"], errors="coerce").astype("Int64")
+    governance_view["validation_reliability"] = pd.to_numeric(
+        governance_view["validation_reliability"], errors="coerce"
+    )
     generated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     status = sizing["sizing_status"].iloc[0] if len(sizing) else "NO_OUTPUT"
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1264,13 +1402,13 @@ def build_html_report(result: FinalHierarchyResult) -> str:
 :root{{--paper:{PAPER};--page:#eadcb8;--grid:#dbc17b;--major:#c8a24b;--ink:{INK};--muted:{INK_MUTED};--navy:{INK_NAVY};--red:{INK_RED};--green:{INK_GREEN}}}
 *{{box-sizing:border-box}} body{{margin:0;color:var(--ink);background:#eadcb8;font:14px/1.48 Georgia,"Times New Roman",serif;letter-spacing:0}} main{{max-width:1320px;margin:0 auto;padding:30px 38px 64px;background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px),linear-gradient(var(--major) 1px,transparent 1px),linear-gradient(90deg,var(--major) 1px,transparent 1px);background-size:10px 10px,10px 10px,50px 50px,50px 50px}}
 header,.band{{background:rgba(244,236,211,.95)}} header{{border-top:4px solid var(--ink);border-bottom:1px solid var(--ink);padding:16px 0 14px}} h1{{font-size:31px;line-height:1.08;margin:0 0 7px}} h2{{font-size:20px;margin:34px 0 10px;border-bottom:2px solid var(--ink);padding-bottom:5px}} p{{max-width:980px}} .meta{{color:var(--muted);font-size:12px}} .kpis{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--ink);margin:22px 0;background:rgba(244,236,211,.96)}} .kpi{{padding:13px 15px;border-right:1px solid var(--ink)}} .kpi:last-child{{border-right:0}} .kpi b{{display:block;font:22px/1.05 Arial,sans-serif;color:var(--navy)}} .kpi span{{font-size:11px;text-transform:uppercase}} .band{{padding:1px 12px 12px;margin:0 -12px}} .charts{{display:grid;grid-template-columns:1fr 1fr;gap:18px}} figure{{margin:10px 0;background:var(--paper);border:1px solid var(--ink);padding:8px}} img{{width:100%;display:block}} figcaption{{font-size:11px;color:var(--muted);padding-top:5px}} .table-wrap{{overflow-x:auto;border:1px solid var(--ink);background:rgba(244,236,211,.97)}} table{{border-collapse:collapse;width:100%;font-size:12px}} th,td{{padding:7px 9px;border-bottom:1px solid #c9b77f;text-align:left;white-space:nowrap}} thead th{{background:#e1cd91;border-bottom:2px solid var(--ink);font-family:Arial,sans-serif}} tbody tr:nth-child(even){{background:rgba(225,205,145,.25)}} .warn{{color:#925c00;font-weight:bold}} .active{{color:var(--green);font-weight:bold}} code{{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}} @media(max-width:800px){{main{{padding:18px 14px 44px}}.kpis{{grid-template-columns:1fr 1fr}}.kpi:nth-child(2){{border-right:0}}.charts{{grid-template-columns:1fr}}h1{{font-size:25px}}}}
-</style></head><body><main><header><h1>Final Hierarchical Macro -> Sector -> Company Model</h1><p>Walk-forward regime probabilities, sector excess-return forecasts, company residual alpha, trend survival, positioning, and constrained long/short sizing.</p><p class="meta">Generated {generated}. Research output, not personalized investment advice.</p></header>
-<div class="kpis"><div class="kpi"><b>{result.macro.live.iloc[0]['predicted_class'].split(' ')[0]}</b><span>Forecast regime</span></div><div class="kpi"><b>{result.sector.validation_reliability:.2f}</b><span>Sector reliability</span></div><div class="kpi"><b>{result.company.validation_reliability:.2f}</b><span>Company reliability</span></div><div class="kpi"><b>{len(active)}</b><span>Nonzero positions</span></div></div>
+</style></head><body><main><header><h1>Final Hierarchical Macro -> Sector -> Company Model</h1><p>Walk-forward regime probabilities, sector excess-return forecasts, company residual alpha, trend survival, positioning, and constrained long/short sizing.</p><p class="meta">Data as of {positioning.get('asof', 'n/a')}. Generated {generated}. Research output, not personalized investment advice.</p></header>
+<div class="kpis"><div class="kpi"><b>{result.macro.live.iloc[0]['predicted_class'].split(' ')[0]}</b><span>Forecast regime</span></div><div class="kpi"><b>{result.sector.validation_reliability:.2f}</b><span>Sector reliability</span></div><div class="kpi"><b>{result.company.validation_reliability:.2f}</b><span>Company reliability</span></div><div class="kpi"><b>{float(sizing['realized_gross'].iloc[0]) * 100.0 if len(sizing) else 0.0:.2f}%</b><span>Realized gross / {len(active)} names</span></div></div>
 <section class="band"><h2>Decision State</h2><p class="{'active' if status == 'ACTIVE_RESEARCH' else 'warn'}">{status}</p><div class="table-wrap">{_html_table(macro_view)}</div><div class="charts">{_img(_chart_macro_probabilities(result.macro), 'Macro regime probability ensemble')}{_img(_chart_live_sector(result.sector), 'Sector forecasts after validation shrinkage')}</div></section>
-<section class="band"><h2>Company Selection And Sizing</h2><p>Expected alpha is sector excess alpha plus company residual alpha. Nonzero weights require current point-in-time book membership or the dedicated SEMIS specification, at least three fundamentals, directional 50/200 confirmation, volatility scaling, 6% long-name caps, 5% short-name caps, and one shared 20% gross sector cap.</p>{_img(_chart_company_alpha(result.company), 'Company residual forecasts after validation shrinkage')}<h3>Highest expected alpha</h3><div class="table-wrap">{_html_table(top_sizing)}</div><h3>Lowest expected alpha</h3><div class="table-wrap">{_html_table(bottom_sizing)}</div></section>
+<section class="band"><h2>Company Selection And Sizing</h2><p>Expected alpha is sector excess alpha plus company residual alpha. Nonzero weights require current point-in-time book membership or the dedicated SEMIS specification, at least three fundamentals, directional 50/200 confirmation, a 1.0% long or 1.5% short six-month alpha hurdle, volatility scaling, 6% long-name caps, 5% short-name caps, and one shared 20% gross sector cap. Long and short sleeves are solved jointly so missing signals cannot violate the macro net target; unused risk budget stays unallocated.</p>{_img(_chart_company_alpha(result.company), 'Company residual forecasts after validation shrinkage')}<h3>Highest expected alpha</h3><div class="table-wrap">{_html_table(top_sizing)}</div><h3>Lowest expected alpha</h3><div class="table-wrap">{_html_table(bottom_sizing)}</div></section>
 <section class="band"><h2>Out-Of-Sample Validation</h2>{_img(_chart_oos_ic(result.sector, result.company), 'Walk-forward cross-sectional information coefficients')}<div class="table-wrap">{_html_table(metrics)}</div></section>
-<section class="band"><h2>Positioning And Gamma</h2><p>CFTC positioning is a trained feature only after its public usable date. Current asset-manager positioning is {positioning.get('cftc', {}).get('asset_manager_net_pct_oi', 'n/a')}% of open interest, z {positioning.get('cftc', {}).get('asset_manager_z', 'n/a')}. Dealer gamma status: <b>{gex.get('status', 'unavailable')}</b>. Gamma is never injected into historical model features without a point-in-time chain archive.</p><p class="meta">{gex.get('detail', GEX_INSTRUCTIONS)}</p></section>
-<section class="band"><h2>Governance</h2><p>The 2025+ holdout is reported separately and never selects hyperparameters. Final live models refit on matured labels only after validation reporting. Company confidence is governed by the strict N-PORT validation slice; static SEMIS and nonmember rows receive explicit haircuts. A zero reliability score forces sizing abstention.</p><div class="table-wrap">{_html_table(pd.DataFrame(result.governance['layers']).T.reset_index(names='layer'))}</div><h3>Model audit</h3><div class="table-wrap">{_html_table(result.audit)}</div></section>
+<section class="band"><h2>Positioning And Gamma</h2><p>CFTC positioning enters all four trained layers only after each report's public usable date. The current release is usable from {cftc.get('usable_date', 'n/a')} and applies a {float(sizing['positioning_gross_scalar'].iloc[0]) if len(sizing) else 1.0:.2f} gross-risk scalar. Dealer gamma status: <b>{gex.get('status', 'unavailable')}</b>; its current gross-risk scalar is {float(sizing['gamma_gross_scalar'].iloc[0]) if len(sizing) else 1.0:.2f}. Gamma is never injected into historical features without a point-in-time chain archive.</p><div class="charts"><div><h3>Current CFTC snapshot</h3><div class="table-wrap">{_html_table(positioning_view)}</div></div><div><h3>CFTC model attribution</h3><div class="table-wrap">{_html_table(cftc_attribution)}</div></div></div><p class="meta">{gex.get('detail', GEX_INSTRUCTIONS)}</p></section>
+<section class="band"><h2>Governance</h2><p>The 2025+ holdout is reported separately and never selects hyperparameters. Final live models refit on matured labels only after validation reporting. Regression confidence combines non-overlapping rank-IC and top-minus-bottom spread evidence. Company confidence is the geometric mean of broad and strict point-in-time validation scores; static SEMIS and nonmember rows receive explicit haircuts. A zero reliability score forces sizing abstention.</p><div class="table-wrap">{_html_table(governance_view)}</div><h3>Model audit</h3><div class="table-wrap">{_html_table(result.audit)}</div></section>
 </main></body></html>"""
 
 
@@ -1292,6 +1430,28 @@ def _write_outputs(result: FinalHierarchyResult) -> None:
         for model in [result.macro, result.sector, result.company, result.trend]
     ], ignore_index=True)
     positioning_importance.to_csv(out / "cftc_feature_importance.csv", index=False)
+    family_rows = []
+    for model in [result.macro, result.sector, result.company, result.trend]:
+        for row in model.importance.itertuples(index=False):
+            feature = str(row.feature)
+            if feature.startswith("cot_"):
+                family = "cftc_positioning"
+            elif feature in COMPANY_FUNDAMENTAL_FEATURES:
+                family = "company_fundamental"
+            elif feature.startswith("company_"):
+                family = "company_price_trend"
+            elif feature.startswith("parent_"):
+                family = "parent_sector"
+            elif feature.startswith("book_") or feature.startswith("sector_"):
+                family = "cross_section_control"
+            elif any(token in feature for token in ["vix", "nfci", "spread", "yield_curve", "cpi", "indpro", "gold", "copper", "wti", "dxy", "cape", "fed_path", "breakeven", "infl_"]):
+                family = "macro_market"
+            else:
+                family = "other"
+            family_rows.append({"layer": row.layer, "family": family, "importance": row.importance})
+    pd.DataFrame(family_rows).groupby(["layer", "family"], as_index=False)["importance"].sum().to_csv(
+        out / "feature_family_importance.csv", index=False
+    )
     result.sizing.to_csv(out / "sizing_advisor.csv", index=False)
     result.audit.to_csv(out / "model_audit.csv", index=False)
     (out / "positioning_snapshot.json").write_text(json.dumps(result.positioning_snapshot, indent=2), encoding="utf-8")
@@ -1388,7 +1548,7 @@ def build_final_hierarchy(
     cftc_snapshot = _current_positioning_snapshot(positioning, asof)
     gamma = gamma_exposure(root)
     gamma_snapshot = (
-        {"status": "available_live_only", "detail": gamma, **gamma}
+        {"status": "available_live_only", "detail": "Live snapshot only; excluded from model training.", **gamma}
         if gamma
         else {"status": "unavailable_neutral", "detail": GEX_INSTRUCTIONS}
     )
@@ -1408,6 +1568,11 @@ def build_final_hierarchy(
         },
         "cftc": {"included_in_training": True, "publication_aligned": True, "latest": cftc_snapshot},
         "gamma": {"included_in_training": False, "live_risk_overlay": True, "status": gamma_snapshot["status"]},
+        "reliability_policy": {
+            "regression": "mean of positive validation rank-IC and top-minus-bottom spread evidence, sampled at non-overlapping horizons",
+            "company": "geometric mean of broad-universe and strict point-in-time regression reliability",
+            "holdout_use": "reporting only; never used for model weighting, calibration, or sizing confidence",
+        },
         "known_limitations": [
             "Company universe before November 2019 is not strict point-in-time constituent history.",
             "The dedicated semiconductor book overlaps XLK and is consolidated by a predeclared priority rule.",

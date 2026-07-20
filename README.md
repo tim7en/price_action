@@ -88,6 +88,18 @@ The build writes model-ready panels, annual walk-forward split metadata, a
 feature-role registry, leakage checks, progress state, and a vintage
 millimetre-paper dashboard under `outputs/hierarchical_research/`.
 
+To fit the final macro -> sector -> company -> trend ensemble, incorporate
+release-aligned CFTC positioning, apply the live gamma risk overlay, and write
+the constrained sizing dashboard:
+
+```bash
+python build_final_hierarchy.py
+```
+
+The final dashboard and auditable model artifacts are written under
+`outputs/final_hierarchy/`. Dealer gamma remains a live-only sizing overlay
+until a historical point-in-time options-chain archive is available.
+
 
 ## Run it
 
