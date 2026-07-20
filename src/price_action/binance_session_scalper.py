@@ -37,6 +37,7 @@ from .execution_costs import BinanceExecutionCosts, load_binance_execution_costs
 DEFAULT_DATA = Path("cache/cache/binance_asia_orb/BTCUSDT_2022-01-01_2026-02-25_5m.csv.gz")
 DEFAULT_EXECUTION = Path("config/binance_session_scalper_execution.json")
 DEFAULT_OUTPUT = Path("outputs/binance_session_scalper")
+LEVERAGED_NY_OUTPUT = Path("outputs/binance_ny_open_scalper_leveraged")
 BAR_INTERVAL = pd.Timedelta(minutes=5)
 PHASE_MINUTES = 30
 HOLDOUT_START = pd.Timestamp("2025-01-01", tz="UTC")
@@ -58,6 +59,8 @@ PHASES = (
 @dataclass(frozen=True)
 class ScalperConfig:
     symbol: str = "BTCUSDT"
+    markets: tuple[str, ...] = tuple(SESSION_CALENDARS)
+    phases: tuple[str, ...] = PHASES
     profile_lookback_bars: int = 50
     profile_rows: int = 24
     profile_value_fraction: float = 0.70
@@ -81,6 +84,10 @@ class ScalperConfig:
     maximum_one_trade_per_phase: bool = True
 
     def __post_init__(self) -> None:
+        if not self.markets or not set(self.markets).issubset(SESSION_CALENDARS):
+            raise ValueError(f"markets must be selected from {sorted(SESSION_CALENDARS)}")
+        if not self.phases or not set(self.phases).issubset(PHASES):
+            raise ValueError(f"phases must be selected from {list(PHASES)}")
         if self.profile_lookback_bars < 10 or self.profile_rows < 4:
             raise ValueError("Volume-profile history and resolution are too small")
         if not 0.0 < self.profile_value_fraction < 1.0:
@@ -91,6 +98,20 @@ class ScalperConfig:
             raise ValueError("risk_fraction must be positive and no greater than 5%")
         if self.max_notional_fraction <= 0.0:
             raise ValueError("max_notional_fraction must be positive")
+
+
+def preset_config(name: str) -> ScalperConfig:
+    if name == "broad_timing_research":
+        return ScalperConfig()
+    if name == "leveraged_new_york_open":
+        return ScalperConfig(
+            markets=("New_York",),
+            phases=("opening_first_30m", "opening_followthrough_30m"),
+            risk_fraction=0.01,
+            max_notional_fraction=10.0,
+            maximum_one_trade_per_phase=False,
+        )
+    raise ValueError(f"Unknown strategy preset: {name}")
 
 
 def load_binance_klines(path: str | Path) -> pd.DataFrame:
@@ -713,7 +734,8 @@ Generated {governance['generated_at_utc']}. This is a standalone strategy; no ma
 - OHLCV approximation: 50-bar, 24-bin typical-price volume profile; five-bar close-location delta proxy; 2x-volume/0.3-ATR absorption; accumulation then aggressive expansion; session VWAP alignment.
 - The first 30 minutes defines the opening range. ORB entries are allowed only in the following 30 minutes. Triple-A and value-area reactions are evaluated in all phase buckets.
 - Signals are confirmed at a bar close and entered at the next five-minute open. Both stop and target touching in one bar is resolved as a stop.
-- Risk is 0.25% of equity per trade subject to a 1x notional cap, 2R target, one trade per market-phase, one position globally, and three net losses per UTC day.
+- Risk is {governance['config']['risk_fraction'] * 100.0:.2f}% of current equity per trade, subject to a {governance['config']['max_notional_fraction']:.1f}x gross-notional cap, 2R target, one position globally, and three net losses per UTC day. {'Only one trade is permitted per market-phase.' if governance['config']['maximum_one_trade_per_phase'] else 'Repeated non-overlapping attempts are permitted within the selected session until the loss stop is reached.'}
+- Profit-based intraday risk scaling is disabled because the source describes the principle but does not supply an auditable scaling equation.
 - Development period: 2022-2024. Untuned holdout: 2025 onward.
 
 ## Important limitations
@@ -751,6 +773,10 @@ def build_session_scalper(
         raise ValueError("This long/short BTCUSDT study requires a USD-M perpetual execution profile")
     bars = load_binance_klines(data_file)
     schedule = build_session_schedule(bars.index.min(), bars.index.max())
+    schedule = schedule.loc[
+        schedule["market"].isin(strategy.markets)
+        & schedule["phase"].isin(strategy.phases)
+    ].reset_index(drop=True)
     candidates, moves, phase_quality = build_phase_candidates(bars, schedule, strategy)
     trades, blocked = run_backtest(candidates, bars, strategy, execution)
     summary = trade_summary(trades)
@@ -768,8 +794,11 @@ def build_session_scalper(
         "execution": execution.to_dict(),
         "holdout_start": HOLDOUT_START.isoformat(),
         "calendar_library": "exchange_calendars",
-        "session_calendars": SESSION_CALENDARS,
-        "phases": list(PHASES),
+        "session_calendars": {
+            market: SESSION_CALENDARS[market] for market in strategy.markets
+        },
+        "phases": list(strategy.phases),
+        "profit_scaling": "disabled: no exact public sizing formula supplied",
         "usable_phases": int(phase_quality["usable"].sum()),
         "excluded_phases": int((~phase_quality["usable"]).sum()),
         "raw_signals": int(len(signal_view)),
@@ -819,17 +848,28 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--project-root", default=None)
     parser.add_argument("--data-path", default=str(DEFAULT_DATA))
     parser.add_argument("--execution-path", default=str(DEFAULT_EXECUTION))
-    parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT))
+    parser.add_argument(
+        "--preset",
+        choices=["broad_timing_research", "leveraged_new_york_open"],
+        default="broad_timing_research",
+    )
+    parser.add_argument("--output-dir", default=None)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    output_dir = args.output_dir or (
+        str(LEVERAGED_NY_OUTPUT)
+        if args.preset == "leveraged_new_york_open"
+        else str(DEFAULT_OUTPUT)
+    )
     result = build_session_scalper(
         args.project_root,
         data_path=args.data_path,
         execution_path=args.execution_path,
-        output_dir=args.output_dir,
+        output_dir=output_dir,
+        config=preset_config(args.preset),
     )
     print(f"Report: {result['output_dir'] / 'report.md'}")
     print(result["summary"].head(12).to_string(index=False))

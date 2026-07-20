@@ -113,6 +113,38 @@ class BinanceSessionScalperTests(unittest.TestCase):
         self.assertAlmostEqual(trade["one_way_turnover"], 0.50)
         self.assertAlmostEqual(trade["execution_cost"], 0.50 * 15.0 / 10_000.0)
 
+    def test_one_percent_stop_risk_can_create_leveraged_notional(self) -> None:
+        index = pd.date_range("2025-01-02 14:30", periods=3, freq="5min", tz="UTC")
+        bars = pd.DataFrame({
+            "open": [100.0, 100.0, 100.0],
+            "high": [100.05, 100.05, 100.05],
+            "low": [99.95, 99.95, 99.95],
+            "close": [100.0, 100.0, 100.0],
+        }, index=index)
+        signal = pd.Series({
+            "bar_id": 0,
+            "timestamp": index[0],
+            "phase_end": index[-1] + pd.Timedelta(minutes=5),
+            "signal_side": 1,
+            "atr": 0.20,
+            "market": "New_York",
+            "session_date": "2025-01-02",
+            "phase": "opening_first_30m",
+            "setup": "value_area_bounce",
+        })
+
+        trade = _simulate_trade(
+            signal,
+            bars,
+            ScalperConfig(risk_fraction=0.01, max_notional_fraction=10.0),
+            BinanceExecutionCosts(
+                product="usd_m_perp", maker_fee_bps=0.0, taker_fee_bps=0.0, slippage_bps=0.0
+            ),
+        )
+
+        self.assertAlmostEqual(trade["notional_fraction"], 5.0)
+        self.assertAlmostEqual(trade["risk_fraction_deployed"], 0.01)
+
     def test_fourth_same_day_signal_is_blocked_after_three_losses(self) -> None:
         index = pd.date_range("2025-01-02 00:00", periods=10, freq="5min", tz="UTC")
         bars = pd.DataFrame({
