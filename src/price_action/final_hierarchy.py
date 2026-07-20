@@ -43,6 +43,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from .data import resolve_project_root
+from .execution_costs import (
+    BinanceExecutionCosts,
+    load_binance_execution_costs,
+    simulate_rebalanced_portfolio,
+)
 from .hierarchical_research import (
     BOOK_PARENT_SECTOR,
     EARNINGS_FUNDAMENTAL_FEATURES,
@@ -69,6 +74,7 @@ from .quality_engine import SECTOR_SPECIFICATION, load_close
 from .sector_dalio_regime_model import build_live_etf_overlay_panel
 
 OUTPUT_DIR = Path("outputs") / "final_hierarchy"
+BINANCE_EXECUTION_CONFIG = Path("config") / "binance_execution.json"
 COT_CACHE = Path("cache") / "market_structure" / "cot_tff_es.csv"
 CROSS_EVENTS = Path("outputs") / "sector_dalio_regime_model" / "daily_50_200_cross_events.csv"
 HOLDOUT_START = pd.Timestamp("2025-01-01")
@@ -160,6 +166,10 @@ class FinalHierarchyResult:
     positioning_snapshot: dict[str, Any]
     governance: dict[str, Any]
     audit: pd.DataFrame
+    portfolio_signals: pd.DataFrame
+    portfolio_targets: pd.DataFrame
+    portfolio_periods: pd.DataFrame
+    portfolio_summary: dict[str, Any]
     output_dir: Path
 
 
@@ -660,6 +670,7 @@ def run_regression_layer(
         )
         pred = panel.loc[test, meta_columns].copy()
         pred["target"] = panel.loc[test, target_column]
+        pred["target_end_date"] = panel.loc[test, target_end_column]
         pred["fold"] = split.fold
         pred["train_rows"] = int(train.sum())
         pred["target_clip_lower"] = bounds[0]
@@ -787,6 +798,7 @@ def run_classification_layer(
         )
         pred = panel.loc[test, meta_columns].copy()
         pred["target"] = panel.loc[test, target_column]
+        pred["target_end_date"] = panel.loc[test, target_end_column]
         pred["fold"] = split.fold
         pred["train_rows"] = int(train.sum())
         pred["selected_feature_count"] = len(fold_features)
@@ -1077,7 +1089,7 @@ def build_model_audit(
 def _select_primary_company_rows(company: pd.DataFrame) -> pd.DataFrame:
     frame = company.copy()
     frame["priority"] = 3
-    frame.loc[frame["pit_member"].fillna(False), "priority"] = 2
+    frame.loc[frame["pit_member"].eq(True), "priority"] = 2
     frame.loc[frame["book"].eq("SEMIS"), "priority"] = 1
     frame["metric_priority"] = -pd.to_numeric(frame.get("n_metrics"), errors="coerce").fillna(0)
     return frame.sort_values(["ticker", "priority", "metric_priority", "book"]).drop_duplicates("ticker", keep="first")
@@ -1218,7 +1230,7 @@ def build_sizing_advisor(
         pd.to_numeric(company_live["n_metrics"], errors="coerce").fillna(0.0) / 5.0
     ).clip(0.0, 1.0)
     company_live["point_in_time_confidence"] = np.where(
-        company_live["pit_member"].fillna(False),
+        company_live["pit_member"].eq(True),
         1.0,
         np.where(company_live["book"].eq("SEMIS"), 0.65, 0.40),
     )
@@ -1248,7 +1260,7 @@ def build_sizing_advisor(
     volatility = pd.to_numeric(company_live["company_volatility_63d"], errors="coerce").clip(0.12, 1.50)
     company_live["risk_score"] = company_live["expected_total_alpha"].abs() * company_live["confidence"] / volatility
     company_live["allocation_eligible"] = (
-        (company_live["pit_member"].fillna(False) | company_live["book"].eq("SEMIS"))
+        (company_live["pit_member"].eq(True) | company_live["book"].eq("SEMIS"))
         & pd.to_numeric(company_live["n_metrics"], errors="coerce").ge(3)
         & company_live["quality_z"].notna()
     )
@@ -1378,6 +1390,200 @@ def build_sizing_advisor(
     ).reset_index(drop=True)
 
 
+def _causal_regression_reliability(
+    predictions: pd.DataFrame,
+    asof: pd.Timestamp,
+    *,
+    group_columns: list[str],
+    horizon: int,
+    strict_point_in_time: bool = False,
+) -> float:
+    matured = predictions.loc[
+        pd.to_datetime(predictions["target_end_date"]).lt(asof)
+        & pd.to_datetime(predictions["date"]).lt(asof)
+    ].copy()
+    if matured["date"].nunique() < 24:
+        return 0.0
+    broad_metrics = pd.DataFrame([
+        _regression_metrics(matured, scope="validation", group_columns=group_columns, horizon=horizon)
+    ])
+    broad = _regression_reliability(broad_metrics)
+    if not strict_point_in_time:
+        return broad
+    strict = matured.loc[matured["strict_pit_eligible"].eq(True)]
+    if len(strict) < 500 or strict["date"].nunique() < 24:
+        return 0.0
+    strict_metrics = pd.DataFrame([
+        _regression_metrics(strict, scope="validation", group_columns=group_columns, horizon=horizon)
+    ])
+    return float(math.sqrt(broad * _regression_reliability(strict_metrics)))
+
+
+def _causal_classification_live(
+    predictions: pd.DataFrame,
+    asof: pd.Timestamp,
+    classes: list[str],
+    *,
+    positive_class: str | None = None,
+) -> tuple[float, pd.Series]:
+    matured = predictions.loc[
+        pd.to_datetime(predictions["target_end_date"]).lt(asof)
+        & pd.to_datetime(predictions["date"]).lt(asof)
+    ].copy()
+    if len(matured) < max(24, len(classes) * 5):
+        reliability = 0.0
+    else:
+        metrics = pd.DataFrame([_classification_metrics(
+            matured,
+            scope="validation",
+            classes=classes,
+            positive_class=positive_class,
+        )])
+        reliability = _classification_reliability(metrics, len(classes))
+    if matured.empty:
+        prior = pd.Series(1.0 / len(classes), index=classes)
+    else:
+        prior = matured["target"].value_counts(normalize=True).reindex(classes, fill_value=0.0)
+    return reliability, prior
+
+
+def _historical_result_shell(
+    *,
+    live: pd.DataFrame,
+    reliability: float,
+    classes: list[str] | None,
+    asof: pd.Timestamp,
+) -> RegressionResult | ClassificationResult:
+    common = {
+        "predictions": pd.DataFrame(),
+        "live": live,
+        "metrics": pd.DataFrame(),
+        "importance": pd.DataFrame(columns=["layer", "feature", "importance"]),
+        "feature_columns": [],
+        "validation_reliability": reliability,
+        "trained_through": asof,
+    }
+    if classes is None:
+        return RegressionResult(**common)
+    return ClassificationResult(**common, classes=classes)
+
+
+def build_walkforward_portfolio_targets(
+    macro: ClassificationResult,
+    sector: RegressionResult,
+    company: RegressionResult,
+    trend: ClassificationResult,
+    positioning: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Replay portfolio decisions with only labels matured by each signal date."""
+    dates = sorted(pd.to_datetime(company.predictions["date"].dropna().unique()))
+    signal_rows: list[dict[str, Any]] = []
+    target_rows: list[dict[str, Any]] = []
+    for asof in dates:
+        asof = pd.Timestamp(asof)
+        company_live = company.predictions.loc[pd.to_datetime(company.predictions["date"]).eq(asof)].copy()
+        sector_live = sector.predictions.loc[pd.to_datetime(sector.predictions["date"]).eq(asof)].copy()
+        macro_candidates = macro.predictions.loc[pd.to_datetime(macro.predictions["date"]).le(asof)]
+        if company_live.empty or sector_live.empty or macro_candidates.empty:
+            continue
+        macro_live = macro_candidates.loc[
+            pd.to_datetime(macro_candidates["date"]).eq(pd.to_datetime(macro_candidates["date"]).max())
+        ].tail(1).copy()
+
+        company_reliability = _causal_regression_reliability(
+            company.predictions,
+            asof,
+            group_columns=["date", "book"],
+            horizon=6,
+            strict_point_in_time=True,
+        )
+        sector_reliability = _causal_regression_reliability(
+            sector.predictions,
+            asof,
+            group_columns=["date"],
+            horizon=6,
+        )
+        company_live["validation_reliability"] = company_reliability
+        company_live["validated_alpha"] = company_live["predicted_alpha"] * company_reliability
+        sector_live["validation_reliability"] = sector_reliability
+        sector_live["validated_alpha"] = sector_live["predicted_alpha"] * sector_reliability
+
+        macro_reliability, macro_prior = _causal_classification_live(
+            macro.predictions, asof, macro.classes
+        )
+        macro_live["validation_reliability"] = macro_reliability
+        for label in macro.classes:
+            macro_live[f"validated_prob::{label}"] = (
+                float(macro_prior[label])
+                + macro_reliability * (macro_live[f"prob::{label}"] - float(macro_prior[label]))
+            )
+
+        trend_candidates = trend.predictions.loc[pd.to_datetime(trend.predictions["date"]).le(asof)].copy()
+        if trend_candidates.empty:
+            trend_live = pd.DataFrame(columns=[
+                "date", "sector", "symbol", "type", "validated_prob::survives"
+            ])
+            trend_reliability = 0.0
+        else:
+            trend_live = trend_candidates.sort_values("date").groupby("sector", as_index=False).tail(1).copy()
+            trend_reliability, trend_prior = _causal_classification_live(
+                trend.predictions,
+                asof,
+                trend.classes,
+                positive_class="survives",
+            )
+            for label in trend.classes:
+                trend_live[f"validated_prob::{label}"] = (
+                    float(trend_prior[label])
+                    + trend_reliability * (trend_live[f"prob::{label}"] - float(trend_prior[label]))
+                )
+
+        macro_shell = _historical_result_shell(
+            live=macro_live, reliability=macro_reliability, classes=macro.classes, asof=asof
+        )
+        sector_shell = _historical_result_shell(
+            live=sector_live, reliability=sector_reliability, classes=None, asof=asof
+        )
+        company_shell = _historical_result_shell(
+            live=company_live, reliability=company_reliability, classes=None, asof=asof
+        )
+        trend_shell = _historical_result_shell(
+            live=trend_live, reliability=trend_reliability, classes=trend.classes, asof=asof
+        )
+        sizing = build_sizing_advisor(
+            macro_shell,
+            sector_shell,
+            company_shell,
+            trend_shell,
+            _current_positioning_snapshot(positioning, asof),
+            None,
+        )
+        if sizing.empty:
+            continue
+        summary = sizing.iloc[0]
+        signal_rows.append({
+            "date": asof,
+            "sizing_status": summary["sizing_status"],
+            "active_names": int(sizing["suggested_weight"].ne(0.0).sum()),
+            "gross_exposure": float(sizing["suggested_weight"].abs().sum()),
+            "net_exposure": float(sizing["suggested_weight"].sum()),
+            "macro_reliability": macro_reliability,
+            "sector_reliability": sector_reliability,
+            "company_reliability": company_reliability,
+            "trend_reliability": trend_reliability,
+        })
+        for row in sizing.loc[sizing["suggested_weight"].ne(0.0), ["ticker", "suggested_weight"]].itertuples(index=False):
+            target_rows.append({
+                "date": asof,
+                "symbol": str(row.ticker),
+                "target_weight": float(row.suggested_weight),
+            })
+    return pd.DataFrame(signal_rows), pd.DataFrame(
+        target_rows,
+        columns=["date", "symbol", "target_weight"],
+    )
+
+
 def _chart_live_sector(sector: RegressionResult) -> str:
     view = sector.live.sort_values("validated_alpha")
     fig, ax = _vintage_figure(figsize=(10.5, 5.0))
@@ -1495,6 +1701,11 @@ def build_html_report(result: FinalHierarchyResult) -> str:
     governance_view["validation_reliability"] = pd.to_numeric(
         governance_view["validation_reliability"], errors="coerce"
     )
+    portfolio_summary_view = pd.DataFrame([{
+        key: value
+        for key, value in result.portfolio_summary.items()
+        if not isinstance(value, (dict, list))
+    }])
     generated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     status = sizing["sizing_status"].iloc[0] if len(sizing) else "NO_OUTPUT"
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1507,6 +1718,7 @@ header,.band{{background:rgba(244,236,211,.95)}} header{{border-top:4px solid va
 <section class="band"><h2>Decision State</h2><p class="{'active' if status == 'ACTIVE_RESEARCH' else 'warn'}">{status}</p><div class="table-wrap">{_html_table(macro_view)}</div><div class="charts">{_img(_chart_macro_probabilities(result.macro), 'Macro regime probability ensemble')}{_img(_chart_live_sector(result.sector), 'Sector forecasts after validation shrinkage')}</div></section>
 <section class="band"><h2>Company Selection And Sizing</h2><p>Expected alpha is sector excess alpha plus company residual alpha. Nonzero weights require current point-in-time book membership or the dedicated SEMIS specification, at least three fundamentals, directional 50/200 confirmation, a 1.0% long or 1.5% short six-month alpha hurdle, volatility scaling, 6% long-name caps, 5% short-name caps, and one shared 20% gross sector cap. Long and short sleeves are solved jointly so missing signals cannot violate the macro net target; unused risk budget stays unallocated.</p>{_img(_chart_company_alpha(result.company), 'Company residual forecasts after validation shrinkage')}<h3>Highest expected alpha</h3><div class="table-wrap">{_html_table(top_sizing)}</div><h3>Lowest expected alpha</h3><div class="table-wrap">{_html_table(bottom_sizing)}</div></section>
 <section class="band"><h2>Out-Of-Sample Validation</h2>{_img(_chart_oos_ic(result.sector, result.company), 'Walk-forward cross-sectional information coefficients')}<div class="table-wrap">{_html_table(metrics)}</div></section>
+<section class="band"><h2>Net Portfolio Replay</h2><p>Each historical recommendation is rebuilt from walk-forward predictions using only outcomes whose target window had finished before that signal. Trades execute on the next available close. Turnover compares the new target with drifted pre-trade weights; commission, slippage, perpetual funding, idle-cash carry, and final liquidation are accounted for separately. A <b>RESEARCH_ONLY</b> result means Binance instrument mapping, mark-price history, or funding history is still missing and the figures must not be treated as executable evidence.</p><div class="table-wrap">{_html_table(portfolio_summary_view)}</div></section>
 <section class="band"><h2>Positioning And Gamma</h2><p>CFTC positioning enters all four trained layers only after each report's public usable date. The current release is usable from {cftc.get('usable_date', 'n/a')} and applies a {float(sizing['positioning_gross_scalar'].iloc[0]) if len(sizing) else 1.0:.2f} gross-risk scalar. Dealer gamma status: <b>{gex.get('status', 'unavailable')}</b>; its current gross-risk scalar is {float(sizing['gamma_gross_scalar'].iloc[0]) if len(sizing) else 1.0:.2f}. Gamma is never injected into historical features without a point-in-time chain archive.</p><div class="charts"><div><h3>Current CFTC snapshot</h3><div class="table-wrap">{_html_table(positioning_view)}</div></div><div><h3>CFTC model attribution</h3><div class="table-wrap">{_html_table(cftc_attribution)}</div></div></div><p class="meta">{gex.get('detail', GEX_INSTRUCTIONS)}</p></section>
 <section class="band"><h2>Governance</h2><p>The 2025+ holdout is reported separately and never selects hyperparameters. Final live models refit on matured labels only after validation reporting. Regression confidence combines non-overlapping rank-IC and top-minus-bottom spread evidence. Company confidence is the geometric mean of broad and strict point-in-time validation scores; static SEMIS and nonmember rows receive explicit haircuts. A zero reliability score forces sizing abstention.</p><div class="table-wrap">{_html_table(governance_view)}</div><h3>Model audit</h3><div class="table-wrap">{_html_table(result.audit)}</div></section>
 </main></body></html>"""
@@ -1553,6 +1765,12 @@ def _write_outputs(result: FinalHierarchyResult) -> None:
         out / "feature_family_importance.csv", index=False
     )
     result.sizing.to_csv(out / "sizing_advisor.csv", index=False)
+    result.portfolio_signals.to_csv(out / "portfolio_walkforward_signals.csv", index=False)
+    result.portfolio_targets.to_csv(out / "portfolio_walkforward_targets.csv", index=False)
+    result.portfolio_periods.to_csv(out / "portfolio_walkforward_periods.csv", index=False)
+    (out / "portfolio_backtest_summary.json").write_text(
+        json.dumps(result.portfolio_summary, indent=2), encoding="utf-8"
+    )
     result.audit.to_csv(out / "model_audit.csv", index=False)
     (out / "positioning_snapshot.json").write_text(json.dumps(result.positioning_snapshot, indent=2), encoding="utf-8")
     (out / "model_governance.json").write_text(json.dumps(result.governance, indent=2), encoding="utf-8")
@@ -1653,8 +1871,18 @@ def build_final_hierarchy(
         else {"status": "unavailable_neutral", "detail": GEX_INSTRUCTIONS}
     )
     positioning_snapshot = {"asof": asof.strftime("%Y-%m-%d"), "cftc": cftc_snapshot, "gamma": gamma_snapshot}
-    _write_progress(out, step=7, total=total_steps, stage="sizing", message="Applying confidence shrinkage and portfolio constraints")
+    _write_progress(out, step=7, total=total_steps, stage="sizing", message="Applying confidence shrinkage, portfolio constraints, and execution costs")
     sizing = build_sizing_advisor(macro, sector, company, trend, cftc_snapshot, gamma)
+    portfolio_signals, portfolio_targets = build_walkforward_portfolio_targets(
+        macro, sector, company, trend, positioning
+    )
+    execution = load_binance_execution_costs(root / BINANCE_EXECUTION_CONFIG)
+    portfolio_periods, portfolio_summary = simulate_rebalanced_portfolio(
+        portfolio_targets,
+        portfolio_signals["date"].tolist(),
+        lambda symbol: load_close(root, symbol),
+        execution,
+    )
     governance = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "asof": asof.strftime("%Y-%m-%d"),
@@ -1668,6 +1896,7 @@ def build_final_hierarchy(
         },
         "cftc": {"included_in_training": True, "publication_aligned": True, "latest": cftc_snapshot},
         "gamma": {"included_in_training": False, "live_risk_overlay": True, "status": gamma_snapshot["status"]},
+        "execution": portfolio_summary,
         "reliability_policy": {
             "regression": "mean of positive validation rank-IC and top-minus-bottom spread evidence, sampled at non-overlapping horizons",
             "company": "geometric mean of broad-universe and strict point-in-time regression reliability",
@@ -1678,6 +1907,7 @@ def build_final_hierarchy(
             "The dedicated semiconductor book overlaps XLK and is consolidated by a predeclared priority rule.",
             "Gamma has no historical point-in-time chain archive and is not a trained feature.",
             "Monthly six-month targets overlap; inference uses non-overlapping IC and spread samples.",
+            "The portfolio replay uses adjusted underlying closes, not Binance mark prices; it remains research-only until venue symbols and historical funding are supplied.",
         ],
     }
     audit = build_model_audit(
@@ -1694,7 +1924,21 @@ def build_final_hierarchy(
         _write_progress(out, step=7, total=total_steps, stage="audit", message="Final model audit failed", status="failed")
         raise ValueError("Final model audit failed:\n" + failures.to_string(index=False))
     governance["audit_status"] = audit["status"].value_counts().to_dict()
-    result = FinalHierarchyResult(macro, sector, company, trend, sizing, positioning_snapshot, governance, audit, out)
+    result = FinalHierarchyResult(
+        macro=macro,
+        sector=sector,
+        company=company,
+        trend=trend,
+        sizing=sizing,
+        positioning_snapshot=positioning_snapshot,
+        governance=governance,
+        audit=audit,
+        portfolio_signals=portfolio_signals,
+        portfolio_targets=portfolio_targets,
+        portfolio_periods=portfolio_periods,
+        portfolio_summary=portfolio_summary,
+        output_dir=out,
+    )
     _write_progress(out, step=8, total=total_steps, stage="report", message="Writing final hierarchy dashboard and outputs")
     _write_outputs(result)
     _write_progress(out, step=8, total=total_steps, stage="complete", message="Final hierarchy complete", status="complete")

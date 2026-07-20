@@ -12,6 +12,7 @@ from price_action.hierarchical_research import (
     _role_for_column,
 )
 from price_action.final_hierarchy import (
+    _classification_reliability,
     _capped_budget,
     _feasible_side_budgets,
     _regression_model_weights,
@@ -99,6 +100,19 @@ class HierarchicalResearchContractTests(unittest.TestCase):
 
         metrics.loc[0, "spread_tstat_nonoverlap"] = -2.0
         self.assertAlmostEqual(_regression_reliability(metrics), 0.25)
+
+    def test_classification_reliability_requires_calibrated_probability_skill(self) -> None:
+        uncalibrated = pd.DataFrame([{
+            "scope": "validation",
+            "balanced_accuracy": 0.60,
+            "log_loss_skill": -0.10,
+            "brier_skill": 0.05,
+        }])
+        calibrated = uncalibrated.copy()
+        calibrated.loc[0, ["log_loss_skill", "brier_skill"]] = [0.20, 0.10]
+
+        self.assertEqual(_classification_reliability(uncalibrated, 5), 0.0)
+        self.assertGreater(_classification_reliability(calibrated, 5), 0.0)
 
     def test_shared_sector_cap_includes_existing_book(self) -> None:
         scores = pd.Series([2.0, 1.0], index=[0, 1])

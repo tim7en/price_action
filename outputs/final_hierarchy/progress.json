@@ -1,9 +1,9 @@
 {
-  "status": "complete",
-  "step": 8,
+  "status": "running",
+  "step": 3,
   "total_steps": 8,
-  "progress_pct": 100.0,
-  "stage": "complete",
-  "message": "Final hierarchy complete",
-  "updated_at_utc": "2026-07-20T17:54:44.440107+00:00"
+  "progress_pct": 37.5,
+  "stage": "macro",
+  "message": "Training walk-forward macro regime ensemble",
+  "updated_at_utc": "2026-07-20T18:05:46.874525+00:00"
 }
