@@ -1,0 +1,80 @@
+layer,feature,importance
+trend,type_golden,0.16720871580228247
+trend,sma_gap,0.07525131389295331
+trend,type_death,0.059064958256286305
+trend,infl_exp_1y_z,0.026389959999276996
+trend,core_cpi_yoy_z,0.023608747849478282
+trend,copper_ret_6m,0.021713426994084396
+trend,fed_path_2y_z,0.020877508428802184
+trend,permits_yoy_z,0.020432292354680318
+trend,breakeven_10y,0.018014454232397312
+trend,infl_5y5y_fwd,0.017334714834918212
+trend,wti,0.01719359722295303
+trend,t10y3m,0.017115975349565663
+trend,dxy_ret_6m,0.016765419876074127
+trend,wti_ret_6m,0.01647963221157419
+trend,fed_path_2y,0.016416499565856356
+trend,cape,0.015875628446203115
+trend,indpro_yoy,0.01536003195751337
+trend,copper_gold_ratio_z,0.014987200790693628
+trend,vix3m,0.01494445146451691
+trend,copper_gold_ratio,0.01407667642779364
+trend,t10y3m_z,0.013424678915131718
+trend,inflation_signal,0.012754506886144823
+trend,vix,0.012645164904878988
+trend,yield_curve_10y2y,0.012620804442284361
+trend,claims_yoy,0.012148246142841606
+trend,dxy,0.011934341822613624
+trend,copper_z,0.011679220557502397
+trend,cot_open_interest_yoy,0.01155881132604381
+trend,growth_signal,0.01125523680309965
+trend,indpro_yoy_z,0.011220765140662496
+trend,market_health,0.01104798585655652
+trend,wti_z,0.01073521881615339
+trend,hy_spread,0.010676478646475668
+trend,cot_lev_funds_net_pct_oi,0.010546694638087767
+trend,core_cpi_yoy,0.010369948567926227
+trend,"dalio_quadrant_Stagflation (growth down, inflation up)",0.010312957529056017
+trend,hy_spread_z,0.009848568833384263
+trend,nfci_z,0.009749997371780172
+trend,permits_yoy,0.009527878310599402
+trend,gold,0.009379075495441027
+trend,yield_curve_10y2y_z,0.00886521238278671
+trend,vix_z,0.008773770362521463
+trend,gold_z,0.008397304501920338
+trend,gold_ret_6m,0.008396989780104511
+trend,infl_exp_1y,0.008252388760911314
+trend,copper,0.008106079372610082
+trend,infl_5y5y_fwd_z,0.007674529040160596
+trend,sector_breadth,0.0076492477878002335
+trend,cape_z,0.007382911108783793
+trend,cot_dealer_net_pct_oi_z,0.007160925179325928
+trend,dxy_z,0.006634433028060083
+trend,nfci,0.006153057072917449
+trend,dalio_quadrant_Indeterminate,0.005920546634786411
+trend,cot_asset_mgr_net_pct_oi,0.005914943506748438
+trend,cot_asset_mgr_net_pct_oi_change_13w,0.005599000792448919
+trend,breakeven_10y_z,0.005590031582301558
+trend,cot_dealer_net_pct_oi,0.005428593766115166
+trend,cot_lev_funds_net_pct_oi_z,0.0046611885054008255
+trend,sector_Energy,0.004292907788811798
+trend,claims_yoy_z,0.004282906974349027
+trend,cot_asset_mgr_net_pct_oi_z,0.003943435334971354
+trend,"dalio_quadrant_Deflation (growth down, inflation down)",0.0038341049574668554
+trend,vix_curve_spread,0.003653544215796568
+trend,cot_dealer_net_pct_oi_change_13w,0.0036167237932627303
+trend,vix_curve_ratio,0.00333571762266133
+trend,cot_crowding_abs_z,0.0033332553990216363
+trend,"dalio_quadrant_Goldilocks (growth up, inflation down)",0.0030616612826158914
+trend,cot_lev_funds_net_pct_oi_change_13w,0.0022607106326456056
+trend,"dalio_quadrant_Reflation (growth up, inflation up)",0.002178755105145903
+trend,sector_Health Care,0.0010047518154401899
+trend,sector_Materials,0.000823073282153848
+trend,sector_Utilities,0.0005167694896430192
+trend,sector_Consumer Defensive,0.00031505409483235193
+trend,sector_Technology,0.00021345733311539685
+trend,sector_Consumer Cyclical,0.00017311293469679515
+trend,sector_Financials,5.111781309820501e-05
+trend,sector_Industrials,0.0
+trend,sector_Communication Svcs,0.0
+trend,sector_Real Estate,0.0

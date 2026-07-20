@@ -526,6 +526,7 @@ def _family_for_column(layer: str, column: str, role: str) -> str:
         return "macro_nowcast"
     if layer == "company" and (
         column == "quality_z"
+        or column == "capex_coverage_z"
         or (
             column.endswith("_z")
             and not column.startswith("parent_")

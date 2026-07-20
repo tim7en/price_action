@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-19T18:41:25.860646+00:00",
+  "generated_at_utc": "2026-07-20T03:01:11.667758+00:00",
   "holdout_start": "2025-01-01",
   "target_horizons_months": {
     "macro": 3,
@@ -163,6 +163,7 @@
       "sector"
     ],
     "company": [
+      "capex_coverage_z",
       "capital_ratio_z",
       "earnings_stability_z",
       "fcf_margin_z",
@@ -212,7 +213,6 @@
       "permits_yoy_z",
       "cape",
       "cape_z",
-      "capex_coverage_z",
       "copper",
       "copper_gold_ratio",
       "copper_gold_ratio_z",

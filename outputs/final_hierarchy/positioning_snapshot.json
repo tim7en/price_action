@@ -1,0 +1,19 @@
+{
+  "asof": "2026-07-15",
+  "cftc": {
+    "available": true,
+    "usable_date": "2026-07-13",
+    "age_days": 2,
+    "asset_manager_net_pct_oi": 49.2777345661838,
+    "asset_manager_z": 1.101838583970785,
+    "leveraged_funds_net_pct_oi": -18.372684089852136,
+    "leveraged_funds_z": -0.5575244895271155,
+    "dealer_net_pct_oi": -37.1177720147276,
+    "dealer_z": -0.7532477860586616,
+    "crowding_abs_z": 1.101838583970785
+  },
+  "gamma": {
+    "status": "unavailable_neutral",
+    "detail": "GEX needs a chain file CBOE won't serve to scripts: open https://cdn.cboe.com/api/global/delayed_quotes/options/SPY.json in a browser and save it to data/options/SPY_options.json, then rerun."
+  }
+}

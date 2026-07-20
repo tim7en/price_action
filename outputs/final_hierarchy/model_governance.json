@@ -1,0 +1,109 @@
+{
+  "generated_at_utc": "2026-07-20T03:19:09.563189+00:00",
+  "asof": "2026-07-15",
+  "holdout_start": "2025-01-01",
+  "models": {
+    "macro": {
+      "task": "five-class next-three-month Dalio quadrant",
+      "models": [
+        "logit",
+        "extra_trees",
+        "hist_gradient"
+      ],
+      "min_feature_coverage": 0.55,
+      "min_train_rows": 84,
+      "label_horizon_months": 3
+    },
+    "sector": {
+      "task": "next-six-month excess return versus broad sector basket",
+      "models": [
+        "ridge",
+        "extra_trees",
+        "hist_gradient"
+      ],
+      "min_feature_coverage": 0.6,
+      "min_train_rows": 700,
+      "label_horizon_months": 6
+    },
+    "company": {
+      "task": "next-126-trading-day stock return minus parent-sector ETF",
+      "models": [
+        "ridge",
+        "extra_trees",
+        "hist_gradient"
+      ],
+      "min_feature_coverage": 0.45,
+      "min_train_rows": 5000,
+      "label_horizon_months": 6,
+      "training_target_winsorization": [
+        0.005,
+        0.995
+      ],
+      "weighting": "equal book-month mass"
+    },
+    "trend": {
+      "task": "50/200 cross survives 63 trading days and reaches 5% favorable excursion",
+      "models": [
+        "logit",
+        "extra_trees",
+        "hist_gradient"
+      ],
+      "min_feature_coverage": 0.5,
+      "min_train_rows": 90,
+      "label_horizon_months": 3
+    }
+  },
+  "layers": {
+    "macro": {
+      "features": 63,
+      "validation_reliability": 0.1260362388529463,
+      "trained_through": "2026-06-30"
+    },
+    "sector": {
+      "features": 107,
+      "validation_reliability": 0.029928579518421934,
+      "trained_through": "2025-09-30"
+    },
+    "company": {
+      "features": 142,
+      "validation_reliability": 0.49640032222048713,
+      "trained_through": "2026-06-03"
+    },
+    "trend": {
+      "features": 79,
+      "validation_reliability": 0.2150919567448102,
+      "trained_through": "2026-06-30"
+    }
+  },
+  "cftc": {
+    "included_in_training": true,
+    "publication_aligned": true,
+    "latest": {
+      "available": true,
+      "usable_date": "2026-07-13",
+      "age_days": 2,
+      "asset_manager_net_pct_oi": 49.2777345661838,
+      "asset_manager_z": 1.101838583970785,
+      "leveraged_funds_net_pct_oi": -18.372684089852136,
+      "leveraged_funds_z": -0.5575244895271155,
+      "dealer_net_pct_oi": -37.1177720147276,
+      "dealer_z": -0.7532477860586616,
+      "crowding_abs_z": 1.101838583970785
+    }
+  },
+  "gamma": {
+    "included_in_training": false,
+    "live_risk_overlay": true,
+    "status": "unavailable_neutral"
+  },
+  "known_limitations": [
+    "Company universe before November 2019 is not strict point-in-time constituent history.",
+    "The dedicated semiconductor book overlaps XLK and is consolidated by a predeclared priority rule.",
+    "Gamma has no historical point-in-time chain archive and is not a trained feature.",
+    "Monthly six-month targets overlap; inference uses non-overlapping IC and spread samples."
+  ],
+  "audit_status": {
+    "PASS": 9,
+    "WARN": 3
+  }
+}

@@ -75,6 +75,19 @@ This path is useful for extending daily history to the last 20-plus years when t
 
 The root runner scripts avoid any need to install the package into the environment first.
 
+## Hierarchical research contract
+
+Build the shared macro, sector, and company monthly panels before training the
+hierarchical ensemble:
+
+```bash
+python build_hierarchical_research.py
+```
+
+The build writes model-ready panels, annual walk-forward split metadata, a
+feature-role registry, leakage checks, progress state, and a vintage
+millimetre-paper dashboard under `outputs/hierarchical_research/`.
+
 
 ## Run it
 

@@ -1,0 +1,13 @@
+check,status,detail
+targets_excluded,PASS,"leaked features={'macro': [], 'sector': [], 'company': [], 'trend': []}"
+cftc_in_all_layers,PASS,"selected CFTC features={'macro': 11, 'sector': 11, 'company': 11, 'trend': 11}"
+matured_labels_only,PASS,"asof=2026-07-15, later cutoffs={}"
+holdout_present,PASS,"holdout rows={'macro': 15, 'sector': 33, 'company': 1923, 'trend': 21}"
+live_predictions_complete,PASS,"missing live predictions={'macro': 0, 'sector': 0, 'company': 0, 'trend': 0}"
+ticker_consolidation,PASS,one sizing row per ticker after SEMIS/sector consolidation
+single_name_cap,PASS,maximum absolute suggested weight <= 6%
+shared_sector_gross_cap,PASS,maximum sector gross=0.200
+gamma_not_trained,PASS,gamma is live-only
+sector_evidence_strength,WARN,validation reliability=0.030; forecasts are strongly shrunk
+company_universe_scope,WARN,sizing confidence uses strict point-in-time validation; static SEMIS/nonmember rows receive explicit haircuts
+gamma_history,WARN,no historical or current chain; neutral overlay
