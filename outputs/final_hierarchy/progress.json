@@ -1,9 +1,9 @@
 {
-  "status": "running",
-  "step": 2,
+  "status": "complete",
+  "step": 8,
   "total_steps": 8,
-  "progress_pct": 25.0,
-  "stage": "live",
-  "message": "Building current macro, sector, and company rows",
-  "updated_at_utc": "2026-07-20T18:16:28.422650+00:00"
+  "progress_pct": 100.0,
+  "stage": "complete",
+  "message": "Final hierarchy complete",
+  "updated_at_utc": "2026-07-20T18:20:18.904975+00:00"
 }
