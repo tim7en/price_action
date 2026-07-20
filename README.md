@@ -118,6 +118,23 @@ stability, CFTC attribution, live factor contributions, and the millimetre-paper
 dashboard under `outputs/factor_driver_model/`. The importance values are
 predictive conditional associations, not causal estimates.
 
+## Standalone Binance session scalper
+
+Run the independent BTCUSDT five-minute session study with:
+
+```bash
+python build_binance_session_scalper.py
+```
+
+It does not consume the macro or hierarchical models. The predeclared study
+compares Tokyo, London, and New York exchange calendars during the first 30
+minutes, the following 30-minute opening-range window, the final 30 minutes,
+and the first 30 minutes after each cash close. It implements OHLCV proxies for
+the supplied Fabio-style volume profile, delta, absorption, Triple-A, ORB, and
+value-area rules; signals enter on the next bar and pay the separate USD-M
+execution assumptions in `config/binance_session_scalper_execution.json`.
+Outputs and limitations are written under `outputs/binance_session_scalper/`.
+
 
 ## Run it
 

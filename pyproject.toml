@@ -14,6 +14,7 @@ dependencies = [
     "lightgbm>=4.5,<5.0",
     "hmmlearn>=0.3,<0.4",
     "yfinance>=0.2,<2.0",
+    "exchange-calendars>=4.11,<5.0",
 ]
 
 [project.scripts]
@@ -33,6 +34,7 @@ price-action-sector-dalio-regime = "price_action.sector_dalio_regime_model:main"
 price-action-hierarchical-research = "price_action.hierarchical_research:main"
 price-action-final-hierarchy = "price_action.final_hierarchy:main"
 price-action-factor-drivers = "price_action.factor_driver_model:main"
+price-action-binance-session-scalper = "price_action.binance_session_scalper:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]

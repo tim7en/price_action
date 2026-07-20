@@ -1,0 +1,88 @@
+{
+  "generated_at_utc": "2026-07-20T18:43:39.834845+00:00",
+  "strategy": "standalone_fabio_inspired_ohlcv_proxy",
+  "macro_or_hierarchy_inputs": false,
+  "data_file": "/Users/timursabitov/Dev/price_action/cache/cache/binance_asia_orb/BTCUSDT_2022-01-01_2026-02-25_5m.csv.gz",
+  "data_quality": {
+    "rows": 436729,
+    "first_bar_utc": "2022-01-01T00:00:00+00:00",
+    "last_bar_utc": "2026-02-25T11:20:00+00:00",
+    "duplicate_timestamps": 0,
+    "irregular_gap_events": 1,
+    "missing_five_minute_bars": 16,
+    "largest_gap_minutes": 85.0
+  },
+  "config": {
+    "symbol": "BTCUSDT",
+    "profile_lookback_bars": 50,
+    "profile_rows": 24,
+    "profile_value_fraction": 0.7,
+    "delta_smoothing_bars": 5,
+    "atr_bars": 14,
+    "average_volume_bars": 50,
+    "absorption_volume_multiplier": 2.0,
+    "absorption_range_atr": 0.3,
+    "aggression_volume_multiplier": 1.25,
+    "aggression_range_atr": 0.8,
+    "accumulation_bars": 3,
+    "accumulation_range_atr": 0.8,
+    "absorption_memory_bars": 6,
+    "location_tolerance_atr": 0.2,
+    "stop_atr": 1.0,
+    "risk_reward": 2.0,
+    "max_holding_bars": 12,
+    "risk_fraction": 0.0025,
+    "max_notional_fraction": 1.0,
+    "max_daily_losses": 3,
+    "maximum_one_trade_per_phase": true
+  },
+  "execution": {
+    "product": "usd_m_perp",
+    "maker_fee_bps": 10.0,
+    "taker_fee_bps": 10.0,
+    "maker_fill_fraction": 0.0,
+    "bnb_fee_discount_fraction": 0.0,
+    "slippage_bps": 5.0,
+    "annual_funding_bps": 0.0,
+    "annual_cash_yield_bps": 0.0,
+    "funding_history_supplied": false,
+    "venue_instrument_mapping_supplied": false,
+    "commission_bps": 10.0,
+    "all_in_trade_cost_bps": 15.0,
+    "turnover_definition": "sum(abs(target_weight - prior_weight))",
+    "funding_note": "Positive funding means longs pay and shorts receive; supply historical rates for investable results.",
+    "research_only": true
+  },
+  "holdout_start": "2025-01-01T00:00:00+00:00",
+  "calendar_library": "exchange_calendars",
+  "session_calendars": {
+    "Tokyo": "XTKS",
+    "London": "XLON",
+    "New_York": "XNYS"
+  },
+  "phases": [
+    "opening_first_30m",
+    "opening_followthrough_30m",
+    "closing_last_30m",
+    "after_close_30m"
+  ],
+  "usable_phases": 12384,
+  "excluded_phases": 16,
+  "raw_signals": 4414,
+  "signal_counts": {
+    "value_area_bounce": 2871,
+    "opening_range_breakout": 1543
+  },
+  "executed_trades": 2561,
+  "blocked_signals": {
+    "overlap": 729,
+    "daily_loss_stop": 618,
+    "phase_limit": 249,
+    "unexecutable": 257
+  },
+  "research_only_reasons": [
+    "five-minute OHLCV is not true order flow",
+    "cache venue/product metadata is absent",
+    "historical perpetual mark price and funding are absent"
+  ]
+}
