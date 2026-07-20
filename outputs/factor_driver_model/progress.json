@@ -1,9 +1,9 @@
 {
-  "status": "running",
-  "step": 3,
+  "status": "complete",
+  "step": 5,
   "total_steps": 5,
-  "progress_pct": 60.0,
-  "stage": "sector",
-  "message": "Training pooled 6/12-month sector-excess driver models",
-  "updated_at_utc": "2026-07-20T05:33:35.031600+00:00"
+  "progress_pct": 100.0,
+  "stage": "complete",
+  "message": "Factor driver model and dashboard complete",
+  "updated_at_utc": "2026-07-20T05:34:21.454114+00:00"
 }

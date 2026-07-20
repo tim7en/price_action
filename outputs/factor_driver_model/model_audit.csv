@@ -1,5 +1,6 @@
 check,status,detail
 targets_excluded,PASS,"leaked features={'market_6m': [], 'market_12m': [], 'sector_6m': [], 'sector_12m': []}"
+calendar_proxies_excluded,PASS,"date-like features={'market_6m': [], 'market_12m': [], 'sector_6m': [], 'sector_12m': []}"
 purged_walk_forward,PASS,rows violating target maturity=0
 cftc_in_every_model,PASS,"selected CFTC features={'market_6m': 11, 'market_12m': 11, 'sector_6m': 11, 'sector_12m': 11}"
 cftc_release_alignment,PASS,minimum CFTC age=0.0 days
