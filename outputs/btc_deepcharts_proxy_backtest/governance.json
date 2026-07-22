@@ -1,0 +1,141 @@
+{
+  "generated_at_utc": "2026-07-22T08:00:46.710172+00:00",
+  "status": "RESEARCH_ONLY_LIVE_DEPLOYMENT_BLOCKED",
+  "data_source": "D:\\dev\\price_action\\cache\\cache\\binance_asia_orb\\BTCUSDT_2022-01-01_2026-02-25_5m.csv.gz",
+  "data_quality": {
+    "input_rows": 436729,
+    "first_bar_utc": "2022-01-01T00:00:00+00:00",
+    "last_bar_utc": "2026-02-25T11:20:00+00:00",
+    "expected_rows_on_complete_grid": 436745,
+    "missing_five_minute_bars": 16,
+    "non_five_minute_steps": 1,
+    "maximum_gap_minutes": 85.0,
+    "duplicate_timestamps": 0,
+    "zero_volume_bars": 14,
+    "venue_product_identity": "unverified BTCUSDT klines; spot versus perpetual metadata absent"
+  },
+  "development_period": "2022-01-01 through 2024-12-31",
+  "holdout_period": "2025-01-01 through 2026-02-25",
+  "session_interpretation": "09:30-16:00 UTC, seven days per week",
+  "config": {
+    "orb_bars": 6,
+    "profile_bins": 24,
+    "value_area_fraction": 0.7,
+    "ivb_lookback_sessions": 60,
+    "ivb_minimum_sessions": 20,
+    "effort_lookback_bars": 50,
+    "effort_quantile": 0.75,
+    "vtracker_range_lookback_bars": 20,
+    "delta_lookback_bars": 5,
+    "donchian_timeframe_minutes": 240,
+    "donchian_length": 20,
+    "reward_to_risk": 2.0,
+    "trail_activation_atr": 1.5,
+    "trail_offset_atr": 0.5,
+    "risk_target_fraction": 0.0025,
+    "risk_maximum_leverage": 3.0,
+    "risk_maximum_daily_losses": 2,
+    "risk_maximum_daily_return_loss": 0.0075
+  },
+  "costs_bps_per_side": [
+    0.0,
+    1.0,
+    2.0,
+    3.0,
+    6.0,
+    15.0
+  ],
+  "reference_one_way_cost_bps": 6.0,
+  "execution_diagnostics": {
+    "orb_only_proxy": {
+      "raw_long_signals": 3978,
+      "raw_short_signals": 3960,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 2812,
+      "signals_blocked_daily_losses": 0,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "vwap_profile_uniform_proxy": {
+      "raw_long_signals": 2066,
+      "raw_short_signals": 1939,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 1238,
+      "signals_blocked_daily_losses": 0,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "vwap_profile_close_proxy": {
+      "raw_long_signals": 2071,
+      "raw_short_signals": 1896,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 1239,
+      "signals_blocked_daily_losses": 0,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "ivb_vwap_profile_proxy": {
+      "raw_long_signals": 2023,
+      "raw_short_signals": 1870,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 1204,
+      "signals_blocked_daily_losses": 0,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "effort_vtracker_proxy": {
+      "raw_long_signals": 1083,
+      "raw_short_signals": 1071,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 239,
+      "signals_blocked_daily_losses": 0,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "full_without_htf_proxy": {
+      "raw_long_signals": 630,
+      "raw_short_signals": 603,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 112,
+      "signals_blocked_daily_losses": 0,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "full_no_delta_proxy": {
+      "raw_long_signals": 367,
+      "raw_short_signals": 314,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 68,
+      "signals_blocked_daily_losses": 0,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "full_with_delta_proxy": {
+      "raw_long_signals": 325,
+      "raw_short_signals": 275,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 44,
+      "signals_blocked_daily_losses": 0,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    }
+  },
+  "causality_audit": {
+    "status": "FAIL",
+    "checks": {
+      "prior_session_profile_available_before_signal": false,
+      "ivb_rolling_sample_available_before_signal": false,
+      "completed_four_hour_context_available_before_signal": true,
+      "entry_is_next_five_minute_open": true,
+      "profile_allocations_conserve_session_volume": true,
+      "session_context_prefix_invariance": true,
+      "opening_range_uses_exactly_six_completed_bars": true
+    },
+    "notes": {
+      "signal_bar_timing": "OHLCV signal fields are known at bar close; fills occur at the next bar open.",
+      "profile_timing": "Only the previous completed 09:30-16:00 UTC session profile is attached.",
+      "ivb_timing": "Current-session targets use rolling quantiles of prior completed sessions only."
+    }
+  },
+  "proprietary_parity_claimed": false
+}

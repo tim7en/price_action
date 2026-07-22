@@ -1,0 +1,17 @@
+{
+  "status": "FAIL",
+  "checks": {
+    "prior_session_profile_available_before_signal": false,
+    "ivb_rolling_sample_available_before_signal": false,
+    "completed_four_hour_context_available_before_signal": true,
+    "entry_is_next_five_minute_open": true,
+    "profile_allocations_conserve_session_volume": true,
+    "session_context_prefix_invariance": true,
+    "opening_range_uses_exactly_six_completed_bars": true
+  },
+  "notes": {
+    "signal_bar_timing": "OHLCV signal fields are known at bar close; fills occur at the next bar open.",
+    "profile_timing": "Only the previous completed 09:30-16:00 UTC session profile is attached.",
+    "ivb_timing": "Current-session targets use rolling quantiles of prior completed sessions only."
+  }
+}
