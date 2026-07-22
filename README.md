@@ -168,6 +168,18 @@ high/low timing, and the data-identity audit are written under
 `outputs/nasdaq_multifrequency_backtest/`. Pass `--bar-minutes 1`, `2`, or `5`
 to write a single-frequency report instead.
 
+The separate two-minute POC/trend/management extension can be run with:
+
+```bash
+python build_nasdaq_poc_scaling_backtest.py
+```
+
+It compares 10-, 16-, 20-, and 30-minute post-observation phases, then audits
+incremental trend sizing, a causal 1.5-ATR profit-protecting stop, and one
+profit-financed add-on through a prior-five-session POC. It never charges an
+add-on's stop risk to base capital and leaves the original baseline unchanged.
+Results are written under `outputs/nasdaq_poc_scaling_backtest/`.
+
 The CSV is not identified as CME NQ: most prices are off NQ's quarter-point
 tick grid, and volume provenance is absent. The output is therefore explicitly
 research-only until venue, contract/roll, spread and commission metadata are

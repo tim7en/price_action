@@ -1,0 +1,11 @@
+variant,trades,trades_with_add_on,add_on_share,average_added_notional,minimum_scaled_trade_net_return
+static_10m,83,0,0.0,0.0,
+static_16m,115,0,0.0,0.0,
+static_20m,122,0,0.0,0.0,
+static_30m,142,0,0.0,0.0,
+trend_sized_16m,115,0,0.0,0.0,
+trend_trail_16m,115,0,0.0,0.0,
+trend_trail_poc_scale_16m,115,0,0.0,0.0,
+trend_trail_poc_scale_30m,142,0,0.0,0.0,
+reserved_poc_scale_16m,115,1,0.008695652173913044,0.7685506990511095,0.014260665435349438
+reserved_poc_scale_30m,142,1,0.007042253521126761,0.7685506990511095,0.014260665435349438

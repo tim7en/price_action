@@ -1,0 +1,11 @@
+variant,trades,trend_aligned_trades,trades_with_raised_stop,trades_crossing_prior_poc,aligned_trades_crossing_prior_poc,qualified_scale_signals,filled_add_ons
+static_10m,83,34,0,1,1,0,0
+static_16m,115,42,0,6,3,0,0
+static_20m,122,44,0,8,3,0,0
+static_30m,142,49,0,9,3,0,0
+trend_sized_16m,115,42,0,6,3,0,0
+trend_trail_16m,115,42,24,6,3,0,0
+trend_trail_poc_scale_16m,115,42,24,6,3,1,0
+trend_trail_poc_scale_30m,142,49,40,9,3,1,0
+reserved_poc_scale_16m,115,42,24,6,3,1,1
+reserved_poc_scale_30m,142,49,40,9,3,1,1
