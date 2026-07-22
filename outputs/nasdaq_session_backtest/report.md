@@ -1,6 +1,6 @@
 # Nasdaq-100 Five-Minute New York-Open Backtest
 
-Generated 2026-07-22T00:50:42.888733+00:00. This is a standalone strategy with no macro or hierarchical-model inputs.
+Generated 2026-07-22T00:53:06.613223+00:00. This is a standalone strategy with no macro or hierarchical-model inputs.
 
 > **Data identity warning:** the CSV has no venue or contract metadata, and 94.1% of one-minute closes are off CME NQ's 0.25-point grid. Results are percentage-return research on an unverified Nasdaq-100 cash/CFD-like feed, not a CME NQ execution backtest.
 
@@ -83,6 +83,46 @@ Generated 2026-07-22T00:50:42.888733+00:00. This is a standalone strategy with n
 | holdout_2025 | all | 62 | -2.6646 | -27.9097 | 22.8032 | 0.4098 |
 | holdout_2025 | balance_value_rejection | 25 | -16.7893 | -58.2060 | 26.8558 | 0.2090 |
 | holdout_2025 | imbalance_opening_range_breakout | 37 | 6.8791 | -23.7820 | 38.1180 | 0.6642 |
+
+## Quarterly stability
+
+| quarter | setup | trades | win_rate | average_gross_return_bps | average_net_return_bps | break_even_one_way_cost_bps | cumulative_net_return | max_drawdown |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2024Q1 | all | 13 | 0.5385 | 33.6264 | 25.8484 | 2.1616 | 0.0333 | -0.0213 |
+| 2024Q1 | balance_value_rejection | 7 | 0.5714 | 45.0680 | 37.8198 | 3.1089 | 0.0263 | -0.0128 |
+| 2024Q1 | imbalance_opening_range_breakout | 6 | 0.5000 | 20.2778 | 11.8818 | 1.2076 | 0.0069 | -0.0213 |
+| 2024Q2 | all | 17 | 0.4118 | -8.8373 | -15.8701 | -0.6283 | -0.0275 | -0.0419 |
+| 2024Q2 | balance_value_rejection | 8 | 0.5000 | -9.8919 | -17.4507 | -0.6543 | -0.0143 | -0.0175 |
+| 2024Q2 | imbalance_opening_range_breakout | 9 | 0.3333 | -7.8999 | -14.4651 | -0.6017 | -0.0134 | -0.0334 |
+| 2024Q3 | all | 16 | 0.3125 | -4.2476 | -9.6969 | -0.3897 | -0.0164 | -0.0469 |
+| 2024Q3 | balance_value_rejection | 5 | 0.6000 | 47.9695 | 42.5438 | 4.4206 | 0.0210 | -0.0107 |
+| 2024Q3 | imbalance_opening_range_breakout | 11 | 0.1818 | -27.9826 | -33.4427 | -2.5625 | -0.0366 | -0.0402 |
+| 2024Q4 | all | 21 | 0.6190 | 45.0198 | 38.2261 | 3.3134 | 0.0820 | -0.0328 |
+| 2024Q4 | balance_value_rejection | 7 | 0.8571 | 101.4403 | 94.9305 | 7.7914 | 0.0680 | -0.0106 |
+| 2024Q4 | imbalance_opening_range_breakout | 14 | 0.5000 | 16.8095 | 9.8739 | 1.2118 | 0.0131 | -0.0369 |
+| 2025Q1 | all | 23 | 0.4783 | 8.6936 | 3.8087 | 0.8898 | 0.0077 | -0.0365 |
+| 2025Q1 | balance_value_rejection | 6 | 0.3333 | -33.0265 | -36.9638 | -4.1940 | -0.0221 | -0.0180 |
+| 2025Q1 | imbalance_opening_range_breakout | 17 | 0.5294 | 23.4183 | 18.1989 | 2.2434 | 0.0306 | -0.0159 |
+| 2025Q2 | all | 14 | 0.4286 | 2.7821 | -3.3730 | 0.2260 | -0.0055 | -0.0436 |
+| 2025Q2 | balance_value_rejection | 8 | 0.2500 | -38.4796 | -44.3449 | -3.2803 | -0.0353 | -0.0542 |
+| 2025Q2 | imbalance_opening_range_breakout | 6 | 0.6667 | 57.7978 | 51.2563 | 4.4178 | 0.0309 | -0.0102 |
+| 2025Q3 | all | 14 | 0.5000 | -0.9039 | -9.2863 | -0.0539 | -0.0135 | -0.0377 |
+| 2025Q3 | balance_value_rejection | 6 | 0.6667 | 37.1457 | 29.3506 | 2.3826 | 0.0175 | -0.0123 |
+| 2025Q3 | imbalance_opening_range_breakout | 8 | 0.3750 | -29.4412 | -38.2639 | -1.6685 | -0.0304 | -0.0375 |
+| 2025Q4 | all | 13 | 0.4615 | 0.8315 | -5.8185 | 0.0625 | -0.0083 | -0.0300 |
+| 2025Q4 | balance_value_rejection | 6 | 0.3333 | 3.4762 | -3.2912 | 0.2568 | -0.0025 | -0.0216 |
+| 2025Q4 | imbalance_opening_range_breakout | 7 | 0.5714 | -1.4354 | -7.9847 | -0.1096 | -0.0058 | -0.0164 |
+
+## Long/short stability
+
+| scope | trades | sessions | win_rate | target_rate | stop_rate | average_gross_r | average_net_r | average_gross_return_bps | average_net_return_bps | gross_profit_factor | net_profit_factor | break_even_one_way_cost_bps | cumulative_net_return | annualized_net_return | max_drawdown | average_notional_fraction | median_risk_fraction_deployed | average_holding_bars |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| all::side::long | 77 | 74 | 0.4545 | 0.0909 | 0.3636 | 0.0408 | -0.0288 | 4.4018 | -2.4577 | 1.1115 | 0.9430 | 0.3209 | -0.0224 | -0.0117 | -0.1169 | 6.8595 | 0.0100 | 3.1299 |
+| all::side::short | 54 | 52 | 0.5000 | 0.2037 | 0.3889 | 0.1968 | 0.1366 | 19.6756 | 13.6631 | 1.4607 | 1.2990 | 1.6362 | 0.0726 | 0.0403 | -0.0715 | 6.0124 | 0.0100 | 2.6111 |
+| development_2024::side::long | 37 | 35 | 0.3784 | 0.1081 | 0.4324 | -0.0977 | -0.1719 | -9.1144 | -16.4079 | 0.8002 | 0.6723 | -0.6248 | -0.0606 | -0.0625 | -0.1169 | 7.2935 | 0.0100 | 2.9459 |
+| development_2024::side::short | 30 | 29 | 0.6000 | 0.2667 | 0.3000 | 0.5005 | 0.4403 | 50.0532 | 44.0310 | 2.5523 | 2.2708 | 4.1557 | 0.1385 | 0.1564 | -0.0212 | 6.0222 | 0.0100 | 2.4000 |
+| holdout_2025::side::long | 40 | 39 | 0.5250 | 0.0750 | 0.3000 | 0.1690 | 0.1036 | 16.9043 | 10.4463 | 1.5004 | 1.2848 | 1.3088 | 0.0408 | 0.0448 | -0.0296 | 6.4580 | 0.0100 | 3.3000 |
+| holdout_2025::side::short | 24 | 23 | 0.3750 | 0.1250 | 0.5000 | -0.1830 | -0.2430 | -18.2965 | -24.2967 | 0.6720 | 0.5918 | -1.5246 | -0.0579 | -0.0668 | -0.0715 | 6.0003 | 0.0100 | 2.8750 |
 
 ## Auction-regime counts
 

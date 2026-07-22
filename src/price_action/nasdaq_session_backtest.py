@@ -732,6 +732,48 @@ def session_bootstrap(trades: pd.DataFrame, samples: int = 5_000) -> pd.DataFram
     return pd.DataFrame(rows)
 
 
+def quarterly_stability(trades: pd.DataFrame) -> pd.DataFrame:
+    if trades.empty:
+        return pd.DataFrame()
+    data = trades.copy()
+    data["entry_time"] = pd.to_datetime(data["entry_time"], utc=True)
+    data["quarter"] = data["entry_time"].dt.tz_localize(None).dt.to_period("Q").astype(str)
+    rows: list[dict[str, Any]] = []
+    for quarter, quarter_group in data.groupby("quarter", sort=True):
+        groups = [("all", quarter_group)]
+        groups.extend(
+            (str(name), group) for name, group in quarter_group.groupby("setup", sort=True)
+        )
+        for setup, group in groups:
+            gross = group["gross_return"].astype(float)
+            net = group["net_return"].astype(float)
+            turnover = float(group["one_way_turnover"].sum())
+            equity = (1.0 + net).cumprod()
+            rows.append({
+                "quarter": quarter,
+                "setup": setup,
+                "trades": int(len(group)),
+                "win_rate": float(net.gt(0.0).mean()),
+                "average_gross_return_bps": float(gross.mean() * 10_000.0),
+                "average_net_return_bps": float(net.mean() * 10_000.0),
+                "break_even_one_way_cost_bps": float(gross.sum() / turnover * 10_000.0)
+                if turnover > 0.0 else np.nan,
+                "cumulative_net_return": float(equity.iloc[-1] - 1.0),
+                "max_drawdown": float((equity / equity.cummax() - 1.0).min()),
+            })
+    return pd.DataFrame(rows)
+
+
+def direction_summary(trades: pd.DataFrame) -> pd.DataFrame:
+    rows: list[dict[str, Any]] = []
+    for scope, scoped in _scopes(trades).items():
+        if scoped.empty:
+            continue
+        for side, group in scoped.groupby("side", sort=True):
+            rows.append(_metrics(group, f"{scope}::side::{side}"))
+    return pd.DataFrame(rows)
+
+
 def signal_funnel(candidates: pd.DataFrame) -> pd.DataFrame:
     checks = {
         "execution_window_bars": pd.Series(True, index=candidates.index),
@@ -782,6 +824,8 @@ def build_report(
     phases: pd.DataFrame,
     sensitivity: pd.DataFrame,
     bootstrap: pd.DataFrame,
+    quarterly: pd.DataFrame,
+    directions: pd.DataFrame,
     regimes: pd.DataFrame,
     funnel: pd.DataFrame,
     governance: dict[str, Any],
@@ -809,6 +853,14 @@ Generated {governance['generated_at_utc']}. This is a standalone strategy with n
 ## Session-block bootstrap
 
 {_markdown_table(bootstrap)}
+
+## Quarterly stability
+
+{_markdown_table(quarterly)}
+
+## Long/short stability
+
+{_markdown_table(directions)}
 
 ## Auction-regime counts
 
@@ -873,6 +925,8 @@ def build_nasdaq_backtest(
     phases = phase_summary(moves)
     sensitivity = cost_sensitivity(trades)
     bootstrap = session_bootstrap(trades)
+    quarterly = quarterly_stability(trades)
+    directions = direction_summary(trades)
     regimes = regime_counts(quality)
     funnel = signal_funnel(candidates)
     signals = candidates.loc[candidates["signal_side"].ne(0)].copy()
@@ -916,11 +970,23 @@ def build_nasdaq_backtest(
     phases.to_csv(output / "phase_summary.csv", index=False)
     sensitivity.to_csv(output / "cost_sensitivity.csv", index=False)
     bootstrap.to_csv(output / "bootstrap.csv", index=False)
+    quarterly.to_csv(output / "quarterly_stability.csv", index=False)
+    directions.to_csv(output / "direction_summary.csv", index=False)
     regimes.to_csv(output / "regime_counts.csv", index=False)
     funnel.to_csv(output / "signal_funnel.csv", index=False)
     (output / "governance.json").write_text(json.dumps(governance, indent=2), encoding="utf-8")
     (output / "report.md").write_text(
-        build_report(summary, phases, sensitivity, bootstrap, regimes, funnel, governance),
+        build_report(
+            summary,
+            phases,
+            sensitivity,
+            bootstrap,
+            quarterly,
+            directions,
+            regimes,
+            funnel,
+            governance,
+        ),
         encoding="utf-8",
     )
     return {
@@ -930,6 +996,7 @@ def build_nasdaq_backtest(
         "phase_summary": phases,
         "cost_sensitivity": sensitivity,
         "bootstrap": bootstrap,
+        "quarterly_stability": quarterly,
         "governance": governance,
     }
 
