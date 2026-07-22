@@ -105,6 +105,10 @@ class IdentifyConfirmTradeConfig:
     max_trades_per_session: int = 1
     profile_bins: int = 24
     profile_value_fraction: float = 0.70
+    a_plus_context_bars: int = 6
+    a_plus_minimum_defended_touches: int = 2
+    a_plus_minimum_approach_efficiency: float = 0.60
+    a_plus_maximum_structural_risk_atr: float = 1.50
 
     def __post_init__(self) -> None:
         if self.execution_window_minutes < 15:
@@ -137,6 +141,14 @@ class IdentifyConfirmTradeConfig:
             raise ValueError("Daily limits must be positive")
         if self.profile_bins < 4 or not 0.0 < self.profile_value_fraction < 1.0:
             raise ValueError("Invalid profile configuration")
+        if self.a_plus_context_bars < 3:
+            raise ValueError("A+ context requires at least three bars")
+        if self.a_plus_minimum_defended_touches < 2:
+            raise ValueError("A+ confirmation requires at least two defended touches")
+        if not 0.0 <= self.a_plus_minimum_approach_efficiency <= 1.0:
+            raise ValueError("A+ approach efficiency must be within [0, 1]")
+        if self.a_plus_maximum_structural_risk_atr <= 0.0:
+            raise ValueError("A+ maximum structural risk must be positive")
         if any(minutes not in {5, 30, 60, 240} for minutes in self.higher_timeframes):
             raise ValueError("Higher timeframes must be chosen from 5, 30, 60, and 240 minutes")
 
@@ -384,6 +396,72 @@ def _tradeable_level(level_info: dict[str, Any], config: IdentifyConfirmTradeCon
     return bool(level_info["strong_level"] or level_info["level_count"] >= config.minimum_level_count)
 
 
+def _a_plus_features(
+    frame: pd.DataFrame,
+    position: int,
+    side: int,
+    level_info: dict[str, Any],
+    config: IdentifyConfirmTradeConfig,
+) -> dict[str, Any]:
+    """Grade only information observable at the signal bar's close.
+
+    This is a deliberately strict one-minute proxy for the transcript's A+
+    language.  It does not pretend that OHLCV can observe Bookmap liquidity or
+    true bid/ask absorption.
+    """
+    bar = frame.iloc[position]
+    level = float(level_info["reference_level"])
+    atr = float(bar["atr"])
+    tolerance = atr * config.level_touch_tolerance_atr
+    context_start = max(0, position - config.a_plus_context_bars + 1)
+    context = frame.iloc[context_start:position + 1]
+    touched = context["low"].le(level + tolerance) & context["high"].ge(level - tolerance)
+    if side > 0:
+        defended = touched & context["close"].ge(level)
+        sweep_reclaim = float(bar["low"]) < level and float(bar["close"]) > level
+        stop_reference = min(level, float(bar["low"]))
+    else:
+        defended = touched & context["close"].le(level)
+        sweep_reclaim = float(bar["high"]) > level and float(bar["close"]) < level
+        stop_reference = max(level, float(bar["high"]))
+
+    approach = frame.iloc[max(0, position - config.a_plus_context_bars + 1):position]
+    close_changes = approach["close"].diff().abs().sum()
+    if len(approach) >= 2 and close_changes > 0.0:
+        approach_efficiency = abs(float(approach["close"].iloc[-1] - approach["close"].iloc[0])) / float(close_changes)
+    else:
+        approach_efficiency = 0.0
+    stop_price = stop_reference - side * atr * config.stop_buffer_atr
+    structural_risk_atr = side * (float(bar["close"]) - stop_price) / atr
+
+    criteria = {
+        "a_plus_strong_level": bool(level_info["strong_level"]),
+        "a_plus_sweep_reclaim": bool(sweep_reclaim),
+        "a_plus_repeated_defense": int(defended.sum()) >= config.a_plus_minimum_defended_touches,
+        "a_plus_clear_approach": approach_efficiency >= config.a_plus_minimum_approach_efficiency,
+        "a_plus_clean_structural_risk": 0.0 < structural_risk_atr <= config.a_plus_maximum_structural_risk_atr,
+    }
+    failure_labels = {
+        "a_plus_strong_level": "weak_level",
+        "a_plus_sweep_reclaim": "no_sweep_reclaim",
+        "a_plus_repeated_defense": "insufficient_defense",
+        "a_plus_clear_approach": "choppy_approach",
+        "a_plus_clean_structural_risk": "wide_or_invalid_stop",
+    }
+    failures = [failure_labels[name] for name, passed in criteria.items() if not passed]
+    return {
+        **criteria,
+        "a_plus_setup": bool(all(criteria.values())),
+        "a_plus_score": int(sum(criteria.values())),
+        "a_plus_failure_reasons": "|".join(failures),
+        "a_plus_defended_touch_count": int(defended.sum()),
+        "a_plus_approach_efficiency": float(approach_efficiency),
+        "a_plus_structural_risk_atr": float(structural_risk_atr),
+        "a_plus_context_start": frame.index[context_start],
+        "a_plus_context_end": frame.index[position],
+    }
+
+
 def build_session_candidates(
     session_frame: pd.DataFrame,
     session_levels: pd.DataFrame,
@@ -438,6 +516,7 @@ def build_session_candidates(
             vwap_alignment = float(bar["close"]) <= float(bar["session_vwap"]) + float(bar["atr"]) * config.vwap_slack_atr
             if approach_up and approach_toward and weak_approach and rejection and reversal_volume and vwap_alignment:
                 short_score = int(short_level["level_count"]) + int(short_level["strong_level"])
+                a_plus = _a_plus_features(frame, position, -1, short_level, config)
                 short_record = {
                     "timestamp": frame.index[position],
                     "bar_id": int(bar["bar_id"]),
@@ -457,6 +536,7 @@ def build_session_candidates(
                     "approach_volume_strength": prior_volume_strength,
                     "signal_close_location": float(bar["close_location"]),
                     "signal_wick_share": float(bar["upper_wick_share"]),
+                    **a_plus,
                 }
 
         if long_level is not None and _tradeable_level(long_level, config):
@@ -478,6 +558,7 @@ def build_session_candidates(
             vwap_alignment = float(bar["close"]) >= float(bar["session_vwap"]) - float(bar["atr"]) * config.vwap_slack_atr
             if approach_down and approach_toward and weak_approach and rejection and reversal_volume and vwap_alignment:
                 long_score = int(long_level["level_count"]) + int(long_level["strong_level"])
+                a_plus = _a_plus_features(frame, position, 1, long_level, config)
                 long_record = {
                     "timestamp": frame.index[position],
                     "bar_id": int(bar["bar_id"]),
@@ -497,6 +578,7 @@ def build_session_candidates(
                     "approach_volume_strength": prior_volume_strength,
                     "signal_close_location": float(bar["close_location"]),
                     "signal_wick_share": float(bar["lower_wick_share"]),
+                    **a_plus,
                 }
 
         if short_record is None and long_record is None:
@@ -733,6 +815,9 @@ def simulate_trade(
                     "exit_reason": str(reason),
                     "level_count": int(signal["level_count"]),
                     "level_sources": str(signal["level_sources"]),
+                    "a_plus_setup": bool(signal.get("a_plus_setup", False)),
+                    "a_plus_score": int(signal.get("a_plus_score", 0)),
+                    "a_plus_failure_reasons": str(signal.get("a_plus_failure_reasons", "")),
                     "holding_minutes": int((timestamp - entry_time) / pd.Timedelta(minutes=1)) + 1,
                     "notional_fraction": notional_fraction,
                     "risk_fraction_deployed": risk_fraction_deployed,
@@ -805,6 +890,9 @@ def simulate_trade(
         "exit_reason": str(exit_reason),
         "level_count": int(signal["level_count"]),
         "level_sources": str(signal["level_sources"]),
+        "a_plus_setup": bool(signal.get("a_plus_setup", False)),
+        "a_plus_score": int(signal.get("a_plus_score", 0)),
+        "a_plus_failure_reasons": str(signal.get("a_plus_failure_reasons", "")),
         "holding_minutes": int((pd.Timestamp(exit_time) - entry_time) / pd.Timedelta(minutes=1)) + 1,
         "notional_fraction": notional_fraction,
         "risk_fraction_deployed": risk_fraction_deployed,
@@ -953,12 +1041,38 @@ def session_bootstrap(trades: pd.DataFrame, samples: int = 10_000) -> pd.DataFra
         rows.append({
             "scope": scope,
             "sessions": int(len(daily)),
+            "inference_reliable_20_sessions": bool(len(daily) >= 20),
             "mean_session_return_bps": float(daily.mean() * 10_000.0),
             "bootstrap_mean_ci_low_bps": float(np.quantile(draws, 0.025) * 10_000.0),
             "bootstrap_mean_ci_high_bps": float(np.quantile(draws, 0.975) * 10_000.0),
             "bootstrap_probability_mean_positive": float((draws > 0.0).mean()),
         })
     return pd.DataFrame(rows)
+
+
+def a_plus_qualification_summary(candidates: pd.DataFrame) -> pd.DataFrame:
+    criteria = [
+        ("strong premarket level", "a_plus_strong_level"),
+        ("liquidity sweep and reclaim", "a_plus_sweep_reclaim"),
+        ("two or more defended touches", "a_plus_repeated_defense"),
+        ("clear directional approach", "a_plus_clear_approach"),
+        ("clean structural stop", "a_plus_clean_structural_risk"),
+        ("all A+ conditions", "a_plus_setup"),
+    ]
+    if candidates.empty:
+        return pd.DataFrame([
+            {"criterion": label, "passing_candidates": 0, "total_candidates": 0, "pass_rate": np.nan}
+            for label, _ in criteria
+        ])
+    return pd.DataFrame([
+        {
+            "criterion": label,
+            "passing_candidates": int(candidates[column].astype(bool).sum()),
+            "total_candidates": int(len(candidates)),
+            "pass_rate": float(candidates[column].astype(bool).mean()),
+        }
+        for label, column in criteria
+    ])
 
 
 def audit_causality(
@@ -988,6 +1102,7 @@ def audit_causality(
     checks["all_identify_levels_known_by_session_open"] = not bool(future_levels.any())
 
     candidate_bad = 0
+    a_plus_future_context = 0
     for row in candidates.itertuples(index=False):
         bar_id = int(row.bar_id)
         if bar_id + 1 >= len(bars):
@@ -997,8 +1112,14 @@ def audit_causality(
         next_time = pd.Timestamp(bars.index[bar_id + 1])
         if next_time != signal_time + pd.Timedelta(minutes=1):
             candidate_bad += 1
+        context_start = pd.Timestamp(getattr(row, "a_plus_context_start", signal_time))
+        context_end = pd.Timestamp(getattr(row, "a_plus_context_end", signal_time))
+        if context_start > context_end or context_end != signal_time:
+            a_plus_future_context += 1
     violations["candidate_without_next_minute_bar"] = candidate_bad
     checks["all_candidates_have_strict_next_bar_execution"] = candidate_bad == 0
+    violations["a_plus_future_context"] = a_plus_future_context
+    checks["a_plus_context_ends_at_signal_bar"] = a_plus_future_context == 0
 
     trade_time_bad = 0
     deadline_bad = 0
@@ -1073,12 +1194,50 @@ def create_plots(trades: pd.DataFrame, output: Path) -> list[Path]:
     return paths
 
 
+def create_a_plus_comparison_plot(
+    baseline_trades: pd.DataFrame,
+    a_plus_trades: pd.DataFrame,
+    output: Path,
+) -> Path | None:
+    if baseline_trades.empty:
+        return None
+    plt = _configure_plots()
+    from matplotlib.ticker import PercentFormatter
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for label, frame, color in (
+        ("All qualified confirmations", baseline_trades, "#64748b"),
+        ("Strict A+ proxy only", a_plus_trades, "#0f766e"),
+    ):
+        if frame.empty:
+            continue
+        ordered = frame.sort_values("exit_time").copy()
+        ordered["exit_time"] = pd.to_datetime(ordered["exit_time"], utc=True)
+        equity_return = (1.0 + ordered["net_return"]).cumprod() - 1.0
+        ax.step(ordered["exit_time"], equity_return, where="post", label=label, color=color, linewidth=2.0)
+    ax.axhline(0.0, color="#0f172a", linewidth=0.8)
+    ax.set(title="Baseline versus strict A+ proxy", ylabel="Compounded net return")
+    ax.yaxis.set_major_formatter(PercentFormatter(1.0))
+    ax.legend()
+    fig.tight_layout()
+    path = output / "a_plus_comparison.png"
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
+
+
 def build_report(
     summary: pd.DataFrame,
     bootstrap: pd.DataFrame,
     candidates: pd.DataFrame,
     trades: pd.DataFrame,
+    a_plus_summary: pd.DataFrame,
+    a_plus_bootstrap: pd.DataFrame,
+    a_plus_candidates: pd.DataFrame,
+    a_plus_trades: pd.DataFrame,
+    a_plus_qualification: pd.DataFrame,
     blocked: dict[str, int],
+    a_plus_blocked: dict[str, int],
     causality: dict[str, Any],
     governance: dict[str, Any],
 ) -> str:
@@ -1086,6 +1245,50 @@ def build_report(
     period_rows = summary.loc[summary["scope"].isin(["development_2024", "holdout_2025"])]
     side_rows = summary.loc[summary["scope"].str.startswith("side::", na=False)]
     blocked_frame = pd.DataFrame([blocked])
+    a_plus_headline = a_plus_summary.loc[
+        a_plus_summary["scope"].isin(["all", "development_2024", "holdout_2025"]),
+        [
+            "scope",
+            "trades",
+            "sessions",
+            "win_rate",
+            "partial_target_rate",
+            "average_gross_r",
+            "average_net_r",
+            "break_even_one_way_cost_bps",
+            "cumulative_net_return",
+            "max_drawdown",
+            "average_holding_minutes",
+        ],
+    ]
+    a_plus_blocked_frame = pd.DataFrame([a_plus_blocked])
+    if a_plus_candidates.empty:
+        a_plus_examples = pd.DataFrame()
+    else:
+        a_plus_examples = a_plus_candidates[
+            [
+                "timestamp",
+                "signal_side",
+                "level_sources",
+                "a_plus_defended_touch_count",
+                "a_plus_approach_efficiency",
+                "a_plus_structural_risk_atr",
+            ]
+        ].copy()
+        a_plus_examples["side"] = a_plus_examples.pop("signal_side").map({1: "long", -1: "short"})
+        if not a_plus_trades.empty:
+            outcomes = a_plus_trades[
+                ["signal_time", "exit_reason", "net_r_multiple"]
+            ].rename(columns={"signal_time": "timestamp"})
+            a_plus_examples = a_plus_examples.merge(outcomes, on="timestamp", how="left")
+        else:
+            a_plus_examples["exit_reason"] = np.nan
+            a_plus_examples["net_r_multiple"] = np.nan
+        a_plus_examples["execution_status"] = np.where(
+            a_plus_examples["exit_reason"].notna(),
+            "executed",
+            "unexecutable_at_window_end",
+        )
     causality_frame = pd.DataFrame([
         {"check": name, "passed": passed}
         for name, passed in causality["checks"].items()
@@ -1101,6 +1304,7 @@ Generated {governance['generated_at_utc']}. This is a causal one-minute proxy fo
 - The proxy uses completed 4h, 1h, 30m, and 5m pivots plus prior-session profile levels as the identify layer.
 - Confirmation is reduced to one-minute approach direction, weak approach volume, rejection wick, and reversal volume.
 - Trade management uses next-open entries, structural stops, a half-off first target, and a trailing runner.
+- The strict A+ proxy additionally requires a strong premarket level, a sweep/reclaim, at least two defended one-minute touches, a directional approach efficiency of at least {governance['config']['a_plus_minimum_approach_efficiency']:.2f}, and structural signal-close risk no wider than {governance['config']['a_plus_maximum_structural_risk_atr']:.2f} ATR.
 
 ## Overview
 
@@ -1108,6 +1312,28 @@ Candidate bars evaluated: **{len(candidates)}**
 Executed trades: **{len(trades)}**
 
 {_markdown_table(headline)}
+
+## Strict A+ qualification
+
+The A+ rules are pre-declared in configuration. They are a filter on the causal baseline signals; no parameter grid or outcome optimization was run against the 2025 holdout.
+
+{_markdown_table(a_plus_qualification)}
+
+Strict A+ candidate bars: **{len(a_plus_candidates)}**
+
+Executed strict A+ trades: **{len(a_plus_trades)}**
+
+{_markdown_table(a_plus_headline)}
+
+Identified A+ candidates and realized outcomes:
+
+{_markdown_table(a_plus_examples)}
+
+Strict A+ session bootstrap:
+
+{_markdown_table(a_plus_bootstrap)}
+
+With only {len(a_plus_trades)} executed A+ trades, the A+ return, win rate, bootstrap interval, and positive-mean probability are descriptive only. They are not enough to estimate a stable edge.
 
 ## Development and holdout
 
@@ -1125,6 +1351,10 @@ Executed trades: **{len(trades)}**
 
 {_markdown_table(blocked_frame)}
 
+Strict A+ blocked signals:
+
+{_markdown_table(a_plus_blocked_frame)}
+
 ## Causality and leakage checks
 
 {_markdown_table(causality_frame)}
@@ -1132,6 +1362,7 @@ Executed trades: **{len(trades)}**
 - Higher-timeframe bars are timestamped only when the complete 5m/30m/1h/4h interval is available.
 - Prior-session high, low, POC, VAH, and VAL are shifted one complete session.
 - Relative-volume baselines exclude the current signal bar.
+- A+ retest, clarity, sweep, and structural-risk features end at the signal bar; no post-signal confirmation is used.
 - Signal decisions occur at the one-minute close; entries occur at the next minute's open.
 - Same-bar stop/target collisions are resolved as stops. New trailing extremes affect only the following bar.
 
@@ -1146,6 +1377,7 @@ Executed trades: **{len(trades)}**
 
 - [Equity and drawdown](equity_and_drawdown.png)
 - [Exit reasons](exit_reasons.png)
+- [Baseline versus strict A+](a_plus_comparison.png)
 """
 
 
@@ -1176,8 +1408,26 @@ def build_identify_confirm_trade_backtest(
     trades, blocked = run_backtest(candidates, featured, levels, execution, strategy)
     summary = trade_summary(trades)
     bootstrap = session_bootstrap(trades)
+    a_plus_candidates = (
+        candidates.loc[candidates["a_plus_setup"].astype(bool)].copy()
+        if not candidates.empty
+        else candidates.copy()
+    )
+    a_plus_trades, a_plus_blocked = run_backtest(
+        a_plus_candidates,
+        featured,
+        levels,
+        execution,
+        strategy,
+    )
+    a_plus_summary = trade_summary(a_plus_trades)
+    a_plus_bootstrap = session_bootstrap(a_plus_trades)
+    a_plus_qualification = a_plus_qualification_summary(candidates)
     causality = audit_causality(levels, candidates, trades, featured, schedule, strategy)
     plot_paths = create_plots(trades, output)
+    comparison_plot = create_a_plus_comparison_plot(trades, a_plus_trades, output)
+    if comparison_plot is not None:
+        plot_paths.append(comparison_plot)
     governance = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "strategy": "identify_confirm_trade_transcript_proxy",
@@ -1188,8 +1438,11 @@ def build_identify_confirm_trade_backtest(
         "data_quality": data_audit,
         "config": asdict(strategy),
         "blocked_signals": blocked,
+        "a_plus_blocked_signals": a_plus_blocked,
         "raw_candidates": int(len(candidates)),
         "executed_trades": int(len(trades)),
+        "a_plus_candidates": int(len(a_plus_candidates)),
+        "a_plus_executed_trades": int(len(a_plus_trades)),
         "causality_audit_status": causality["status"],
         "plot_files": [path.name for path in plot_paths],
         "research_only_reasons": [
@@ -1203,11 +1456,30 @@ def build_identify_confirm_trade_backtest(
     trades.to_csv(output / "trades.csv", index=False)
     summary.to_csv(output / "summary.csv", index=False)
     bootstrap.to_csv(output / "bootstrap.csv", index=False)
+    a_plus_candidates.to_csv(output / "a_plus_signals.csv", index=False)
+    a_plus_trades.to_csv(output / "a_plus_trades.csv", index=False)
+    a_plus_summary.to_csv(output / "a_plus_summary.csv", index=False)
+    a_plus_bootstrap.to_csv(output / "a_plus_bootstrap.csv", index=False)
+    a_plus_qualification.to_csv(output / "a_plus_qualification.csv", index=False)
     (output / "causality_audit.json").write_text(
         json.dumps(causality, indent=2), encoding="utf-8"
     )
     (output / "governance.json").write_text(json.dumps(governance, indent=2), encoding="utf-8")
-    report = build_report(summary, bootstrap, candidates, trades, blocked, causality, governance)
+    report = build_report(
+        summary,
+        bootstrap,
+        candidates,
+        trades,
+        a_plus_summary,
+        a_plus_bootstrap,
+        a_plus_candidates,
+        a_plus_trades,
+        a_plus_qualification,
+        blocked,
+        a_plus_blocked,
+        causality,
+        governance,
+    )
     report_path = output / "report.md"
     report_path.write_text(report, encoding="utf-8")
     return {
@@ -1217,6 +1489,11 @@ def build_identify_confirm_trade_backtest(
         "trades": trades,
         "summary": summary,
         "bootstrap": bootstrap,
+        "a_plus_signals": a_plus_candidates,
+        "a_plus_trades": a_plus_trades,
+        "a_plus_summary": a_plus_summary,
+        "a_plus_bootstrap": a_plus_bootstrap,
+        "a_plus_qualification": a_plus_qualification,
         "causality": causality,
         "governance": governance,
         "report_path": report_path,

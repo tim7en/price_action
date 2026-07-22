@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-22T17:52:20.065264+00:00",
+  "generated_at_utc": "2026-07-22T18:00:43.028518+00:00",
   "strategy": "identify_confirm_trade_transcript_proxy",
   "calendar": "XNYS",
   "data_file": "/Users/timursabitov/Dev/price_action/cache/Nasdaq.csv",
@@ -48,7 +48,11 @@
     "max_daily_losses": 2,
     "max_trades_per_session": 1,
     "profile_bins": 24,
-    "profile_value_fraction": 0.7
+    "profile_value_fraction": 0.7,
+    "a_plus_context_bars": 6,
+    "a_plus_minimum_defended_touches": 2,
+    "a_plus_minimum_approach_efficiency": 0.6,
+    "a_plus_maximum_structural_risk_atr": 1.5
   },
   "blocked_signals": {
     "overlap": 0,
@@ -56,12 +60,21 @@
     "session_trade_limit": 0,
     "unexecutable": 1
   },
+  "a_plus_blocked_signals": {
+    "overlap": 0,
+    "daily_loss_stop": 0,
+    "session_trade_limit": 0,
+    "unexecutable": 1
+  },
   "raw_candidates": 15,
   "executed_trades": 14,
+  "a_plus_candidates": 3,
+  "a_plus_executed_trades": 2,
   "causality_audit_status": "PASS",
   "plot_files": [
     "equity_and_drawdown.png",
-    "exit_reasons.png"
+    "exit_reasons.png",
+    "a_plus_comparison.png"
   ],
   "research_only_reasons": [
     "15-second execution is unavailable",

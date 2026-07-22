@@ -3,6 +3,7 @@
   "checks": {
     "all_identify_levels_known_by_session_open": true,
     "all_candidates_have_strict_next_bar_execution": true,
+    "a_plus_context_ends_at_signal_bar": true,
     "signal_entry_exit_order_is_strict": true,
     "all_positions_flat_before_execution_deadline": true,
     "same_bar_boundary_policy_is_stop_first": true,
@@ -13,6 +14,7 @@
   "violations": {
     "levels_not_known_by_session_open": 0,
     "candidate_without_next_minute_bar": 0,
+    "a_plus_future_context": 0,
     "trade_timestamp_ordering": 0,
     "trade_after_execution_deadline": 0
   },

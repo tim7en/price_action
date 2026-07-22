@@ -1,4 +1,4 @@
-scope,sessions,mean_session_return_bps,bootstrap_mean_ci_low_bps,bootstrap_mean_ci_high_bps,bootstrap_probability_mean_positive
-all,14,-4.251801343885015,-16.672797378186477,8.813467379886083,0.2544
-development_2024,6,2.190894593749696,-14.91113882627737,19.20789033544534,0.5945
-holdout_2025,8,-9.08382329711105,-23.301890308973817,8.352011467762567,0.1452
+scope,sessions,inference_reliable_20_sessions,mean_session_return_bps,bootstrap_mean_ci_low_bps,bootstrap_mean_ci_high_bps,bootstrap_probability_mean_positive
+all,14,False,-4.251801343885015,-16.672797378186477,8.813467379886083,0.2544
+development_2024,6,False,2.190894593749696,-14.91113882627737,19.20789033544534,0.5945
+holdout_2025,8,False,-9.08382329711105,-23.301890308973817,8.352011467762567,0.1452

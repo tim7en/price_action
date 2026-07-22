@@ -1,0 +1,4 @@
+scope,sessions,inference_reliable_20_sessions,mean_session_return_bps,bootstrap_mean_ci_low_bps,bootstrap_mean_ci_high_bps,bootstrap_probability_mean_positive
+all,2,False,19.67993794031786,8.275543641043104,31.084332239592616,1.0
+development_2024,1,False,8.275543641043104,8.275543641043104,8.275543641043104,1.0
+holdout_2025,1,False,31.084332239592616,31.084332239592616,31.084332239592616,1.0

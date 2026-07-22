@@ -7,6 +7,7 @@ import pandas as pd
 from price_action.nasdaq_identify_confirm_trade_backtest import (
     NasdaqExecutionCosts,
     IdentifyConfirmTradeConfig,
+    _a_plus_features,
     _resample_ohlcv,
     _walk_to_target_or_stop,
     audit_causality,
@@ -126,6 +127,34 @@ class NasdaqIdentifyConfirmTradeTests(unittest.TestCase):
         self.assertEqual(len(candidates), 1)
         self.assertEqual(int(candidates.iloc[0]["signal_side"]), -1)
         self.assertAlmostEqual(float(candidates.iloc[0]["reference_level"]), 102.075)
+        self.assertTrue(bool(candidates.iloc[0]["a_plus_setup"]))
+        self.assertEqual(int(candidates.iloc[0]["a_plus_score"]), 5)
+
+    def test_a_plus_requires_repeated_defense_without_future_bars(self) -> None:
+        index = pd.date_range("2025-01-02 14:30", periods=7, freq="min", tz="UTC")
+        frame = pd.DataFrame(
+            {
+                "open": [102.4, 102.0, 101.7, 101.3, 100.9, 100.4, 100.8],
+                "high": [102.6, 102.2, 101.9, 101.5, 101.1, 101.0, 101.2],
+                "low": [102.2, 101.8, 101.5, 101.1, 100.7, 99.7, 100.5],
+                "close": [102.3, 101.9, 101.6, 101.2, 100.8, 100.8, 101.0],
+                "atr": [1.0] * 7,
+            },
+            index=index,
+        )
+        level = {
+            "reference_level": 100.0,
+            "strong_level": True,
+        }
+        config = IdentifyConfirmTradeConfig(a_plus_context_bars=6)
+
+        prefix_features = _a_plus_features(frame.iloc[:6], 5, 1, level, config)
+        full_features = _a_plus_features(frame, 5, 1, level, config)
+
+        self.assertEqual(prefix_features, full_features)
+        self.assertFalse(bool(full_features["a_plus_repeated_defense"]))
+        self.assertFalse(bool(full_features["a_plus_setup"]))
+        self.assertEqual(full_features["a_plus_context_end"], index[5])
 
     def test_simulate_trade_scales_out_then_hits_second_target(self) -> None:
         index = pd.date_range("2025-01-02 14:33", periods=5, freq="min", tz="UTC")
