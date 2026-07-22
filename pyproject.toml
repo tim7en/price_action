@@ -15,6 +15,7 @@ dependencies = [
     "hmmlearn>=0.3,<0.4",
     "yfinance>=0.2,<2.0",
     "exchange-calendars>=4.11,<5.0",
+    "matplotlib>=3.9,<4.0",
 ]
 
 [project.scripts]

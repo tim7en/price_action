@@ -1,0 +1,72 @@
+{
+  "generated_at_utc": "2026-07-22T01:04:43.684448+00:00",
+  "strategy": "standalone_nasdaq_new_york_open_auction_proxy",
+  "macro_or_hierarchy_inputs": false,
+  "data_file": "/Users/timursabitov/Dev/price_action/cache/Nasdaq.csv",
+  "data_quality": {
+    "input_rows": 681646,
+    "bar_minutes": 1,
+    "aggregated_rows": 681646,
+    "first_input_bar_utc": "2024-01-02T05:02:00+00:00",
+    "last_input_bar_utc": "2025-12-05T21:44:00+00:00",
+    "duplicate_timestamps": 0,
+    "zero_volume_rows": 0,
+    "non_one_minute_gap_events": 548,
+    "largest_gap_minutes": 4381.0,
+    "incomplete_aggregate_groups_dropped": 0,
+    "close_not_on_nq_quarter_tick_rows": 641336,
+    "close_not_on_nq_quarter_tick_share": 0.9408637327879867,
+    "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
+    "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
+  },
+  "config": {
+    "bar_minutes": 1,
+    "profile_rows": 24,
+    "profile_value_fraction": 0.7,
+    "atr_bars": 14,
+    "average_volume_bars": 50,
+    "delta_smoothing_bars": 5,
+    "aggression_volume_multiplier": 1.25,
+    "aggression_range_atr": 0.8,
+    "absorption_volume_multiplier": 2.0,
+    "absorption_range_atr": 0.3,
+    "absorption_memory_bars": 6,
+    "accumulation_bars": 3,
+    "accumulation_range_atr": 0.8,
+    "location_tolerance_atr": 0.2,
+    "stop_atr": 1.0,
+    "reward_to_risk": 2.0,
+    "max_holding_minutes": 30,
+    "risk_fraction": 0.01,
+    "max_notional_fraction": 10.0,
+    "max_daily_losses": 3
+  },
+  "execution": {
+    "instrument_assumption": "unverified_nasdaq_100_cash_or_cfd",
+    "commission_bps": 0.15,
+    "slippage_bps": 0.35,
+    "venue_and_contract_verified": false,
+    "historical_spread_supplied": false,
+    "one_way_cost_bps": 0.5,
+    "research_only": true,
+    "cost_note": "Commission plus slippage is charged to entry and exit notional."
+  },
+  "calendar": "XNYS",
+  "holdout_start": "2025-01-01T00:00:00+00:00",
+  "usable_sessions": 474,
+  "excluded_sessions": 11,
+  "raw_signals": 82,
+  "executed_trades": 78,
+  "blocked_signals": {
+    "overlap": 3,
+    "daily_loss_stop": 0,
+    "unexecutable": 1
+  },
+  "profit_scaling": "disabled: no exact auditable scaling equation supplied",
+  "research_only_reasons": [
+    "instrument and venue identity are absent",
+    "price grid is inconsistent with CME NQ",
+    "volume provenance is absent",
+    "1-minute OHLCV is not genuine order flow"
+  ]
+}

@@ -3,8 +3,8 @@
 The supplied ``cache/Nasdaq.csv`` contains one-minute OHLCV, but no venue,
 contract, bid/ask, or roll metadata.  Prices are not aligned to CME NQ's
 quarter-point tick, so the feed is deliberately treated as an unverified
-Nasdaq-100 cash/CFD-like series.  This module resamples it to causal five-minute
-bars and tests bar-data approximations of the Direction/Location/Aggression
+Nasdaq-100 cash/CFD-like series.  This module resamples it to causal one-, two-,
+or five-minute bars and tests bar-data approximations of Direction/Location/Aggression
 framework without claiming genuine order flow.
 """
 
@@ -28,7 +28,7 @@ from .data import resolve_project_root
 DEFAULT_DATA = Path("cache/Nasdaq.csv")
 DEFAULT_EXECUTION = Path("config/nasdaq_session_execution.json")
 DEFAULT_OUTPUT = Path("outputs/nasdaq_session_backtest")
-BAR_INTERVAL = pd.Timedelta(minutes=5)
+DEFAULT_MULTI_OUTPUT = Path("outputs/nasdaq_multifrequency_backtest")
 HOLDOUT_START = pd.Timestamp("2025-01-01", tz="UTC")
 CALENDAR_NAME = "XNYS"
 
@@ -67,6 +67,7 @@ class NasdaqExecutionCosts:
 
 @dataclass(frozen=True)
 class NasdaqStrategyConfig:
+    bar_minutes: int = 5
     profile_rows: int = 24
     profile_value_fraction: float = 0.70
     atr_bars: int = 14
@@ -76,15 +77,20 @@ class NasdaqStrategyConfig:
     aggression_range_atr: float = 0.80
     absorption_volume_multiplier: float = 2.0
     absorption_range_atr: float = 0.30
+    absorption_memory_bars: int = 6
+    accumulation_bars: int = 3
+    accumulation_range_atr: float = 0.80
     location_tolerance_atr: float = 0.20
     stop_atr: float = 1.0
     reward_to_risk: float = 2.0
-    max_holding_bars: int = 6
+    max_holding_minutes: int = 30
     risk_fraction: float = 0.01
     max_notional_fraction: float = 10.0
     max_daily_losses: int = 3
 
     def __post_init__(self) -> None:
+        if self.bar_minutes not in {1, 2, 5} or 30 % self.bar_minutes:
+            raise ValueError("bar_minutes must be 1, 2, or 5 and divide a 30-minute phase")
         if self.profile_rows < 4 or not 0.0 < self.profile_value_fraction < 1.0:
             raise ValueError("Invalid volume-profile configuration")
         if self.atr_bars < 2 or self.average_volume_bars < 2 or self.delta_smoothing_bars < 1:
@@ -96,12 +102,29 @@ class NasdaqStrategyConfig:
         if self.max_notional_fraction <= 0.0 or self.max_daily_losses < 1:
             raise ValueError("Leverage and daily-loss limits must be positive")
 
+    @property
+    def bar_interval(self) -> pd.Timedelta:
+        return pd.Timedelta(minutes=self.bar_minutes)
+
+    @property
+    def opening_bars(self) -> int:
+        return 30 // self.bar_minutes
+
+    @property
+    def max_holding_bars(self) -> int:
+        return max(1, self.max_holding_minutes // self.bar_minutes)
+
 
 def load_execution_costs(path: str | Path) -> NasdaqExecutionCosts:
     return NasdaqExecutionCosts(**json.loads(Path(path).read_text(encoding="utf-8")))
 
 
-def load_nasdaq_bars(path: str | Path) -> tuple[pd.DataFrame, dict[str, Any]]:
+def load_nasdaq_bars(
+    path: str | Path,
+    bar_minutes: int = 5,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    if bar_minutes not in {1, 2, 5}:
+        raise ValueError("bar_minutes must be 1, 2, or 5")
     raw = pd.read_csv(path)
     required = {"time", "open", "high", "low", "close", "volume"}
     missing = required - set(raw.columns)
@@ -127,28 +150,30 @@ def load_nasdaq_bars(path: str | Path) -> tuple[pd.DataFrame, dict[str, Any]]:
         raise ValueError("Nasdaq CSV contains negative volume")
     raw = raw.set_index("time")
     minute_deltas = raw.index.to_series().diff().dropna()
-    minute_counts = raw["close"].resample("5min", origin="epoch").count()
-    bars = raw.resample("5min", origin="epoch").agg(
+    rule = f"{bar_minutes}min"
+    minute_counts = raw["close"].resample(rule, origin="epoch").count()
+    bars = raw.resample(rule, origin="epoch").agg(
         open=("open", "first"),
         high=("high", "max"),
         low=("low", "min"),
         close=("close", "last"),
         volume=("volume", "sum"),
     )
-    incomplete_groups = minute_counts.between(1, 4)
-    bars = bars.loc[minute_counts.eq(5)].dropna()
+    incomplete_groups = minute_counts.between(1, bar_minutes - 1)
+    bars = bars.loc[minute_counts.eq(bar_minutes)].dropna()
     bars["bar_id"] = np.arange(len(bars), dtype=int)
     off_tick = ((raw["close"] * 4.0) - (raw["close"] * 4.0).round()).abs().gt(1e-8)
     audit = {
         "input_rows": int(len(raw)),
-        "five_minute_rows": int(len(bars)),
+        "bar_minutes": int(bar_minutes),
+        "aggregated_rows": int(len(bars)),
         "first_input_bar_utc": raw.index.min().isoformat(),
         "last_input_bar_utc": raw.index.max().isoformat(),
         "duplicate_timestamps": duplicate_count,
         "zero_volume_rows": int(raw["volume"].eq(0.0).sum()),
         "non_one_minute_gap_events": int(minute_deltas.ne(pd.Timedelta(minutes=1)).sum()),
         "largest_gap_minutes": float(minute_deltas.max() / pd.Timedelta(minutes=1)),
-        "incomplete_five_minute_groups_dropped": int(incomplete_groups.sum()),
+        "incomplete_aggregate_groups_dropped": int(incomplete_groups.sum()),
         "close_not_on_nq_quarter_tick_rows": int(off_tick.sum()),
         "close_not_on_nq_quarter_tick_share": float(off_tick.mean()),
         "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
@@ -178,8 +203,13 @@ def build_ny_schedule(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def _complete_grid(frame: pd.DataFrame, start: pd.Timestamp, end: pd.Timestamp) -> bool:
-    expected = pd.date_range(start, end - BAR_INTERVAL, freq=BAR_INTERVAL, tz="UTC")
+def _complete_grid(
+    frame: pd.DataFrame,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    bar_interval: pd.Timedelta,
+) -> bool:
+    expected = pd.date_range(start, end - bar_interval, freq=bar_interval, tz="UTC")
     actual = frame.loc[(frame.index >= start) & (frame.index < end)].index
     return bool(len(actual) == len(expected) and actual.equals(expected))
 
@@ -208,10 +238,30 @@ def add_indicators(frame: pd.DataFrame, config: NasdaqStrategyConfig) -> pd.Data
         config.delta_smoothing_bars,
         min_periods=config.delta_smoothing_bars,
     ).sum()
-    out["absorption_proxy"] = (
-        out["volume"].gt(out["average_volume"] * config.absorption_volume_multiplier)
-        & out["bar_range"].lt(out["atr"] * config.absorption_range_atr)
+    out["absorption_volume_test"] = out["volume"].gt(
+        out["average_volume"] * config.absorption_volume_multiplier
     )
+    out["absorption_range_test"] = out["bar_range"].lt(
+        out["atr"] * config.absorption_range_atr
+    )
+    out["absorption_proxy"] = (
+        out["absorption_volume_test"] & out["absorption_range_test"]
+    )
+    out["recent_absorption_proxy"] = out["absorption_proxy"].shift(1).rolling(
+        config.absorption_memory_bars,
+        min_periods=1,
+    ).max().fillna(0.0).astype(bool)
+    out["prior_accumulation_high"] = out["high"].shift(1).rolling(
+        config.accumulation_bars,
+        min_periods=config.accumulation_bars,
+    ).max()
+    out["prior_accumulation_low"] = out["low"].shift(1).rolling(
+        config.accumulation_bars,
+        min_periods=config.accumulation_bars,
+    ).min()
+    out["accumulation_proxy"] = (
+        out["prior_accumulation_high"] - out["prior_accumulation_low"]
+    ).lt(out["atr"] * config.accumulation_range_atr)
     volume_expansion = out["volume"].gt(
         out["average_volume"] * config.aggression_volume_multiplier
     )
@@ -269,8 +319,9 @@ def _phase_move(
     phase: str,
     start: pd.Timestamp,
     end: pd.Timestamp,
+    bar_interval: pd.Timedelta,
 ) -> dict[str, Any] | None:
-    if not _complete_grid(bars, start, end):
+    if not _complete_grid(bars, start, end, bar_interval):
         return None
     phase_bars = bars.loc[(bars.index >= start) & (bars.index < end)]
     phase_return = float(phase_bars["close"].iloc[-1] / phase_bars["open"].iloc[0] - 1.0)
@@ -298,7 +349,12 @@ def build_candidates(
     for row in schedule.itertuples(index=False):
         session_open = pd.Timestamp(row.session_open)
         session_close = pd.Timestamp(row.session_close)
-        rth_complete = _complete_grid(indicated, session_open, session_close)
+        rth_complete = _complete_grid(
+            indicated,
+            session_open,
+            session_close,
+            config.bar_interval,
+        )
         rth = indicated.loc[(indicated.index >= session_open) & (indicated.index < session_close)]
         levels = (
             volume_profile_levels(
@@ -329,7 +385,14 @@ def build_candidates(
             "after_close_30m": (session_close, pd.Timestamp(row.after_close_end)),
         }
         for phase, (start, end) in phase_bounds.items():
-            move = _phase_move(indicated, row.session_date, phase, start, end)
+            move = _phase_move(
+                indicated,
+                row.session_date,
+                phase,
+                start,
+                end,
+                config.bar_interval,
+            )
             if move is not None:
                 moves.append(move)
 
@@ -340,8 +403,18 @@ def build_candidates(
         session_open = pd.Timestamp(current["session_open"])
         opening_end = session_open + pd.Timedelta(minutes=30)
         execution_end = session_open + pd.Timedelta(minutes=60)
-        opening_complete = _complete_grid(indicated, session_open, opening_end)
-        execution_complete = _complete_grid(indicated, opening_end, execution_end)
+        opening_complete = _complete_grid(
+            indicated,
+            session_open,
+            opening_end,
+            config.bar_interval,
+        )
+        execution_complete = _complete_grid(
+            indicated,
+            opening_end,
+            execution_end,
+            config.bar_interval,
+        )
         prior_profile_complete = bool(previous is not None and previous["rth_complete"])
         usable = bool(opening_complete and execution_complete and prior_profile_complete)
         quality_row = {
@@ -361,22 +434,22 @@ def build_candidates(
         first_hour = indicated.loc[
             (indicated.index >= session_open) & (indicated.index < execution_end)
         ].copy()
-        opening = first_hour.iloc[:6]
-        execution = first_hour.iloc[6:12].copy()
+        opening = first_hour.iloc[:config.opening_bars]
+        execution = first_hour.iloc[config.opening_bars:2 * config.opening_bars].copy()
         typical = (first_hour["high"] + first_hour["low"] + first_hour["close"]) / 3.0
         cumulative_volume = first_hour["volume"].cumsum()
         first_hour["session_vwap"] = (
             (typical * first_hour["volume"]).cumsum()
             / cumulative_volume.replace(0.0, np.nan)
         )
-        opening = first_hour.iloc[:6]
-        execution = first_hour.iloc[6:12]
+        opening = first_hour.iloc[:config.opening_bars]
+        execution = first_hour.iloc[config.opening_bars:2 * config.opening_bars]
         opening_high = float(opening["high"].max())
         opening_low = float(opening["low"].min())
         opening_close = float(opening["close"].iloc[-1])
         opening_open = float(opening["open"].iloc[0])
         opening_delta = float(opening["delta_proxy"].sum())
-        opening_vwap = float(first_hour["session_vwap"].iloc[5])
+        opening_vwap = float(first_hour["session_vwap"].iloc[config.opening_bars - 1])
         prior_poc = float(previous["poc"])
         prior_val = float(previous["val"])
         prior_vah = float(previous["vah"])
@@ -409,6 +482,36 @@ def build_candidates(
         for timestamp, bar in execution.iterrows():
             prior_bar = indicated.iloc[int(bar["bar_id"]) - 1]
             tolerance = float(bar["atr"] * config.location_tolerance_atr)
+            strict_location = bool(
+                prior_poc >= bar["prior_accumulation_low"] - tolerance
+                and prior_poc <= bar["prior_accumulation_high"] + tolerance
+                or prior_val >= bar["prior_accumulation_low"] - tolerance
+                and prior_val <= bar["prior_accumulation_high"] + tolerance
+                or prior_vah >= bar["prior_accumulation_low"] - tolerance
+                and prior_vah <= bar["prior_accumulation_high"] + tolerance
+                or opening_high >= bar["prior_accumulation_low"] - tolerance
+                and opening_high <= bar["prior_accumulation_high"] + tolerance
+                or opening_low >= bar["prior_accumulation_low"] - tolerance
+                and opening_low <= bar["prior_accumulation_high"] + tolerance
+            )
+            strict_long = bool(
+                bar["recent_absorption_proxy"]
+                and bar["accumulation_proxy"]
+                and strict_location
+                and bar["aggressive_up"]
+                and bar["close"] > bar["prior_accumulation_high"]
+                and bar["smoothed_delta_proxy"] > 0.0
+                and bar["close"] > bar["session_vwap"]
+            )
+            strict_short = bool(
+                bar["recent_absorption_proxy"]
+                and bar["accumulation_proxy"]
+                and strict_location
+                and bar["aggressive_down"]
+                and bar["close"] < bar["prior_accumulation_low"]
+                and bar["smoothed_delta_proxy"] < 0.0
+                and bar["close"] < bar["session_vwap"]
+            )
             orb_long = bool(
                 regime == "imbalance_up"
                 and bar["aggressive_up"]
@@ -443,7 +546,10 @@ def build_candidates(
             )
             setup = ""
             side = 0
-            if orb_long or orb_short:
+            if strict_long or strict_short:
+                setup = "strict_absorption_accumulation_aggression"
+                side = 1 if strict_long else -1
+            elif orb_long or orb_short:
                 setup = "imbalance_opening_range_breakout"
                 side = 1 if orb_long else -1
             elif balance_long or balance_short:
@@ -483,7 +589,10 @@ def simulate_trade(
         return None
     entry_time = bars.index[entry_id]
     phase_end = pd.Timestamp(signal["phase_end"])
-    if entry_time != pd.Timestamp(signal["timestamp"]) + BAR_INTERVAL or entry_time >= phase_end:
+    if (
+        entry_time != pd.Timestamp(signal["timestamp"]) + config.bar_interval
+        or entry_time >= phase_end
+    ):
         return None
     entry_price = float(bars.iloc[entry_id]["open"])
     atr = float(signal["atr"])
@@ -517,8 +626,10 @@ def simulate_trade(
             break
         exit_price = float(bar["close"])
         exit_time = timestamp
-        exit_reason = "phase_end" if timestamp + BAR_INTERVAL >= phase_end else "max_holding"
-        if timestamp + BAR_INTERVAL >= phase_end:
+        exit_reason = (
+            "phase_end" if timestamp + config.bar_interval >= phase_end else "max_holding"
+        )
+        if timestamp + config.bar_interval >= phase_end:
             break
     gross_return = side * notional_fraction * (exit_price / entry_price - 1.0)
     one_way_turnover = 2.0 * notional_fraction
@@ -539,7 +650,9 @@ def simulate_trade(
         "target_price": target_price,
         "exit_price": exit_price,
         "exit_reason": exit_reason,
-        "holding_bars": int((exit_time - entry_time) / BAR_INTERVAL) + 1,
+        "holding_bars": int((exit_time - entry_time) / config.bar_interval) + 1,
+        "holding_minutes": int((exit_time - entry_time) / pd.Timedelta(minutes=1))
+        + config.bar_minutes,
         "notional_fraction": notional_fraction,
         "risk_fraction_deployed": deployed_risk,
         "gross_return": gross_return,
@@ -588,6 +701,7 @@ def _metrics(frame: pd.DataFrame, scope: str) -> dict[str, Any]:
     frame = frame.sort_values("entry_time")
     gross = frame["gross_return"].astype(float)
     net = frame["net_return"].astype(float)
+    gross_equity = (1.0 + gross).cumprod()
     equity = (1.0 + net).cumprod()
     years = max(
         (pd.Timestamp(frame["exit_time"].max()) - pd.Timestamp(frame["entry_time"].min())).days
@@ -614,12 +728,14 @@ def _metrics(frame: pd.DataFrame, scope: str) -> dict[str, Any]:
         if net_losses.sum() < 0.0 else np.nan,
         "break_even_one_way_cost_bps": float(gross.sum() / turnover * 10_000.0)
         if turnover > 0.0 else np.nan,
+        "cumulative_gross_return": float(gross_equity.iloc[-1] - 1.0),
         "cumulative_net_return": float(equity.iloc[-1] - 1.0),
         "annualized_net_return": float(equity.iloc[-1] ** (1.0 / years) - 1.0),
         "max_drawdown": float((equity / equity.cummax() - 1.0).min()),
         "average_notional_fraction": float(frame["notional_fraction"].mean()),
         "median_risk_fraction_deployed": float(frame["risk_fraction_deployed"].median()),
         "average_holding_bars": float(frame["holding_bars"].mean()),
+        "average_holding_minutes": float(frame["holding_minutes"].mean()),
     }
 
 
@@ -774,6 +890,264 @@ def direction_summary(trades: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def equity_curve_frame(trades_by_frequency: dict[int, pd.DataFrame]) -> pd.DataFrame:
+    rows: list[pd.DataFrame] = []
+    for bar_minutes, trades in sorted(trades_by_frequency.items()):
+        if trades.empty:
+            continue
+        frame = trades.sort_values("exit_time").copy()
+        frame["exit_time"] = pd.to_datetime(frame["exit_time"], utc=True)
+        frame["bar_minutes"] = bar_minutes
+        frame["gross_equity"] = (1.0 + frame["gross_return"]).cumprod()
+        frame["net_equity"] = (1.0 + frame["net_return"]).cumprod()
+        frame["drawdown"] = frame["net_equity"] / frame["net_equity"].cummax() - 1.0
+        rows.append(frame[[
+            "bar_minutes", "exit_time", "session_date", "setup", "side",
+            "gross_return", "net_return", "gross_equity", "net_equity", "drawdown",
+        ]])
+    return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+
+
+def monthly_return_frame(equity_curves: pd.DataFrame) -> pd.DataFrame:
+    if equity_curves.empty:
+        return pd.DataFrame()
+    data = equity_curves.copy()
+    data["month"] = data["exit_time"].dt.tz_localize(None).dt.to_period("M").astype(str)
+    return (
+        data.groupby(["bar_minutes", "month"], sort=True)[["gross_return", "net_return"]]
+        .agg(lambda values: float((1.0 + values).prod() - 1.0))
+        .reset_index()
+    )
+
+
+def session_extreme_timing(
+    one_minute_bars: pd.DataFrame,
+    schedule: pd.DataFrame,
+) -> pd.DataFrame:
+    rows: list[dict[str, Any]] = []
+    one_minute = pd.Timedelta(minutes=1)
+    for session in schedule.itertuples(index=False):
+        session_open = pd.Timestamp(session.session_open)
+        session_close = pd.Timestamp(session.session_close)
+        if not _complete_grid(one_minute_bars, session_open, session_close, one_minute):
+            continue
+        rth = one_minute_bars.loc[
+            (one_minute_bars.index >= session_open)
+            & (one_minute_bars.index < session_close)
+        ]
+        high_time = pd.Timestamp(rth["high"].idxmax())
+        low_time = pd.Timestamp(rth["low"].idxmin())
+        high_minute = int((high_time - session_open) / one_minute)
+        low_minute = int((low_time - session_open) / one_minute)
+        session_minutes = int((session_close - session_open) / one_minute)
+        rows.append({
+            "session_date": session.session_date,
+            "session_minutes": session_minutes,
+            "high_time_utc": high_time,
+            "low_time_utc": low_time,
+            "high_time_new_york": high_time.tz_convert("America/New_York").strftime("%H:%M"),
+            "low_time_new_york": low_time.tz_convert("America/New_York").strftime("%H:%M"),
+            "high_minute_from_open": high_minute,
+            "low_minute_from_open": low_minute,
+            "absolute_high_low_time_gap_minutes": abs(high_minute - low_minute),
+            "high_before_low": high_minute < low_minute,
+            "high_in_first_30m": high_minute < 30,
+            "low_in_first_30m": low_minute < 30,
+            "high_in_last_30m": high_minute >= session_minutes - 30,
+            "low_in_last_30m": low_minute >= session_minutes - 30,
+        })
+    return pd.DataFrame(rows)
+
+
+def extreme_timing_summary(timing: pd.DataFrame) -> pd.DataFrame:
+    if timing.empty:
+        return pd.DataFrame()
+    high = timing["high_minute_from_open"].astype(float)
+    low = timing["low_minute_from_open"].astype(float)
+    gap = timing["absolute_high_low_time_gap_minutes"].astype(float)
+    metrics = {
+        "sessions": float(len(timing)),
+        "median_high_minute_from_open": float(high.median()),
+        "median_low_minute_from_open": float(low.median()),
+        "high_low_timing_correlation": float(high.corr(low)),
+        "median_absolute_high_low_gap_minutes": float(gap.median()),
+        "high_low_within_30m_share": float(gap.le(30).mean()),
+        "high_low_within_60m_share": float(gap.le(60).mean()),
+        "high_in_first_30m_share": float(timing["high_in_first_30m"].mean()),
+        "low_in_first_30m_share": float(timing["low_in_first_30m"].mean()),
+        "high_in_last_30m_share": float(timing["high_in_last_30m"].mean()),
+        "low_in_last_30m_share": float(timing["low_in_last_30m"].mean()),
+        "high_before_low_share": float(timing["high_before_low"].mean()),
+    }
+    return pd.DataFrame([{"metric": name, "value": value} for name, value in metrics.items()])
+
+
+def _configure_plots() -> Any:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.rcParams.update({
+        "figure.facecolor": "#f8f7f2",
+        "axes.facecolor": "#f8f7f2",
+        "axes.edgecolor": "#2d3748",
+        "axes.labelcolor": "#1a202c",
+        "xtick.color": "#2d3748",
+        "ytick.color": "#2d3748",
+        "font.size": 10,
+        "axes.titleweight": "bold",
+    })
+    return plt
+
+
+def render_plots(
+    equity: pd.DataFrame,
+    monthly: pd.DataFrame,
+    timing: pd.DataFrame,
+    output: Path,
+) -> list[Path]:
+    if equity.empty:
+        return []
+    plt = _configure_plots()
+    from matplotlib.ticker import PercentFormatter
+
+    colors = {1: "#2563eb", 2: "#d97706", 5: "#0f766e"}
+    paths: list[Path] = []
+
+    frequencies = sorted(equity["bar_minutes"].unique())
+    fig, axes = plt.subplots(len(frequencies), 1, figsize=(12, 3.5 * len(frequencies)), sharex=True)
+    if len(frequencies) == 1:
+        axes = [axes]
+    for axis, bar_minutes in zip(axes, frequencies, strict=True):
+        group = equity.loc[equity["bar_minutes"].eq(bar_minutes)]
+        axis.plot(group["exit_time"], group["gross_equity"], "--", color="#64748b", label="Gross")
+        axis.plot(group["exit_time"], group["net_equity"], color=colors[bar_minutes], linewidth=2, label="Net")
+        axis.axvline(HOLDOUT_START, color="#9f1239", linestyle=":", label="2025 holdout")
+        axis.axhline(1.0, color="#334155", linewidth=0.8)
+        axis.set_title(f"{bar_minutes}-minute return on equity")
+        axis.set_ylabel("Growth of $1")
+        axis.grid(alpha=0.22)
+        axis.legend(loc="best")
+    fig.tight_layout()
+    path = output / "equity_curves.png"
+    fig.savefig(path, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+    paths.append(path)
+
+    fig, axis = plt.subplots(figsize=(12, 5.5))
+    for bar_minutes in frequencies:
+        group = equity.loc[equity["bar_minutes"].eq(bar_minutes)]
+        axis.plot(
+            group["exit_time"],
+            group["drawdown"],
+            color=colors[bar_minutes],
+            label=f"{bar_minutes}m",
+            linewidth=1.8,
+        )
+    axis.axvline(HOLDOUT_START, color="#9f1239", linestyle=":")
+    axis.yaxis.set_major_formatter(PercentFormatter(1.0))
+    axis.set_title("Net-equity drawdowns")
+    axis.set_ylabel("Drawdown")
+    axis.grid(alpha=0.22)
+    axis.legend()
+    fig.tight_layout()
+    path = output / "drawdowns.png"
+    fig.savefig(path, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+    paths.append(path)
+
+    fig, axes = plt.subplots(1, len(frequencies), figsize=(5 * len(frequencies), 4.5), sharey=True)
+    if len(frequencies) == 1:
+        axes = [axes]
+    for axis, bar_minutes in zip(axes, frequencies, strict=True):
+        values = equity.loc[equity["bar_minutes"].eq(bar_minutes), "net_return"] * 100.0
+        axis.hist(values, bins=24, color=colors[bar_minutes], alpha=0.78, edgecolor="white")
+        axis.axvline(0.0, color="#111827", linewidth=1)
+        axis.axvline(values.mean(), color="#9f1239", linestyle="--", label=f"Mean {values.mean():.3f}%")
+        axis.set_title(f"{bar_minutes}m trade returns")
+        axis.set_xlabel("Net return on equity (%)")
+        axis.grid(axis="y", alpha=0.2)
+        axis.legend()
+    axes[0].set_ylabel("Trades")
+    fig.tight_layout()
+    path = output / "trade_return_distributions.png"
+    fig.savefig(path, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+    paths.append(path)
+
+    if not monthly.empty:
+        pivot = monthly.pivot(index="month", columns="bar_minutes", values="net_return")
+        fig, axis = plt.subplots(figsize=(14, 6))
+        x = np.arange(len(pivot))
+        width = 0.24
+        offsets = np.linspace(-width, width, len(frequencies))
+        for offset, bar_minutes in zip(offsets, frequencies, strict=True):
+            axis.bar(
+                x + offset,
+                pivot[bar_minutes] if bar_minutes in pivot else 0.0,
+                width=width,
+                color=colors[bar_minutes],
+                label=f"{bar_minutes}m",
+            )
+        axis.axhline(0.0, color="#111827", linewidth=0.8)
+        axis.set_xticks(x)
+        axis.set_xticklabels(pivot.index, rotation=60, ha="right")
+        axis.yaxis.set_major_formatter(PercentFormatter(1.0))
+        axis.set_title("Monthly net return on equity")
+        axis.grid(axis="y", alpha=0.2)
+        axis.legend()
+        fig.tight_layout()
+        path = output / "monthly_returns.png"
+        fig.savefig(path, dpi=180, bbox_inches="tight")
+        plt.close(fig)
+        paths.append(path)
+
+    if not timing.empty:
+        regular = timing.loc[timing["session_minutes"].eq(390)]
+        bins = np.arange(0, 391, 30)
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
+        axes[0].hist(
+            regular["high_minute_from_open"],
+            bins=bins,
+            alpha=0.62,
+            color="#dc2626",
+            label="Session high",
+        )
+        axes[0].hist(
+            regular["low_minute_from_open"],
+            bins=bins,
+            alpha=0.58,
+            color="#2563eb",
+            label="Session low",
+        )
+        axes[0].set_title("When regular-session extremes occur")
+        axes[0].set_xlabel("Minutes after 09:30 New York open")
+        axes[0].set_ylabel("Sessions")
+        axes[0].legend()
+        axes[0].grid(axis="y", alpha=0.2)
+        axes[1].scatter(
+            regular["low_minute_from_open"],
+            regular["high_minute_from_open"],
+            s=15,
+            alpha=0.42,
+            color="#7c3aed",
+        )
+        axes[1].plot([0, 390], [0, 390], color="#111827", linestyle="--", linewidth=1)
+        axes[1].set_xlim(0, 390)
+        axes[1].set_ylim(0, 390)
+        axes[1].set_xlabel("Low: minutes after open")
+        axes[1].set_ylabel("High: minutes after open")
+        axes[1].set_title("High/low timing within the same session")
+        axes[1].grid(alpha=0.2)
+        fig.tight_layout()
+        path = output / "session_high_low_timing.png"
+        fig.savefig(path, dpi=180, bbox_inches="tight")
+        plt.close(fig)
+        paths.append(path)
+    return paths
+
+
 def signal_funnel(candidates: pd.DataFrame) -> pd.DataFrame:
     checks = {
         "execution_window_bars": pd.Series(True, index=candidates.index),
@@ -781,6 +1155,14 @@ def signal_funnel(candidates: pd.DataFrame) -> pd.DataFrame:
         "balance_regime_bars": candidates["day_regime"].eq("balance"),
         "aggressive_expansion": candidates["aggressive_up"] | candidates["aggressive_down"],
         "absorption_proxy": candidates["absorption_proxy"],
+        "recent_absorption_proxy": candidates["recent_absorption_proxy"],
+        "accumulation_proxy": candidates["accumulation_proxy"],
+        "recent_absorption_and_accumulation": (
+            candidates["recent_absorption_proxy"] & candidates["accumulation_proxy"]
+        ),
+        "strict_absorption_signals": candidates["setup"].eq(
+            "strict_absorption_accumulation_aggression"
+        ),
         "imbalance_orb_signals": candidates["setup"].eq("imbalance_opening_range_breakout"),
         "balance_rejection_signals": candidates["setup"].eq("balance_value_rejection"),
     }
@@ -792,6 +1174,85 @@ def signal_funnel(candidates: pd.DataFrame) -> pd.DataFrame:
         }
         for stage, mask in checks.items()
     ])
+
+
+def absorption_diagnostics(
+    bars: pd.DataFrame,
+    schedule: pd.DataFrame,
+    candidates: pd.DataFrame,
+    config: NasdaqStrategyConfig,
+) -> pd.DataFrame:
+    """Show exactly where the strict absorption proxy loses observations."""
+    indicated = add_indicators(bars, config)
+    regular_frames: list[pd.DataFrame] = []
+    opening_frames: list[pd.DataFrame] = []
+    for session in schedule.itertuples(index=False):
+        session_open = pd.Timestamp(session.session_open)
+        session_close = pd.Timestamp(session.session_close)
+        if not _complete_grid(
+            indicated,
+            session_open,
+            session_close,
+            config.bar_interval,
+        ):
+            continue
+        regular_frames.append(indicated.loc[
+            (indicated.index >= session_open) & (indicated.index < session_close)
+        ])
+        opening_frames.append(indicated.loc[
+            (indicated.index >= session_open)
+            & (indicated.index < session_open + pd.Timedelta(minutes=30))
+        ])
+
+    empty = indicated.iloc[0:0]
+    scopes = {
+        "all_feed_bars": indicated,
+        "complete_regular_session_bars": (
+            pd.concat(regular_frames) if regular_frames else empty
+        ),
+        "first_30m_bars": pd.concat(opening_frames) if opening_frames else empty,
+        "execution_30m_bars": candidates,
+    }
+    rows: list[dict[str, Any]] = []
+    for scope, frame in scopes.items():
+        eligible = frame["atr"].notna() & frame["average_volume"].notna()
+        volume_test = frame["absorption_volume_test"].fillna(False)
+        range_test = frame["absorption_range_test"].fillna(False)
+        absorption = frame["absorption_proxy"].fillna(False)
+        recent = frame["recent_absorption_proxy"].fillna(False)
+        accumulation = frame["accumulation_proxy"].fillna(False)
+        aggressive = (
+            frame["aggressive_up"].fillna(False)
+            | frame["aggressive_down"].fillna(False)
+        )
+        strict_signals = (
+            frame["setup"].eq("strict_absorption_accumulation_aggression")
+            if "setup" in frame
+            else pd.Series(False, index=frame.index)
+        )
+        volume_count = int(volume_test.sum())
+        range_count = int(range_test.sum())
+        absorption_count = int(absorption.sum())
+        rows.append({
+            "scope": scope,
+            "bars": int(len(frame)),
+            "indicator_eligible_bars": int(eligible.sum()),
+            "volume_above_2x_average": volume_count,
+            "range_below_0_3_atr": range_count,
+            "strict_absorption_intersection": absorption_count,
+            "absorption_given_volume_share": (
+                float(absorption_count / volume_count) if volume_count else 0.0
+            ),
+            "absorption_given_narrow_range_share": (
+                float(absorption_count / range_count) if range_count else 0.0
+            ),
+            "recent_absorption": int(recent.sum()),
+            "three_bar_accumulation": int(accumulation.sum()),
+            "recent_absorption_and_accumulation": int((recent & accumulation).sum()),
+            "aggressive_expansion": int(aggressive.sum()),
+            "strict_signals": int(strict_signals.sum()),
+        })
+    return pd.DataFrame(rows)
 
 
 def regime_counts(quality: pd.DataFrame) -> pd.DataFrame:
@@ -828,11 +1289,12 @@ def build_report(
     directions: pd.DataFrame,
     regimes: pd.DataFrame,
     funnel: pd.DataFrame,
+    absorption: pd.DataFrame,
     governance: dict[str, Any],
 ) -> str:
     holdout_summary = summary.loc[summary["scope"].str.startswith("holdout_2025")]
     holdout_costs = sensitivity.loc[sensitivity["scope"].eq("holdout_2025")]
-    return f"""# Nasdaq-100 Five-Minute New York-Open Backtest
+    return f"""# Nasdaq-100 {governance['config']['bar_minutes']}-Minute New York-Open Backtest
 
 Generated {governance['generated_at_utc']}. This is a standalone strategy with no macro or hierarchical-model inputs.
 
@@ -874,15 +1336,20 @@ Generated {governance['generated_at_utc']}. This is a standalone strategy with n
 
 {_markdown_table(funnel)}
 
+## Strict absorption diagnostics
+
+{_markdown_table(absorption)}
+
 ## Predeclared causal rules
 
-- The raw one-minute file is aggregated into complete five-minute bars; incomplete groups are dropped.
+- The raw one-minute file is aggregated into complete {governance['config']['bar_minutes']}-minute bars; incomplete groups are dropped.
 - XNYS calendars determine the 09:30 New York cash open, holidays, DST and early closes.
 - The prior completed regular session supplies a 24-row, 70% typical-price volume-profile approximation.
 - The first 30 minutes is observation only. An opening close outside the prior value area, aligned with opening return, session VWAP and close-location volume proxy, defines imbalance; otherwise the day is balance.
 - During minutes 30-60, imbalance trades require a fresh opening-range break in the regime direction. Balance trades require rejection at the prior value-area edge.
+- The strict Triple-A proxy requires prior 2x-volume/0.3-ATR absorption, three-bar accumulation at a prior-session or opening-range level, then aligned aggressive expansion through that accumulation.
 - Both setups require aligned smoothed delta proxy, VWAP and aggressive range/volume expansion. These are OHLCV proxies, not bid/ask order flow.
-- Signals enter at the next five-minute open. Stops are one ATR, targets are 2R, same-bar stop/target ambiguity resolves to the stop, and positions close no later than the end of the execution window.
+- Signals enter at the next {governance['config']['bar_minutes']}-minute open. Stops are one ATR, targets are 2R, same-bar stop/target ambiguity resolves to the stop, and positions close no later than the end of the execution window.
 - Risk is {governance['config']['risk_fraction'] * 100.0:.2f}% of current equity at the stop, capped at {governance['config']['max_notional_fraction']:.1f}x notional. Trading stops after three net losses in the session.
 - 2024 is development and 2025 is the untouched temporal holdout. No parameters are selected using holdout performance.
 
@@ -890,7 +1357,7 @@ Generated {governance['generated_at_utc']}. This is a standalone strategy with n
 
 - No symbol, source, venue, contract, expiry or roll metadata was supplied; futures contract sizing, tick rounding and broker margin cannot be modeled honestly.
 - Volume provenance is unknown and may be CFD tick volume. Volume profile, delta and absorption are therefore proxies.
-- Five-minute OHLCV cannot reveal aggressor side, resting liquidity, queue position, partial fills or true footprint/CVD.
+- {governance['config']['bar_minutes']}-minute OHLCV cannot reveal aggressor side, resting liquidity, queue position, partial fills or true footprint/CVD.
 - The configured {governance['execution']['one_way_cost_bps']:.2f} bps one-way execution cost is a scenario, not a measured spread/commission. Use the sensitivity table until actual venue costs are supplied.
 - The sample spans only 2024 through 5 December 2025. Even holdout results need a fresh forward or genuinely identified NQ dataset before capital deployment.
 """
@@ -917,7 +1384,7 @@ def build_nasdaq_backtest(
     output.mkdir(parents=True, exist_ok=True)
     strategy = config or NasdaqStrategyConfig()
     execution = load_execution_costs(execution_file)
-    bars, data_audit = load_nasdaq_bars(data_file)
+    bars, data_audit = load_nasdaq_bars(data_file, strategy.bar_minutes)
     schedule = build_ny_schedule(bars.index.min(), bars.index.max())
     candidates, moves, quality = build_candidates(bars, schedule, strategy)
     trades, blocked = run_backtest(candidates, bars, strategy, execution)
@@ -929,6 +1396,7 @@ def build_nasdaq_backtest(
     directions = direction_summary(trades)
     regimes = regime_counts(quality)
     funnel = signal_funnel(candidates)
+    absorption = absorption_diagnostics(bars, schedule, candidates, strategy)
     signals = candidates.loc[candidates["signal_side"].ne(0)].copy()
     governance = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
@@ -950,7 +1418,7 @@ def build_nasdaq_backtest(
             "instrument and venue identity are absent",
             "price grid is inconsistent with CME NQ",
             "volume provenance is absent",
-            "five-minute OHLCV is not genuine order flow",
+            f"{strategy.bar_minutes}-minute OHLCV is not genuine order flow",
         ],
     }
     schedule.to_csv(output / "session_schedule.csv", index=False)
@@ -960,7 +1428,9 @@ def build_nasdaq_backtest(
         "timestamp", "session_date", "day_regime", "setup", "signal_side",
         "open", "high", "low", "close", "volume", "atr", "session_vwap",
         "opening_range_high", "opening_range_low", "prior_poc", "prior_val", "prior_vah",
-        "smoothed_delta_proxy", "aggressive_up", "aggressive_down", "absorption_proxy",
+        "smoothed_delta_proxy", "aggressive_up", "aggressive_down",
+        "absorption_volume_test", "absorption_range_test", "absorption_proxy",
+        "recent_absorption_proxy", "accumulation_proxy",
     ]
     signals[[column for column in signal_columns if column in signals]].to_csv(
         output / "signals.csv", index=False
@@ -974,6 +1444,7 @@ def build_nasdaq_backtest(
     directions.to_csv(output / "direction_summary.csv", index=False)
     regimes.to_csv(output / "regime_counts.csv", index=False)
     funnel.to_csv(output / "signal_funnel.csv", index=False)
+    absorption.to_csv(output / "strict_absorption_diagnostics.csv", index=False)
     (output / "governance.json").write_text(json.dumps(governance, indent=2), encoding="utf-8")
     (output / "report.md").write_text(
         build_report(
@@ -985,6 +1456,7 @@ def build_nasdaq_backtest(
             directions,
             regimes,
             funnel,
+            absorption,
             governance,
         ),
         encoding="utf-8",
@@ -997,6 +1469,146 @@ def build_nasdaq_backtest(
         "cost_sensitivity": sensitivity,
         "bootstrap": bootstrap,
         "quarterly_stability": quarterly,
+        "absorption_diagnostics": absorption,
+        "governance": governance,
+    }
+
+
+def build_multifrequency_report(
+    comparison: pd.DataFrame,
+    timing_summary: pd.DataFrame,
+    absorption: pd.DataFrame,
+    governance: dict[str, Any],
+) -> str:
+    total_roe = comparison.loc[
+        comparison["scope"].isin(["all", "development_2024", "holdout_2025"])
+    ]
+    strict = comparison.loc[
+        comparison["scope"].str.contains(
+            "setup::strict_absorption_accumulation_aggression",
+            regex=False,
+        )
+    ]
+    return f"""# Nasdaq-100 One-, Two-, and Five-Minute Comparison
+
+Generated {governance['generated_at_utc']}. All frequencies use the same data, fixed rules, 1% stop risk, 2R target and {governance['execution']['one_way_cost_bps']:.2f} bps one-way execution scenario.
+
+> These are multiple views of one unverified Nasdaq-100 cash/CFD-like feed, not independent trials. Comparing frequencies and then selecting the best holdout result would be data mining.
+
+## Total return on equity
+
+{_markdown_table(total_roe, rows=30)}
+
+## Strict absorption proxy
+
+{_markdown_table(strict, rows=30)}
+
+No strict setup row means the rule generated no executable signal. The component audit below distinguishes the 2x-volume test, the 0.3-ATR range test, and their required intersection.
+
+{_markdown_table(absorption, rows=30)}
+
+## Session high/low timing
+
+{_markdown_table(timing_summary)}
+
+## Plots
+
+- [Gross and net equity curves](equity_curves.png)
+- [Net-equity drawdowns](drawdowns.png)
+- [Trade return distributions](trade_return_distributions.png)
+- [Monthly net returns](monthly_returns.png)
+- [Session high/low timing](session_high_low_timing.png)
+
+## Interpretation guardrails
+
+- Gross return is before the configured spread/commission/slippage scenario; net return is after costs on both entry and exit notional.
+- Total return on equity compounds every executed trade at its risk-sized notional. It is not the return of an unleveraged index position.
+- The strict absorption rule is unchanged across frequencies: volume above 2x its prior 50-bar mean, range below 0.3 ATR, recent absorption, three-bar accumulation at a key level, and aggressive directional expansion.
+- The high/low analysis uses complete native one-minute XNYS regular sessions and records the first minute containing each session extreme.
+- Confidence remains limited by two years of unidentified OHLCV and by evaluating three frequencies on the same 2025 holdout.
+"""
+
+
+def build_multifrequency_backtest(
+    project_root: str | Path | None = None,
+    *,
+    data_path: str | Path = DEFAULT_DATA,
+    execution_path: str | Path = DEFAULT_EXECUTION,
+    output_dir: str | Path = DEFAULT_MULTI_OUTPUT,
+    frequencies: tuple[int, ...] = (1, 2, 5),
+) -> dict[str, Any]:
+    root = resolve_project_root(project_root)
+    data_file = Path(data_path)
+    execution_file = Path(execution_path)
+    output = Path(output_dir)
+    if not data_file.is_absolute():
+        data_file = root / data_file
+    if not execution_file.is_absolute():
+        execution_file = root / execution_file
+    if not output.is_absolute():
+        output = root / output
+    output.mkdir(parents=True, exist_ok=True)
+    execution = load_execution_costs(execution_file)
+    results: dict[int, dict[str, Any]] = {}
+    comparison_frames: list[pd.DataFrame] = []
+    absorption_frames: list[pd.DataFrame] = []
+    trades_by_frequency: dict[int, pd.DataFrame] = {}
+    for bar_minutes in frequencies:
+        child_output = output / f"{bar_minutes}min"
+        result = build_nasdaq_backtest(
+            root,
+            data_path=data_file,
+            execution_path=execution_file,
+            output_dir=child_output,
+            config=NasdaqStrategyConfig(bar_minutes=bar_minutes),
+        )
+        results[bar_minutes] = result
+        trades_by_frequency[bar_minutes] = result["trades"]
+        summary = result["summary"].copy()
+        summary.insert(0, "bar_minutes", bar_minutes)
+        comparison_frames.append(summary)
+        absorption = result["absorption_diagnostics"].copy()
+        absorption.insert(0, "bar_minutes", bar_minutes)
+        absorption_frames.append(absorption)
+    comparison = pd.concat(comparison_frames, ignore_index=True)
+    absorption = pd.concat(absorption_frames, ignore_index=True)
+    equity = equity_curve_frame(trades_by_frequency)
+    monthly = monthly_return_frame(equity)
+    one_minute_bars, data_audit = load_nasdaq_bars(data_file, 1)
+    schedule = build_ny_schedule(one_minute_bars.index.min(), one_minute_bars.index.max())
+    timing = session_extreme_timing(one_minute_bars, schedule)
+    timing_summary = extreme_timing_summary(timing)
+    plot_paths = render_plots(equity, monthly, timing, output)
+    governance = {
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "strategy": "nasdaq_new_york_open_frequency_comparison",
+        "frequencies_minutes": list(frequencies),
+        "holdout_start": HOLDOUT_START.isoformat(),
+        "execution": execution.to_dict(),
+        "data_quality": data_audit,
+        "plot_files": [path.name for path in plot_paths],
+        "selection_warning": "frequency comparison shares one holdout; do not select a winner as validated",
+    }
+    comparison.to_csv(output / "frequency_comparison.csv", index=False)
+    absorption.to_csv(output / "strict_absorption_diagnostics.csv", index=False)
+    equity.to_csv(output / "equity_curves.csv", index=False)
+    monthly.to_csv(output / "monthly_returns.csv", index=False)
+    timing.to_csv(output / "session_extreme_timing.csv", index=False)
+    timing_summary.to_csv(output / "session_extreme_timing_summary.csv", index=False)
+    (output / "governance.json").write_text(json.dumps(governance, indent=2), encoding="utf-8")
+    (output / "report.md").write_text(
+        build_multifrequency_report(comparison, timing_summary, absorption, governance),
+        encoding="utf-8",
+    )
+    return {
+        "output_dir": output,
+        "comparison": comparison,
+        "absorption_diagnostics": absorption,
+        "equity_curves": equity,
+        "monthly_returns": monthly,
+        "session_extreme_timing": timing,
+        "session_extreme_timing_summary": timing_summary,
+        "frequency_results": results,
         "governance": governance,
     }
 
@@ -1006,20 +1618,36 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--project-root", default=None)
     parser.add_argument("--data-path", default=str(DEFAULT_DATA))
     parser.add_argument("--execution-path", default=str(DEFAULT_EXECUTION))
-    parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT))
+    parser.add_argument("--bar-minutes", choices=["all", "1", "2", "5"], default="all")
+    parser.add_argument("--output-dir", default=None)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    result = build_nasdaq_backtest(
-        args.project_root,
-        data_path=args.data_path,
-        execution_path=args.execution_path,
-        output_dir=args.output_dir,
-    )
-    print(f"Report: {result['output_dir'] / 'report.md'}")
-    print(result["summary"].to_string(index=False))
+    if args.bar_minutes == "all":
+        result = build_multifrequency_backtest(
+            args.project_root,
+            data_path=args.data_path,
+            execution_path=args.execution_path,
+            output_dir=args.output_dir or DEFAULT_MULTI_OUTPUT,
+        )
+        print(f"Report: {result['output_dir'] / 'report.md'}")
+        selected = result["comparison"].loc[
+            result["comparison"]["scope"].isin(["all", "development_2024", "holdout_2025"])
+        ]
+        print(selected.to_string(index=False))
+    else:
+        bar_minutes = int(args.bar_minutes)
+        result = build_nasdaq_backtest(
+            args.project_root,
+            data_path=args.data_path,
+            execution_path=args.execution_path,
+            output_dir=args.output_dir or Path(f"outputs/nasdaq_session_backtest_{bar_minutes}min"),
+            config=NasdaqStrategyConfig(bar_minutes=bar_minutes),
+        )
+        print(f"Report: {result['output_dir'] / 'report.md'}")
+        print(result["summary"].to_string(index=False))
 
 
 if __name__ == "__main__":

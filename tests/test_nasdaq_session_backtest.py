@@ -9,6 +9,7 @@ import pandas as pd
 from price_action.nasdaq_session_backtest import (
     NasdaqExecutionCosts,
     NasdaqStrategyConfig,
+    add_indicators,
     build_ny_schedule,
     cost_sensitivity,
     load_nasdaq_bars,
@@ -36,8 +37,48 @@ class NasdaqSessionBacktestTests(unittest.TestCase):
 
         self.assertEqual(len(bars), 2)
         self.assertEqual(bars.iloc[0]["volume"], 10)
-        self.assertEqual(audit["incomplete_five_minute_groups_dropped"], 1)
+        self.assertEqual(audit["incomplete_aggregate_groups_dropped"], 1)
         self.assertEqual(audit["close_not_on_nq_quarter_tick_share"], 1.0)
+
+    def test_loader_builds_complete_two_minute_bars(self) -> None:
+        index = pd.date_range("2025-01-02 14:30", periods=7, freq="1min", tz="UTC")
+        frame = pd.DataFrame({
+            "time": index,
+            "open": range(100, 107),
+            "high": range(101, 108),
+            "low": range(99, 106),
+            "close": range(100, 107),
+            "volume": 2,
+        })
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "Nasdaq.csv"
+            frame.to_csv(path, index=False)
+            bars, audit = load_nasdaq_bars(path, bar_minutes=2)
+
+        self.assertEqual(len(bars), 3)
+        self.assertEqual(bars.iloc[0]["open"], 100)
+        self.assertEqual(bars.iloc[0]["close"], 101)
+        self.assertEqual(bars.iloc[0]["volume"], 4)
+        self.assertEqual(audit["incomplete_aggregate_groups_dropped"], 1)
+
+    def test_strict_absorption_requires_both_volume_and_range_tests(self) -> None:
+        index = pd.date_range("2025-01-02", periods=52, freq="1min", tz="UTC")
+        close = pd.Series([100.0] * 52, index=index)
+        frame = pd.DataFrame({
+            "open": close,
+            "high": close + 1.0,
+            "low": close - 1.0,
+            "close": close,
+            "volume": 10.0,
+        }, index=index)
+        frame.loc[index[-1], ["high", "low", "volume"]] = [100.05, 99.95, 100.0]
+
+        indicated = add_indicators(frame, NasdaqStrategyConfig(bar_minutes=1))
+        strict_bar = indicated.loc[index[-1]]
+
+        self.assertTrue(strict_bar["absorption_volume_test"])
+        self.assertTrue(strict_bar["absorption_range_test"])
+        self.assertTrue(strict_bar["absorption_proxy"])
 
     def test_new_york_schedule_handles_dst(self) -> None:
         schedule = build_ny_schedule(
