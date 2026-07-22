@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-22T08:00:46.710172+00:00",
+  "generated_at_utc": "2026-07-22T08:06:43.567325+00:00",
   "status": "RESEARCH_ONLY_LIVE_DEPLOYMENT_BLOCKED",
   "data_source": "D:\\dev\\price_action\\cache\\cache\\binance_asia_orb\\BTCUSDT_2022-01-01_2026-02-25_5m.csv.gz",
   "data_quality": {
@@ -121,10 +121,10 @@
     }
   },
   "causality_audit": {
-    "status": "FAIL",
+    "status": "PASS",
     "checks": {
-      "prior_session_profile_available_before_signal": false,
-      "ivb_rolling_sample_available_before_signal": false,
+      "prior_session_profile_available_before_signal": true,
+      "ivb_rolling_sample_available_before_signal": true,
       "completed_four_hour_context_available_before_signal": true,
       "entry_is_next_five_minute_open": true,
       "profile_allocations_conserve_session_volume": true,
@@ -134,7 +134,8 @@
     "notes": {
       "signal_bar_timing": "OHLCV signal fields are known at bar close; fills occur at the next bar open.",
       "profile_timing": "Only the previous completed 09:30-16:00 UTC session profile is attached.",
-      "ivb_timing": "Current-session targets use rolling quantiles of prior completed sessions only."
+      "ivb_timing": "Current-session targets use rolling quantiles of prior completed sessions only.",
+      "warmup": "Missing prior-profile or IVB values during warmup are unavailable, never future-filled."
     }
   },
   "proprietary_parity_claimed": false

@@ -1,4 +1,4 @@
-filter_variant,sizing_variant,one_way_cost_bps,trades_blocked_by_daily_halt,scope,trades,sessions,win_rate,average_net_r,profit_factor,cumulative_net_return,annualized_net_return,maximum_drawdown,average_effective_leverage,average_risk_fraction
+filter_variant,sizing_variant,one_way_cost_bps,trades_blocked_by_daily_halt_all_history,scope,trades,sessions,win_rate,average_net_r,profit_factor,cumulative_net_return,annualized_net_return,maximum_drawdown,average_effective_leverage,average_risk_fraction
 orb_only_proxy,one_x_notional,6.0,0,all,5126,1511,0.49765899336714786,-0.40272276822909414,0.5659135934441003,-0.9930589929532949,-0.6980508937084235,-0.9932850545876906,1.0,0.00424124160277931
 orb_only_proxy,one_x_notional,6.0,0,development_2022_2024,3684,1091,0.506514657980456,-0.3823391984292841,0.5852757771414606,-0.9714643607325197,-0.69466502720508,-0.9723699680741746,1.0,0.004435415338966692
 orb_only_proxy,one_x_notional,6.0,0,holdout_2025_plus,1442,420,0.4750346740638003,-0.4547984070241705,0.5084550532790364,-0.7567600647862419,-0.7075378838643377,-0.7575364795850431,1.0,0.0037451694501341513

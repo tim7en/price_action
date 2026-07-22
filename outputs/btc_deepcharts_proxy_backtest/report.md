@@ -4,6 +4,8 @@
 
 This is an OHLCV proxy test, not a recreation of Deep Print, DeepTrades, true bid/ask delta, order-book absorption, IVB, Deep Effort, or V-Tracker. Every approximation is explicitly suffixed `proxy`. The holdout is 2025 through 25 February 2026; thresholds were fixed before that split was inspected.
 
+The primary `full_no_delta_proxy` has a gross signal but no executable edge under the reference cost: zero-cost PF is 1.270, return 35.4%, and drawdown -6.1%; at 6 bps per side it returns -35.1% overall and -12.8% in holdout. Its full-history break-even cost is only 2.47 bps per side. Therefore this version is rejected for market-order deployment.
+
 ## Zero-cost one-times-notional results
 
 | filter_variant | trades | profit_factor | cumulative_net_return | maximum_drawdown |
@@ -69,9 +71,38 @@ This is an OHLCV proxy test, not a recreation of Deep Print, DeepTrades, true bi
 | full_no_delta_proxy | 2.4712 |
 | full_with_delta_proxy | 2.0296 |
 
+## Primary-stack cost curve
+
+| filter_variant | one_way_cost_bps | scope | trades | profit_factor | cumulative_net_return | maximum_drawdown |
+| --- | --- | --- | --- | --- | --- | --- |
+| full_no_delta_proxy | 0.0000 | all | 613 | 1.2703 | 0.3538 | -0.0613 |
+| full_no_delta_proxy | 0.0000 | holdout_2025_plus | 164 | 1.2222 | 0.0612 | -0.0536 |
+| full_no_delta_proxy | 1.0000 | all | 613 | 1.1583 | 0.1976 | -0.0649 |
+| full_no_delta_proxy | 1.0000 | holdout_2025_plus | 164 | 1.0992 | 0.0270 | -0.0586 |
+| full_no_delta_proxy | 2.0000 | all | 613 | 1.0539 | 0.0595 | -0.0847 |
+| full_no_delta_proxy | 2.0000 | holdout_2025_plus | 164 | 0.9850 | -0.0061 | -0.0635 |
+| full_no_delta_proxy | 3.0000 | all | 613 | 0.9564 | -0.0628 | -0.1351 |
+| full_no_delta_proxy | 3.0000 | holdout_2025_plus | 164 | 0.8788 | -0.0382 | -0.0764 |
+| full_no_delta_proxy | 6.0000 | all | 613 | 0.7018 | -0.3513 | -0.3601 |
+| full_no_delta_proxy | 6.0000 | holdout_2025_plus | 164 | 0.6052 | -0.1284 | -0.1345 |
+| full_no_delta_proxy | 15.0000 | all | 613 | 0.2503 | -0.7852 | -0.7852 |
+| full_no_delta_proxy | 15.0000 | holdout_2025_plus | 164 | 0.1711 | -0.3515 | -0.3523 |
+| full_with_delta_proxy | 0.0000 | all | 556 | 1.2192 | 0.2531 | -0.0730 |
+| full_with_delta_proxy | 0.0000 | holdout_2025_plus | 149 | 1.2623 | 0.0646 | -0.0508 |
+| full_with_delta_proxy | 1.0000 | all | 556 | 1.1109 | 0.1213 | -0.0984 |
+| full_with_delta_proxy | 1.0000 | holdout_2025_plus | 149 | 1.1352 | 0.0333 | -0.0554 |
+| full_with_delta_proxy | 2.0000 | all | 556 | 1.0100 | 0.0033 | -0.1232 |
+| full_with_delta_proxy | 2.0000 | holdout_2025_plus | 149 | 1.0172 | 0.0030 | -0.0622 |
+| full_with_delta_proxy | 3.0000 | all | 556 | 0.9158 | -0.1023 | -0.1723 |
+| full_with_delta_proxy | 3.0000 | holdout_2025_plus | 149 | 0.9075 | -0.0264 | -0.0721 |
+| full_with_delta_proxy | 6.0000 | all | 556 | 0.6699 | -0.3571 | -0.3728 |
+| full_with_delta_proxy | 6.0000 | holdout_2025_plus | 149 | 0.6244 | -0.1097 | -0.1202 |
+| full_with_delta_proxy | 15.0000 | all | 556 | 0.2362 | -0.7641 | -0.7641 |
+| full_with_delta_proxy | 15.0000 | holdout_2025_plus | 149 | 0.1788 | -0.3195 | -0.3203 |
+
 ## Risk sizing at 6 bps per side
 
-| filter_variant | sizing_variant | scope | trades | profit_factor | cumulative_net_return | maximum_drawdown | average_effective_leverage | trades_blocked_by_daily_halt |
+| filter_variant | sizing_variant | scope | trades | profit_factor | cumulative_net_return | maximum_drawdown | average_effective_leverage | trades_blocked_by_daily_halt_all_history |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | orb_only_proxy | one_x_notional | all | 5126 | 0.5659 | -0.9931 | -0.9933 | 1.0000 | 0 |
 | orb_only_proxy | one_x_notional | holdout_2025_plus | 1442 | 0.5085 | -0.7568 | -0.7575 | 1.0000 | 0 |
@@ -106,7 +137,7 @@ This is an OHLCV proxy test, not a recreation of Deep Print, DeepTrades, true bi
 
 ## Causality and limitations
 
-- Audit: **FAIL**.
+- Audit: **PASS**.
 - Profiles are previous-session estimates; five-minute bars do not reveal price-level volume.
 - Synthetic delta is isolated in an ablation and must not be interpreted as order flow.
 - Entries are next-bar, but stop/target ordering inside each five-minute bar still uses a deterministic OHLC path assumption.
