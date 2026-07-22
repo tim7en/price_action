@@ -1,6 +1,6 @@
 # Two-Minute Nasdaq POC, Trend, Scaling, and Trailing Study
 
-Generated 2026-07-22T01:30:20.425960+00:00. This is a separate extension of the fixed-position New York-open baseline.
+Generated 2026-07-22T01:39:48.563975+00:00. This is a separate extension of the fixed-position New York-open baseline.
 
 > The supplied Fabio notes document 1.5-ATR optional trailing stops and increasing risk only from the day's profits. They do not establish pyramiding into an open trade; the example payload says `pyramid: false`. The POC add-on below is our research hypothesis and is sized only from profit already locked by the raised base stop.
 
@@ -23,6 +23,18 @@ Generated 2026-07-22T01:30:20.425960+00:00. This is a separate extension of the 
 | trend_sized_16m | all | 115 | 110 | 0.5217 | 0.1652 | 0.3478 | 0.2077 | 0.1280 | 15.6487 | 9.4868 | 1.5306 | 1.2937 | 1.2698 | 0.1919 | 0.1105 | 0.0564 | -0.0620 | 6.1619 | 0.0075 | 3.7565 | 7.5130 |
 | trend_sized_16m | development_2024 | 58 | 56 | 0.5345 | 0.2069 | 0.3448 | 0.2659 | 0.1862 | 18.1533 | 11.9733 | 1.6000 | 1.3633 | 1.4687 | 0.1083 | 0.0693 | 0.0710 | -0.0323 | 6.1800 | 0.0075 | 3.3276 | 6.6552 |
 | trend_sized_16m | holdout_2025 | 57 | 54 | 0.5088 | 0.1228 | 0.3509 | 0.1485 | 0.0689 | 13.1001 | 6.9567 | 1.4561 | 1.2200 | 1.0662 | 0.0755 | 0.0385 | 0.0427 | -0.0620 | 6.1434 | 0.0075 | 4.1930 | 8.3860 |
+| trend_3d_10d_sized_10m | all | 83 | 83 | 0.4940 | 0.1084 | 0.2651 | 0.1661 | 0.0868 | 12.2586 | 5.7625 | 1.4513 | 1.1895 | 0.9435 | 0.1042 | 0.0462 | 0.0239 | -0.0385 | 6.4961 | 0.0075 | 2.7590 | 5.5181 |
+| trend_3d_10d_sized_10m | development_2024 | 38 | 38 | 0.5000 | 0.1579 | 0.2895 | 0.1402 | 0.0608 | 8.6168 | 2.0961 | 1.2948 | 1.0644 | 0.6607 | 0.0319 | 0.0067 | 0.0069 | -0.0385 | 6.5207 | 0.0075 | 2.4474 | 4.8947 |
+| trend_3d_10d_sized_10m | holdout_2025 | 45 | 45 | 0.4889 | 0.0667 | 0.2444 | 0.1880 | 0.1089 | 15.3339 | 8.8586 | 1.6031 | 1.3097 | 1.1840 | 0.0700 | 0.0393 | 0.0436 | -0.0326 | 6.4753 | 0.0075 | 3.0222 | 6.0444 |
+| trend_3d_10d_sized_16m | all | 115 | 110 | 0.5217 | 0.1652 | 0.3478 | 0.2077 | 0.1280 | 13.5865 | 7.2365 | 1.4300 | 1.2094 | 1.0698 | 0.1639 | 0.0820 | 0.0421 | -0.0780 | 6.3501 | 0.0075 | 3.7565 | 7.5130 |
+| trend_3d_10d_sized_16m | development_2024 | 58 | 56 | 0.5345 | 0.2069 | 0.3448 | 0.2659 | 0.1862 | 17.1995 | 10.9276 | 1.5548 | 1.3240 | 1.3712 | 0.1022 | 0.0629 | 0.0644 | -0.0368 | 6.2719 | 0.0075 | 3.3276 | 6.6552 |
+| trend_3d_10d_sized_16m | holdout_2025 | 57 | 54 | 0.5088 | 0.1228 | 0.3509 | 0.1485 | 0.0689 | 9.9102 | 3.4805 | 1.3077 | 1.0983 | 0.7707 | 0.0560 | 0.0180 | 0.0200 | -0.0780 | 6.4297 | 0.0075 | 4.1930 | 8.3860 |
+| aligned_poc_immediate_10m | all | 13 | 13 | 0.3846 | 0.0769 | 0.3846 | -0.0455 | -0.1217 | -3.9501 | -11.1069 | 0.9226 | 0.8000 | -0.2760 | -0.0059 | -0.0151 | -0.0108 | -0.0447 | 7.1568 | 0.0100 | 2.6923 | 5.3846 |
+| aligned_poc_immediate_10m | development_2024 | 6 | 6 | 0.1667 | 0.0000 | 0.5000 | -0.6878 | -0.7849 | -65.7156 | -74.5744 | 0.0980 | 0.0684 | -3.7091 | -0.0389 | -0.0440 | -0.0767 | -0.0354 | 8.8588 | 0.0097 | 2.3333 | 4.6667 |
+| aligned_poc_immediate_10m | holdout_2025 | 7 | 7 | 0.5714 | 0.1429 | 0.2857 | 0.5051 | 0.4467 | 48.9918 | 43.2939 | 2.5167 | 2.2540 | 4.2991 | 0.0343 | 0.0302 | 0.0462 | -0.0208 | 5.6980 | 0.0100 | 3.0000 | 6.0000 |
+| aligned_poc_acceptance_16m | all | 8 | 8 | 0.6250 | 0.1250 | 0.3750 | 0.1720 | 0.0965 | 14.3175 | 7.6746 | 1.3818 | 1.1928 | 1.0776 | 0.0111 | 0.0057 | 0.0060 | -0.0229 | 6.6429 | 0.0100 | 3.1250 | 6.2500 |
+| aligned_poc_acceptance_16m | development_2024 | 4 | 4 | 0.5000 | 0.0000 | 0.5000 | -0.2897 | -0.3968 | -34.7408 | -43.6313 | 0.3052 | 0.1904 | -1.9538 | -0.0139 | -0.0174 | -0.0464 | -0.0214 | 8.8905 | 0.0091 | 2.0000 | 4.0000 |
+| aligned_poc_acceptance_16m | holdout_2025 | 4 | 4 | 0.7500 | 0.2500 | 0.2500 | 0.6338 | 0.5898 | 63.3758 | 58.9804 | 3.5350 | 3.2916 | 7.2094 | 0.0254 | 0.0236 | 0.0820 | -0.0103 | 4.3954 | 0.0100 | 4.2500 | 8.5000 |
 | trend_trail_16m | all | 115 | 110 | 0.5217 | 0.1652 | 0.3478 | 0.1921 | 0.1125 | 14.5260 | 8.3641 | 1.4925 | 1.2590 | 1.1787 | 0.1768 | 0.0964 | 0.0493 | -0.0620 | 6.1619 | 0.0075 | 3.7304 | 7.4609 |
 | trend_trail_16m | development_2024 | 58 | 56 | 0.5345 | 0.2069 | 0.3448 | 0.2385 | 0.1588 | 16.1014 | 9.9214 | 1.5322 | 1.3010 | 1.3027 | 0.0953 | 0.0568 | 0.0581 | -0.0323 | 6.1800 | 0.0075 | 3.2759 | 6.5517 |
 | trend_trail_16m | holdout_2025 | 57 | 54 | 0.5088 | 0.1228 | 0.3509 | 0.1449 | 0.0653 | 12.9230 | 6.7796 | 1.4500 | 1.2144 | 1.0518 | 0.0744 | 0.0374 | 0.0415 | -0.0620 | 6.1434 | 0.0075 | 4.1930 | 8.3860 |
@@ -54,6 +66,10 @@ Generated 2026-07-22T01:30:20.425960+00:00. This is a separate extension of the 
 | static_20m | 122 | 0 | 0.0000 | 0.0000 |  |
 | static_30m | 142 | 0 | 0.0000 | 0.0000 |  |
 | trend_sized_16m | 115 | 0 | 0.0000 | 0.0000 |  |
+| trend_3d_10d_sized_10m | 83 | 0 | 0.0000 | 0.0000 |  |
+| trend_3d_10d_sized_16m | 115 | 0 | 0.0000 | 0.0000 |  |
+| aligned_poc_immediate_10m | 13 | 0 | 0.0000 | 0.0000 |  |
+| aligned_poc_acceptance_16m | 8 | 0 | 0.0000 | 0.0000 |  |
 | trend_trail_16m | 115 | 0 | 0.0000 | 0.0000 |  |
 | trend_trail_poc_scale_16m | 115 | 0 | 0.0000 | 0.0000 |  |
 | trend_trail_poc_scale_30m | 142 | 0 | 0.0000 | 0.0000 |  |
@@ -71,6 +87,10 @@ Generated 2026-07-22T01:30:20.425960+00:00. This is a separate extension of the 
 | static_20m | 122 | 44 | 0 | 8 | 3 | 0 | 0 |
 | static_30m | 142 | 49 | 0 | 9 | 3 | 0 | 0 |
 | trend_sized_16m | 115 | 42 | 0 | 6 | 3 | 0 | 0 |
+| trend_3d_10d_sized_10m | 83 | 38 | 0 | 1 | 0 | 0 | 0 |
+| trend_3d_10d_sized_16m | 115 | 48 | 0 | 6 | 2 | 0 | 0 |
+| aligned_poc_immediate_10m | 13 | 13 | 0 | 0 | 0 | 0 | 0 |
+| aligned_poc_acceptance_16m | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
 | trend_trail_16m | 115 | 42 | 24 | 6 | 3 | 0 | 0 |
 | trend_trail_poc_scale_16m | 115 | 42 | 24 | 6 | 3 | 1 | 0 |
 | trend_trail_poc_scale_30m | 142 | 49 | 40 | 9 | 3 | 1 | 0 |
@@ -84,9 +104,25 @@ Generated 2026-07-22T01:30:20.425960+00:00. This is a separate extension of the 
 | group | events | sessions | mean_max_favorable_10m_atr | mean_max_adverse_10m_atr | session_bootstrap_10m_ci_low_bps | session_bootstrap_10m_ci_high_bps | session_bootstrap_probability_10m_positive | mean_forward_2m_bps | median_forward_2m_bps | positive_forward_2m_share | mean_forward_4m_bps | median_forward_4m_bps | positive_forward_4m_share | mean_forward_6m_bps | median_forward_6m_bps | positive_forward_6m_share | mean_forward_10m_bps | median_forward_10m_bps | positive_forward_10m_share |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | all_poc_crosses | 332 | 154 | 1.0047 | 1.0257 | -5.4013 | 3.1549 | 0.4586 | 0.7785 | 0.4124 | 0.5151 | 0.3284 | -0.0254 | 0.4970 | -0.6897 | -0.6390 | 0.4849 | -1.2306 | -0.5347 | 0.4880 |
-| trend_aligned | 103 | 72 | 1.0221 | 0.9428 | -1.6580 | 5.1837 | 0.8534 | 0.4109 | 1.1602 | 0.5437 | 0.1512 | 0.9608 | 0.5534 | -0.7253 | 1.2826 | 0.5340 | 2.0866 | 3.1712 | 0.5728 |
-| aggression_and_delta_aligned | 150 | 101 | 1.0130 | 1.0686 | -10.3635 | 1.9365 | 0.1532 | -0.1573 | -1.0797 | 0.4667 | -0.0110 | 0.0461 | 0.5000 | -1.2356 | 0.5571 | 0.5133 | -2.7179 | -1.1934 | 0.4667 |
-| trend_plus_aggression_delta | 43 | 35 | 1.0342 | 1.0513 | -6.4263 | 3.2609 | 0.3110 | 0.0395 | -0.1769 | 0.4884 | -1.6611 | 0.3035 | 0.5116 | -3.1515 | 1.2826 | 0.5349 | -0.9097 | 0.8368 | 0.5116 |
+| trend_10d_30d_aligned | 103 | 72 | 1.0221 | 0.9428 | -1.6580 | 5.1837 | 0.8534 | 0.4109 | 1.1602 | 0.5437 | 0.1512 | 0.9608 | 0.5534 | -0.7253 | 1.2826 | 0.5340 | 2.0866 | 3.1712 | 0.5728 |
+| trend_3d_10d_aligned | 85 | 54 | 1.0692 | 0.9254 | -0.4527 | 7.5390 | 0.9580 | 0.7929 | 0.1336 | 0.5059 | 1.2813 | 0.2897 | 0.5294 | 2.1790 | 1.6698 | 0.5412 | 3.5105 | 4.8999 | 0.6000 |
+| session_regime_aligned | 43 | 32 | 0.9742 | 0.8318 | -3.0509 | 7.3542 | 0.7900 | 1.0395 | 1.4164 | 0.5814 | 2.2158 | 2.8206 | 0.6744 | 1.8116 | 2.2507 | 0.6512 | 2.1576 | 3.5345 | 0.5581 |
+| poc_migration_3d_aligned | 66 | 48 | 1.1356 | 0.8771 | 0.3840 | 10.3182 | 0.9836 | 1.0515 | 0.6676 | 0.5455 | 2.4640 | 0.2966 | 0.5303 | 3.5176 | 1.7621 | 0.6061 | 4.8602 | 4.6885 | 0.6212 |
+| session_plus_3d_10d | 19 | 13 | 0.9716 | 0.7167 | -2.8222 | 10.1587 | 0.8478 | 0.5975 | 1.1602 | 0.5789 | 2.4110 | 2.8206 | 0.7368 | 2.6969 | 2.2507 | 0.6842 | 2.7687 | 3.5345 | 0.5789 |
+| 3d_10d_plus_poc_migration | 32 | 23 | 1.0710 | 0.9084 | -0.2409 | 11.3935 | 0.9682 | 0.7024 | 0.6676 | 0.5312 | 0.8384 | 0.0666 | 0.5000 | 3.2392 | 2.9800 | 0.6250 | 5.4907 | 5.2038 | 0.6875 |
+| session_trend_poc_migration | 4 | 3 | 1.0561 | 0.5306 | -0.7341 | 34.1129 | 0.9630 | 0.1699 | 0.5801 | 0.5000 | 3.7365 | 4.3184 | 1.0000 | 8.2813 | 2.9800 | 1.0000 | 9.3861 | 5.2038 | 0.7500 |
+| aggression_and_delta_aligned | 150 | 101 | 1.0130 | 1.0686 | -11.0017 | 1.7805 | 0.1466 | -0.1573 | -1.0797 | 0.4667 | -0.0110 | 0.0461 | 0.5000 | -1.2356 | 0.5571 | 0.5133 | -2.7179 | -1.1934 | 0.4667 |
+| 3d_10d_plus_aggression_delta | 43 | 32 | 1.2205 | 0.9307 | -3.4823 | 7.9593 | 0.8080 | 1.1843 | 1.2012 | 0.5349 | 1.1021 | 1.8877 | 0.5814 | 2.7204 | 5.5403 | 0.6279 | 3.0496 | 4.8999 | 0.5814 |
+
+## POC crossing by execution timing
+
+| group | events | sessions | mean_max_favorable_10m_atr | mean_max_adverse_10m_atr | session_bootstrap_10m_ci_low_bps | session_bootstrap_10m_ci_high_bps | session_bootstrap_probability_10m_positive | mean_forward_2m_bps | median_forward_2m_bps | positive_forward_2m_share | mean_forward_4m_bps | median_forward_4m_bps | positive_forward_4m_share | mean_forward_6m_bps | median_forward_6m_bps | positive_forward_6m_share | mean_forward_10m_bps | median_forward_10m_bps | positive_forward_10m_share |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| first_10m_after_observation | 131 | 92 | 1.1535 | 0.9978 | -0.2412 | 6.5495 | 0.9662 | 1.8519 | 1.2012 | 0.5802 | 0.9856 | 1.0368 | 0.5496 | -0.0911 | 0.7670 | 0.5115 | 1.3888 | 0.8051 | 0.5191 |
+| middle_10m_after_observation | 99 | 67 | 0.9018 | 1.1311 | -17.3294 | 0.3997 | 0.0378 | -0.7188 | -0.3650 | 0.4646 | -0.1555 | -0.3981 | 0.4545 | -2.8709 | -1.6018 | 0.4646 | -6.1272 | -2.2362 | 0.4343 |
+| last_10m_after_observation | 102 | 73 | 0.9133 | 0.9591 | -1.3260 | 5.1855 | 0.8714 | 0.8531 | -0.2531 | 0.4804 | -0.0458 | -0.4227 | 0.4706 | 0.6585 | -0.8695 | 0.4706 | 0.1581 | 0.0349 | 0.5000 |
+| first_10m_and_3d_10d_aligned | 36 | 33 | 1.3398 | 0.9097 | -0.5173 | 10.7642 | 0.9632 | 2.5321 | 1.2513 | 0.5556 | 2.4455 | 0.8821 | 0.5556 | 2.5444 | 1.8138 | 0.5278 | 5.4306 | 6.2608 | 0.6667 |
+| first_10m_3d_10d_poc_migration | 14 | 14 | 1.2947 | 1.0018 | -1.7822 | 14.6489 | 0.9380 | 1.3853 | 1.0347 | 0.5714 | -0.6444 | -1.2782 | 0.4286 | 1.7018 | 0.4338 | 0.5000 | 6.4313 | 5.2038 | 0.6429 |
 
 ## Session-block bootstrap
 
@@ -107,6 +143,18 @@ Generated 2026-07-22T01:30:20.425960+00:00. This is a separate extension of the 
 | trend_sized_16m | all | all | 110 | 9.9181 | -6.3672 | 26.2452 | 0.8858 |
 | trend_sized_16m | development_2024 | all | 56 | 12.4084 | -11.9605 | 36.0456 | 0.8408 |
 | trend_sized_16m | holdout_2025 | all | 54 | 7.3355 | -13.9657 | 29.5968 | 0.7430 |
+| trend_3d_10d_sized_10m | all | all | 83 | 5.7625 | -10.8225 | 22.8747 | 0.7454 |
+| trend_3d_10d_sized_10m | development_2024 | all | 38 | 2.0961 | -23.4146 | 28.5262 | 0.5576 |
+| trend_3d_10d_sized_10m | holdout_2025 | all | 45 | 8.8586 | -14.0466 | 31.6199 | 0.7796 |
+| trend_3d_10d_sized_16m | all | all | 110 | 7.5705 | -9.3372 | 24.1503 | 0.8136 |
+| trend_3d_10d_sized_16m | development_2024 | all | 56 | 11.3254 | -13.4594 | 34.8990 | 0.8168 |
+| trend_3d_10d_sized_16m | holdout_2025 | all | 54 | 3.6765 | -18.8639 | 26.5249 | 0.6260 |
+| aligned_poc_immediate_10m | all | all | 13 | -11.1069 | -66.6259 | 48.9121 | 0.3420 |
+| aligned_poc_immediate_10m | development_2024 | all | 6 | -74.5744 | -101.4364 | -30.8710 | 0.0006 |
+| aligned_poc_immediate_10m | holdout_2025 | all | 7 | 43.2939 | -41.2745 | 123.6992 | 0.8484 |
+| aligned_poc_acceptance_16m | all | all | 8 | 7.6746 | -60.0959 | 82.4176 | 0.5798 |
+| aligned_poc_acceptance_16m | development_2024 | all | 4 | -43.6313 | -107.7810 | 20.5184 | 0.0580 |
+| aligned_poc_acceptance_16m | holdout_2025 | all | 4 | 58.9804 | -54.9392 | 160.0042 | 0.8652 |
 | trend_trail_16m | all | all | 110 | 8.7444 | -7.5654 | 25.0094 | 0.8602 |
 | trend_trail_16m | development_2024 | all | 56 | 10.2832 | -13.6522 | 33.7285 | 0.7928 |
 | trend_trail_16m | holdout_2025 | all | 54 | 7.1485 | -14.0676 | 29.3312 | 0.7382 |
@@ -120,14 +168,6 @@ Generated 2026-07-22T01:30:20.425960+00:00. This is a separate extension of the 
 | reserved_trend_trail_16m | development_2024 | all | 56 | 7.8590 | -10.5628 | 26.0207 | 0.7950 |
 | reserved_trend_trail_16m | holdout_2025 | all | 54 | 5.5115 | -10.9870 | 22.8107 | 0.7356 |
 | reserved_poc_scale_16m | all | all | 110 | 6.7174 | -5.8107 | 19.1701 | 0.8566 |
-| reserved_poc_scale_16m | development_2024 | all | 56 | 7.8803 | -10.5413 | 26.0578 | 0.7958 |
-| reserved_poc_scale_16m | holdout_2025 | all | 54 | 5.5115 | -10.9870 | 22.8107 | 0.7356 |
-| reserved_trend_trail_30m | all | all | 128 | 3.6820 | -9.5982 | 17.7068 | 0.7078 |
-| reserved_trend_trail_30m | development_2024 | all | 65 | 3.9734 | -15.1066 | 23.1401 | 0.6620 |
-| reserved_trend_trail_30m | holdout_2025 | all | 63 | 3.3814 | -15.7274 | 23.4143 | 0.6334 |
-| reserved_poc_scale_30m | all | all | 128 | 3.6914 | -9.5891 | 17.7264 | 0.7078 |
-| reserved_poc_scale_30m | development_2024 | all | 65 | 3.9918 | -15.0971 | 23.1766 | 0.6626 |
-| reserved_poc_scale_30m | holdout_2025 | all | 63 | 3.3814 | -15.7274 | 23.4143 | 0.6334 |
 
 ## Holdout cost sensitivity
 
@@ -178,47 +218,48 @@ Generated 2026-07-22T01:30:20.425960+00:00. This is a separate extension of the 
 | trend_sized_16m | holdout_2025 | all | 2.0000 | 57 | 0.4386 | -11.4736 | -0.0651 | -0.1148 |
 | trend_sized_16m | holdout_2025 | all | 3.0000 | 57 | 0.4211 | -23.7604 | -0.1285 | -0.1519 |
 | trend_sized_16m | holdout_2025 | all | 5.0000 | 57 | 0.3333 | -48.3341 | -0.2429 | -0.2455 |
-| trend_trail_16m | holdout_2025 | all | 0.0000 | 57 | 0.5263 | 12.9230 | 0.0744 | -0.0437 |
-| trend_trail_16m | holdout_2025 | all | 0.1000 | 57 | 0.5263 | 11.6943 | 0.0669 | -0.0474 |
-| trend_trail_16m | holdout_2025 | all | 0.2500 | 57 | 0.5263 | 9.8513 | 0.0557 | -0.0529 |
-| trend_trail_16m | holdout_2025 | all | 0.5000 | 57 | 0.5088 | 6.7796 | 0.0374 | -0.0620 |
-| trend_trail_16m | holdout_2025 | all | 1.0000 | 57 | 0.4912 | 0.6361 | 0.0017 | -0.0799 |
-| trend_trail_16m | holdout_2025 | all | 1.5000 | 57 | 0.4912 | -5.5073 | -0.0327 | -0.0975 |
-| trend_trail_16m | holdout_2025 | all | 2.0000 | 57 | 0.4211 | -11.6507 | -0.0661 | -0.1148 |
-| trend_trail_16m | holdout_2025 | all | 3.0000 | 57 | 0.4035 | -23.9375 | -0.1294 | -0.1525 |
-| trend_trail_16m | holdout_2025 | all | 5.0000 | 57 | 0.3333 | -48.5112 | -0.2437 | -0.2463 |
-| trend_trail_poc_scale_16m | holdout_2025 | all | 0.0000 | 57 | 0.5263 | 12.9230 | 0.0744 | -0.0437 |
-| trend_trail_poc_scale_16m | holdout_2025 | all | 0.1000 | 57 | 0.5263 | 11.6943 | 0.0669 | -0.0474 |
-| trend_trail_poc_scale_16m | holdout_2025 | all | 0.2500 | 57 | 0.5263 | 9.8513 | 0.0557 | -0.0529 |
-| trend_trail_poc_scale_16m | holdout_2025 | all | 0.5000 | 57 | 0.5088 | 6.7796 | 0.0374 | -0.0620 |
-| trend_trail_poc_scale_16m | holdout_2025 | all | 1.0000 | 57 | 0.4912 | 0.6361 | 0.0017 | -0.0799 |
-| trend_trail_poc_scale_16m | holdout_2025 | all | 1.5000 | 57 | 0.4912 | -5.5073 | -0.0327 | -0.0975 |
-| trend_trail_poc_scale_16m | holdout_2025 | all | 2.0000 | 57 | 0.4211 | -11.6507 | -0.0661 | -0.1148 |
-| trend_trail_poc_scale_16m | holdout_2025 | all | 3.0000 | 57 | 0.4035 | -23.9375 | -0.1294 | -0.1525 |
-| trend_trail_poc_scale_16m | holdout_2025 | all | 5.0000 | 57 | 0.3333 | -48.5112 | -0.2437 | -0.2463 |
-| trend_trail_poc_scale_30m | holdout_2025 | all | 0.0000 | 69 | 0.4493 | 11.3950 | 0.0780 | -0.0980 |
-| trend_trail_poc_scale_30m | holdout_2025 | all | 0.1000 | 69 | 0.4493 | 10.1982 | 0.0692 | -0.1019 |
-| trend_trail_poc_scale_30m | holdout_2025 | all | 0.2500 | 69 | 0.4493 | 8.4030 | 0.0560 | -0.1078 |
-| trend_trail_poc_scale_30m | holdout_2025 | all | 0.5000 | 69 | 0.4493 | 5.4111 | 0.0344 | -0.1183 |
-| trend_trail_poc_scale_30m | holdout_2025 | all | 1.0000 | 69 | 0.4348 | -0.5728 | -0.0074 | -0.1398 |
-| trend_trail_poc_scale_30m | holdout_2025 | all | 1.5000 | 69 | 0.4203 | -6.5567 | -0.0476 | -0.1609 |
-| trend_trail_poc_scale_30m | holdout_2025 | all | 2.0000 | 69 | 0.3768 | -12.5406 | -0.0862 | -0.1814 |
-| trend_trail_poc_scale_30m | holdout_2025 | all | 3.0000 | 69 | 0.3768 | -24.5083 | -0.1588 | -0.2228 |
-| trend_trail_poc_scale_30m | holdout_2025 | all | 5.0000 | 69 | 0.3188 | -48.4438 | -0.2874 | -0.3087 |
-| reserved_trend_trail_16m | holdout_2025 | all | 0.0000 | 57 | 0.5263 | 10.1040 | 0.0580 | -0.0361 |
-| reserved_trend_trail_16m | holdout_2025 | all | 0.1000 | 57 | 0.5263 | 9.1284 | 0.0522 | -0.0391 |
-| reserved_trend_trail_16m | holdout_2025 | all | 0.2500 | 57 | 0.5263 | 7.6650 | 0.0434 | -0.0435 |
-| reserved_trend_trail_16m | holdout_2025 | all | 0.5000 | 57 | 0.5088 | 5.2261 | 0.0291 | -0.0509 |
-| reserved_trend_trail_16m | holdout_2025 | all | 1.0000 | 57 | 0.4912 | 0.3483 | 0.0008 | -0.0655 |
-| reserved_trend_trail_16m | holdout_2025 | all | 1.5000 | 57 | 0.4912 | -4.5296 | -0.0266 | -0.0799 |
-| reserved_trend_trail_16m | holdout_2025 | all | 2.0000 | 57 | 0.4211 | -9.4074 | -0.0533 | -0.0941 |
-| reserved_trend_trail_16m | holdout_2025 | all | 3.0000 | 57 | 0.4035 | -19.1631 | -0.1046 | -0.1226 |
+| trend_3d_10d_sized_10m | holdout_2025 | all | 0.0000 | 45 | 0.4889 | 15.3339 | 0.0700 | -0.0284 |
+| trend_3d_10d_sized_10m | holdout_2025 | all | 0.1000 | 45 | 0.4889 | 14.0389 | 0.0638 | -0.0292 |
+| trend_3d_10d_sized_10m | holdout_2025 | all | 0.2500 | 45 | 0.4889 | 12.0963 | 0.0545 | -0.0305 |
+| trend_3d_10d_sized_10m | holdout_2025 | all | 0.5000 | 45 | 0.4889 | 8.8586 | 0.0393 | -0.0326 |
+| trend_3d_10d_sized_10m | holdout_2025 | all | 1.0000 | 45 | 0.4889 | 2.3833 | 0.0094 | -0.0467 |
+| trend_3d_10d_sized_10m | holdout_2025 | all | 1.5000 | 45 | 0.4667 | -4.0920 | -0.0196 | -0.0672 |
+| trend_3d_10d_sized_10m | holdout_2025 | all | 2.0000 | 45 | 0.4222 | -10.5674 | -0.0478 | -0.0872 |
+| trend_3d_10d_sized_10m | holdout_2025 | all | 3.0000 | 45 | 0.3556 | -23.5180 | -0.1018 | -0.1261 |
+| trend_3d_10d_sized_10m | holdout_2025 | all | 5.0000 | 45 | 0.3333 | -49.4193 | -0.2010 | -0.2089 |
+| trend_3d_10d_sized_16m | holdout_2025 | all | 0.0000 | 57 | 0.5263 | 9.9102 | 0.0560 | -0.0581 |
+| trend_3d_10d_sized_16m | holdout_2025 | all | 0.1000 | 57 | 0.5263 | 8.6242 | 0.0483 | -0.0621 |
+| trend_3d_10d_sized_16m | holdout_2025 | all | 0.2500 | 57 | 0.5263 | 6.6953 | 0.0368 | -0.0681 |
+| trend_3d_10d_sized_16m | holdout_2025 | all | 0.5000 | 57 | 0.5088 | 3.4805 | 0.0180 | -0.0780 |
+| trend_3d_10d_sized_16m | holdout_2025 | all | 1.0000 | 57 | 0.4912 | -2.9491 | -0.0186 | -0.0975 |
+| trend_3d_10d_sized_16m | holdout_2025 | all | 1.5000 | 57 | 0.4912 | -9.3788 | -0.0540 | -0.1166 |
+| trend_3d_10d_sized_16m | holdout_2025 | all | 2.0000 | 57 | 0.4386 | -15.8084 | -0.0881 | -0.1353 |
+| trend_3d_10d_sized_16m | holdout_2025 | all | 3.0000 | 57 | 0.4211 | -28.6677 | -0.1528 | -0.1793 |
+| trend_3d_10d_sized_16m | holdout_2025 | all | 5.0000 | 57 | 0.3333 | -54.3863 | -0.2689 | -0.2745 |
+| aligned_poc_immediate_10m | holdout_2025 | all | 0.0000 | 7 | 0.5714 | 48.9918 | 0.0343 | -0.0199 |
+| aligned_poc_immediate_10m | holdout_2025 | all | 0.1000 | 7 | 0.5714 | 47.8522 | 0.0335 | -0.0201 |
+| aligned_poc_immediate_10m | holdout_2025 | all | 0.2500 | 7 | 0.5714 | 46.1428 | 0.0323 | -0.0204 |
+| aligned_poc_immediate_10m | holdout_2025 | all | 0.5000 | 7 | 0.5714 | 43.2939 | 0.0302 | -0.0208 |
+| aligned_poc_immediate_10m | holdout_2025 | all | 1.0000 | 7 | 0.5714 | 37.5959 | 0.0262 | -0.0217 |
+| aligned_poc_immediate_10m | holdout_2025 | all | 1.5000 | 7 | 0.5714 | 31.8979 | 0.0221 | -0.0227 |
+| aligned_poc_immediate_10m | holdout_2025 | all | 2.0000 | 7 | 0.5714 | 26.1999 | 0.0180 | -0.0236 |
+| aligned_poc_immediate_10m | holdout_2025 | all | 3.0000 | 7 | 0.5714 | 14.8040 | 0.0100 | -0.0254 |
+| aligned_poc_immediate_10m | holdout_2025 | all | 5.0000 | 7 | 0.5714 | -7.9880 | -0.0060 | -0.0291 |
+| aligned_poc_acceptance_16m | holdout_2025 | all | 0.0000 | 4 | 0.7500 | 63.3758 | 0.0254 | -0.0100 |
+| aligned_poc_acceptance_16m | holdout_2025 | all | 0.1000 | 4 | 0.7500 | 62.4967 | 0.0250 | -0.0101 |
+| aligned_poc_acceptance_16m | holdout_2025 | all | 0.2500 | 4 | 0.7500 | 61.1781 | 0.0245 | -0.0101 |
+| aligned_poc_acceptance_16m | holdout_2025 | all | 0.5000 | 4 | 0.7500 | 58.9804 | 0.0236 | -0.0103 |
+| aligned_poc_acceptance_16m | holdout_2025 | all | 1.0000 | 4 | 0.7500 | 54.5851 | 0.0218 | -0.0106 |
+| aligned_poc_acceptance_16m | holdout_2025 | all | 1.5000 | 4 | 0.7500 | 50.1897 | 0.0200 | -0.0109 |
+| aligned_poc_acceptance_16m | holdout_2025 | all | 2.0000 | 4 | 0.7500 | 45.7944 | 0.0182 | -0.0112 |
+| aligned_poc_acceptance_16m | holdout_2025 | all | 3.0000 | 4 | 0.7500 | 37.0037 | 0.0147 | -0.0118 |
 
 ## Plots
 
 - [Managed equity curves and drawdowns](managed_equity_and_drawdowns.png)
 - [10/16/20/30-minute horizon comparison](horizon_comparison.png)
 - [POC-cross forward returns](poc_cross_forward_returns.png)
+- [POC-cross timing impact](poc_cross_timing_impact.png)
 
 ## Predeclared rules
 

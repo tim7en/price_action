@@ -6,6 +6,7 @@ from price_action.nasdaq_poc_scaling_backtest import (
     PocManagementConfig,
     crossed_prior_poc,
     financed_add_notional,
+    short_trend_bias,
     trend_bias,
 )
 
@@ -15,6 +16,8 @@ class NasdaqPocScalingBacktestTests(unittest.TestCase):
         self.assertEqual(trend_bias(110.0, 105.0, 100.0), 1)
         self.assertEqual(trend_bias(90.0, 95.0, 100.0), -1)
         self.assertEqual(trend_bias(102.0, 105.0, 100.0), 0)
+        self.assertEqual(short_trend_bias(110.0, 105.0, 100.0), 1)
+        self.assertEqual(short_trend_bias(90.0, 95.0, 100.0), -1)
 
     def test_poc_cross_requires_clearing_the_tolerance_band(self) -> None:
         levels = [100.0, 105.0, 110.0]

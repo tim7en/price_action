@@ -55,6 +55,9 @@ class ManagedVariant:
     trailing_stop: bool = False
     poc_scaling: bool = False
     base_risk_scale: float = 1.0
+    trend_model: str = "10_30"
+    signal_source: str = "base"
+    chart_scaling: bool = False
 
     def __post_init__(self) -> None:
         if self.entry_window_minutes not in {10, 16, 20, 30}:
@@ -63,8 +66,16 @@ class ManagedVariant:
             raise ValueError("Holding time must be a positive multiple of two minutes")
         if self.poc_scaling and not self.trailing_stop:
             raise ValueError("POC scaling requires a profit-protecting stop")
+        if self.chart_scaling and not self.trailing_stop:
+            raise ValueError("Chart scaling requires a profit-protecting stop")
+        if self.chart_scaling and self.poc_scaling:
+            raise ValueError("Choose one scaling trigger per variant")
         if not 0.0 < self.base_risk_scale <= 1.0:
             raise ValueError("Base-risk scale must be within (0, 1]")
+        if self.trend_model not in {"10_30", "3_10"}:
+            raise ValueError("Trend model must be 10_30 or 3_10")
+        if self.signal_source not in {"base", "aligned_poc_immediate", "aligned_poc_acceptance"}:
+            raise ValueError("Unknown signal source")
 
 
 @dataclass(frozen=True)
@@ -112,13 +123,21 @@ def daily_poc_context(
         prior = completed.copy()
         prior_closes = [float(item["rth_close"]) for item in prior]
         prior_pocs = [float(item["poc"]) for item in prior[-management.poc_sessions:]][::-1]
+        poc_migration_3d = 0
+        if len(prior_pocs) >= 3:
+            if prior_pocs[0] > prior_pocs[1] > prior_pocs[2]:
+                poc_migration_3d = 1
+            elif prior_pocs[0] < prior_pocs[1] < prior_pocs[2]:
+                poc_migration_3d = -1
         row: dict[str, Any] = {
             "session_date": str(session.session_date),
             "session_open": session_open,
             "session_close": session_close,
             "prior_close": prior_closes[-1] if prior_closes else np.nan,
+            "sma_3d": float(np.mean(prior_closes[-3:])) if len(prior_closes) >= 3 else np.nan,
             "sma_10d": float(np.mean(prior_closes[-10:])) if len(prior_closes) >= 10 else np.nan,
             "sma_30d": float(np.mean(prior_closes[-30:])) if len(prior_closes) >= 30 else np.nan,
+            "poc_migration_3d": poc_migration_3d,
             "available_prior_pocs": len(prior_pocs),
         }
         for offset in range(management.poc_sessions):
@@ -162,6 +181,68 @@ def trend_bias(price: float, sma_10d: float, sma_30d: float) -> int:
     return 0
 
 
+def short_trend_bias(price: float, sma_3d: float, sma_10d: float) -> int:
+    """Return +1 for price > SMA3 > SMA10 and -1 for the inverse."""
+    if not all(np.isfinite(value) for value in [price, sma_3d, sma_10d]):
+        return 0
+    if price > sma_3d > sma_10d:
+        return 1
+    if price < sma_3d < sma_10d:
+        return -1
+    return 0
+
+
+def add_developing_auction_context(
+    indicated_bars: pd.DataFrame,
+    candidates: pd.DataFrame,
+    strategy: NasdaqStrategyConfig,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Add causal current-session developing POC estimates to execution bars."""
+    indicated = indicated_bars.copy()
+    candidate_frame = candidates.copy()
+    indicated["developing_poc"] = np.nan
+    indicated["developing_poc_change"] = np.nan
+    for _, session_candidates in candidate_frame.groupby("session_date", sort=True):
+        ordered = session_candidates.sort_values("timestamp")
+        pocs: list[float] = []
+        bar_ids: list[int] = []
+        session_open = pd.Timestamp(ordered["session_open"].iloc[0])
+        for row in ordered.itertuples(index=False):
+            timestamp = pd.Timestamp(row.timestamp)
+            history = indicated.loc[
+                (indicated.index >= session_open)
+                & (indicated.index <= timestamp)
+            ]
+            poc, _, _ = volume_profile_levels(
+                history,
+                rows=strategy.profile_rows,
+                value_fraction=strategy.profile_value_fraction,
+            )
+            pocs.append(float(poc))
+            bar_ids.append(int(row.bar_id))
+        for offset, (bar_id, poc) in enumerate(zip(bar_ids, pocs, strict=True)):
+            indicated.iloc[
+                bar_id,
+                indicated.columns.get_loc("developing_poc"),
+            ] = poc
+            change = poc - pocs[offset - 1] if offset > 0 else 0.0
+            indicated.iloc[
+                bar_id,
+                indicated.columns.get_loc("developing_poc_change"),
+            ] = change
+    poc_by_bar_id = pd.Series(
+        indicated["developing_poc"].to_numpy(),
+        index=indicated["bar_id"].astype(int),
+    )
+    change_by_bar_id = pd.Series(
+        indicated["developing_poc_change"].to_numpy(),
+        index=indicated["bar_id"].astype(int),
+    )
+    candidate_frame["developing_poc"] = candidate_frame["bar_id"].map(poc_by_bar_id)
+    candidate_frame["developing_poc_change"] = candidate_frame["bar_id"].map(change_by_bar_id)
+    return indicated, candidate_frame
+
+
 def crossed_prior_poc(
     previous_close: float,
     current_close: float,
@@ -186,7 +267,7 @@ def poc_cross_event_study(
     indicated_bars: pd.DataFrame,
     strategy: NasdaqStrategyConfig,
     management: PocManagementConfig,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Measure fast continuation after causal crosses of prior-session POCs."""
     events: list[dict[str, Any]] = []
     horizon_bars = {2: 1, 4: 2, 6: 3, 10: 5}
@@ -216,6 +297,16 @@ def poc_cross_event_study(
         if crossed is None:
             continue
         bias = trend_bias(current_close, float(row.sma_10d), float(row.sma_30d))
+        short_bias = short_trend_bias(current_close, float(row.sma_3d), float(row.sma_10d))
+        regime_side = (
+            1 if row.day_regime == "imbalance_up"
+            else -1 if row.day_regime == "imbalance_down"
+            else 0
+        )
+        execution_minute = int(
+            (pd.Timestamp(row.timestamp) - pd.Timestamp(row.session_open))
+            / pd.Timedelta(minutes=1)
+        ) - 30
         aggressive = bool(row.aggressive_up if side > 0 else row.aggressive_down)
         delta_aligned = bool(
             row.smoothed_delta_proxy > 0.0
@@ -231,6 +322,18 @@ def poc_cross_event_study(
             "atr": float(row.atr),
             "trend_bias": "long" if bias > 0 else "short" if bias < 0 else "neutral",
             "trend_aligned": bias == side,
+            "short_trend_bias": (
+                "long" if short_bias > 0 else "short" if short_bias < 0 else "neutral"
+            ),
+            "short_trend_aligned": short_bias == side,
+            "session_regime_aligned": regime_side == side,
+            "poc_migration_aligned": int(row.poc_migration_3d) == side,
+            "execution_minute": execution_minute,
+            "execution_bucket": (
+                "first_10m" if execution_minute < 10
+                else "middle_10m" if execution_minute < 20
+                else "last_10m"
+            ),
             "aggressive": aggressive,
             "delta_aligned": delta_aligned,
             "aggression_and_delta_aligned": aggressive and delta_aligned,
@@ -267,51 +370,147 @@ def poc_cross_event_study(
 
     event_frame = pd.DataFrame(events)
     if event_frame.empty:
-        return event_frame, pd.DataFrame()
+        return event_frame, pd.DataFrame(), pd.DataFrame()
     groups = {
         "all_poc_crosses": pd.Series(True, index=event_frame.index),
-        "trend_aligned": event_frame["trend_aligned"],
+        "trend_10d_30d_aligned": event_frame["trend_aligned"],
+        "trend_3d_10d_aligned": event_frame["short_trend_aligned"],
+        "session_regime_aligned": event_frame["session_regime_aligned"],
+        "poc_migration_3d_aligned": event_frame["poc_migration_aligned"],
+        "session_plus_3d_10d": (
+            event_frame["session_regime_aligned"]
+            & event_frame["short_trend_aligned"]
+        ),
+        "3d_10d_plus_poc_migration": (
+            event_frame["short_trend_aligned"]
+            & event_frame["poc_migration_aligned"]
+        ),
+        "session_trend_poc_migration": (
+            event_frame["session_regime_aligned"]
+            & event_frame["short_trend_aligned"]
+            & event_frame["poc_migration_aligned"]
+        ),
         "aggression_and_delta_aligned": event_frame["aggression_and_delta_aligned"],
-        "trend_plus_aggression_delta": (
-            event_frame["trend_aligned"]
+        "3d_10d_plus_aggression_delta": (
+            event_frame["short_trend_aligned"]
             & event_frame["aggression_and_delta_aligned"]
         ),
     }
-    rows: list[dict[str, Any]] = []
-    rng = np.random.default_rng(20260722)
-    for group_name, mask in groups.items():
-        frame = event_frame.loc[mask].copy()
-        daily_10m = frame.groupby("session_date", sort=True)["forward_10m_bps"].mean()
-        if len(daily_10m):
-            bootstrap_draws = rng.choice(
-                daily_10m.to_numpy(dtype=float),
-                size=(5_000, len(daily_10m)),
-                replace=True,
-            ).mean(axis=1)
-        else:
-            bootstrap_draws = np.asarray([], dtype=float)
-        row: dict[str, Any] = {
-            "group": group_name,
-            "events": int(len(frame)),
-            "sessions": int(frame["session_date"].nunique()),
-            "mean_max_favorable_10m_atr": float(frame["max_favorable_10m_atr"].mean())
-            if len(frame) else np.nan,
-            "mean_max_adverse_10m_atr": float(frame["max_adverse_10m_atr"].mean())
-            if len(frame) else np.nan,
-            "session_bootstrap_10m_ci_low_bps": float(np.quantile(bootstrap_draws, 0.025))
-            if len(bootstrap_draws) else np.nan,
-            "session_bootstrap_10m_ci_high_bps": float(np.quantile(bootstrap_draws, 0.975))
-            if len(bootstrap_draws) else np.nan,
-            "session_bootstrap_probability_10m_positive": float((bootstrap_draws > 0.0).mean())
-            if len(bootstrap_draws) else np.nan,
-        }
-        for minutes in horizon_bars:
-            values = frame[f"forward_{minutes}m_bps"]
-            row[f"mean_forward_{minutes}m_bps"] = float(values.mean()) if len(frame) else np.nan
-            row[f"median_forward_{minutes}m_bps"] = float(values.median()) if len(frame) else np.nan
-            row[f"positive_forward_{minutes}m_share"] = float(values.gt(0.0).mean()) if len(frame) else np.nan
-        rows.append(row)
-    return event_frame, pd.DataFrame(rows)
+    timing_groups = {
+        "first_10m_after_observation": event_frame["execution_bucket"].eq("first_10m"),
+        "middle_10m_after_observation": event_frame["execution_bucket"].eq("middle_10m"),
+        "last_10m_after_observation": event_frame["execution_bucket"].eq("last_10m"),
+        "first_10m_and_3d_10d_aligned": (
+            event_frame["execution_bucket"].eq("first_10m")
+            & event_frame["short_trend_aligned"]
+        ),
+        "first_10m_3d_10d_poc_migration": (
+            event_frame["execution_bucket"].eq("first_10m")
+            & event_frame["short_trend_aligned"]
+            & event_frame["poc_migration_aligned"]
+        ),
+    }
+
+    def summarize(group_masks: dict[str, pd.Series], seed: int) -> pd.DataFrame:
+        rows: list[dict[str, Any]] = []
+        rng = np.random.default_rng(seed)
+        for group_name, mask in group_masks.items():
+            frame = event_frame.loc[mask].copy()
+            daily_10m = frame.groupby("session_date", sort=True)["forward_10m_bps"].mean()
+            if len(daily_10m):
+                bootstrap_draws = rng.choice(
+                    daily_10m.to_numpy(dtype=float),
+                    size=(5_000, len(daily_10m)),
+                    replace=True,
+                ).mean(axis=1)
+            else:
+                bootstrap_draws = np.asarray([], dtype=float)
+            row: dict[str, Any] = {
+                "group": group_name,
+                "events": int(len(frame)),
+                "sessions": int(frame["session_date"].nunique()),
+                "mean_max_favorable_10m_atr": float(frame["max_favorable_10m_atr"].mean())
+                if len(frame) else np.nan,
+                "mean_max_adverse_10m_atr": float(frame["max_adverse_10m_atr"].mean())
+                if len(frame) else np.nan,
+                "session_bootstrap_10m_ci_low_bps": float(np.quantile(bootstrap_draws, 0.025))
+                if len(bootstrap_draws) else np.nan,
+                "session_bootstrap_10m_ci_high_bps": float(np.quantile(bootstrap_draws, 0.975))
+                if len(bootstrap_draws) else np.nan,
+                "session_bootstrap_probability_10m_positive": float((bootstrap_draws > 0.0).mean())
+                if len(bootstrap_draws) else np.nan,
+            }
+            for minutes in horizon_bars:
+                values = frame[f"forward_{minutes}m_bps"]
+                row[f"mean_forward_{minutes}m_bps"] = float(values.mean()) if len(frame) else np.nan
+                row[f"median_forward_{minutes}m_bps"] = float(values.median()) if len(frame) else np.nan
+                row[f"positive_forward_{minutes}m_share"] = float(values.gt(0.0).mean()) if len(frame) else np.nan
+            rows.append(row)
+        return pd.DataFrame(rows)
+
+    return event_frame, summarize(groups, 20260722), summarize(timing_groups, 20260723)
+
+
+def aligned_poc_signal_sets(
+    candidates: pd.DataFrame,
+    poc_events: pd.DataFrame,
+    strategy: NasdaqStrategyConfig,
+    management: PocManagementConfig,
+) -> dict[str, pd.DataFrame]:
+    """Build immediate-cross control and one-bar acceptance-confirmed POC signals."""
+    if poc_events.empty:
+        empty = candidates.iloc[0:0].copy()
+        return {"aligned_poc_immediate": empty, "aligned_poc_acceptance": empty}
+    selected_events = poc_events.loc[
+        poc_events["execution_bucket"].eq("first_10m")
+        & poc_events["short_trend_aligned"]
+        & poc_events["poc_migration_aligned"]
+    ].copy()
+    candidate_lookup = candidates.set_index("timestamp", drop=False)
+    immediate_rows: list[pd.Series] = []
+    acceptance_rows: list[pd.Series] = []
+    for event in selected_events.itertuples(index=False):
+        timestamp = pd.Timestamp(event.timestamp)
+        if timestamp not in candidate_lookup.index:
+            continue
+        side = 1 if event.side == "long" else -1
+        immediate = candidate_lookup.loc[timestamp].copy()
+        if isinstance(immediate, pd.DataFrame):
+            immediate = immediate.iloc[0].copy()
+        immediate["signal_side"] = side
+        immediate["setup"] = "aligned_poc_immediate_cross"
+        immediate["crossed_poc"] = float(event.crossed_poc)
+        immediate_rows.append(immediate)
+
+        confirmation_time = timestamp + strategy.bar_interval
+        if confirmation_time not in candidate_lookup.index:
+            continue
+        confirmation = candidate_lookup.loc[confirmation_time].copy()
+        if isinstance(confirmation, pd.DataFrame):
+            confirmation = confirmation.iloc[0].copy()
+        if str(confirmation["session_date"]) != str(event.session_date):
+            continue
+        tolerance = float(confirmation["atr"]) * management.poc_cross_tolerance_atr
+        remains_accepted = (
+            float(confirmation["close"]) > float(event.crossed_poc) + tolerance
+            if side > 0
+            else float(confirmation["close"]) < float(event.crossed_poc) - tolerance
+        )
+        vwap_aligned = (
+            float(confirmation["close"]) > float(confirmation["session_vwap"])
+            if side > 0
+            else float(confirmation["close"]) < float(confirmation["session_vwap"])
+        )
+        if not remains_accepted or not vwap_aligned:
+            continue
+        confirmation["signal_side"] = side
+        confirmation["setup"] = "aligned_poc_acceptance_confirmation"
+        confirmation["crossed_poc"] = float(event.crossed_poc)
+        acceptance_rows.append(confirmation)
+    return {
+        "aligned_poc_immediate": pd.DataFrame(immediate_rows),
+        "aligned_poc_acceptance": pd.DataFrame(acceptance_rows),
+    }
 
 
 def financed_add_notional(
@@ -353,6 +552,20 @@ def _risk_multiplier(side: int, bias: int, variant: ManagedVariant, management: 
     return variant.base_risk_scale * management.countertrend_risk_multiplier
 
 
+def _variant_trend_bias(signal: pd.Series, variant: ManagedVariant) -> int:
+    if variant.trend_model == "3_10":
+        return short_trend_bias(
+            float(signal["close"]),
+            float(signal["sma_3d"]),
+            float(signal["sma_10d"]),
+        )
+    return trend_bias(
+        float(signal["close"]),
+        float(signal["sma_10d"]),
+        float(signal["sma_30d"]),
+    )
+
+
 def simulate_managed_trade(
     signal: pd.Series,
     indicated_bars: pd.DataFrame,
@@ -378,7 +591,7 @@ def simulate_managed_trade(
     if not np.isfinite(atr) or atr <= 0.0:
         return None
     side = int(signal["signal_side"])
-    bias = trend_bias(float(signal["close"]), float(signal["sma_10d"]), float(signal["sma_30d"]))
+    bias = _variant_trend_bias(signal, variant)
     risk_multiplier = _risk_multiplier(side, bias, variant, management)
     stop_distance = atr * management.initial_stop_atr
     stop_fraction = stop_distance / entry_price
@@ -408,6 +621,9 @@ def simulate_managed_trade(
     aligned_poc_cross_count = 0
     qualified_scale_signal_count = 0
     scale_rejection_reason = "not_signaled"
+    scale_trigger = "none"
+    chart_acceptance_count = 0
+    signal_developing_poc = float(signal.get("developing_poc", np.nan))
     pocs = [
         float(signal[f"prior_poc_{offset}"])
         for offset in range(1, management.poc_sessions + 1)
@@ -471,6 +687,7 @@ def simulate_managed_trade(
         previous_close = (
             entry_price if bar_id == entry_id else float(indicated_bars.iloc[bar_id - 1]["close"])
         )
+        prior_favorable_close = favorable_close
         favorable_close = (
             max(favorable_close, current_close)
             if side > 0
@@ -511,10 +728,57 @@ def simulate_managed_trade(
             and timestamp + strategy.bar_interval < window_end
         ):
             pending_poc = crossed
+            scale_trigger = "prior_poc_cross"
             qualified_scale_signal_count += 1
             if pd.isna(scale_signal_time):
                 scale_signal_time = timestamp
                 scale_signal_poc = crossed
+
+        prior_close_accepted = (
+            side * (previous_close - entry_price) >= 0.5 * stop_distance
+        )
+        current_close_accepted = (
+            side * (current_close - entry_price) >= 0.5 * stop_distance
+        )
+        developing_poc = float(bar.get("developing_poc", np.nan))
+        developing_poc_migrated = bool(
+            np.isfinite(developing_poc)
+            and np.isfinite(signal_developing_poc)
+            and side * (developing_poc - signal_developing_poc) >= 0.10 * float(bar["atr"])
+        )
+        new_price_displacement = side * (current_close - prior_favorable_close) > 0.0
+        price_expansion = bool(
+            float(bar["bar_range"]) >= 0.80 * float(bar["atr"])
+            and (
+                float(bar["close_location"]) >= 0.75
+                if side > 0
+                else float(bar["close_location"]) <= 0.25
+            )
+        )
+        chart_acceptance = bool(
+            prior_close_accepted
+            and current_close_accepted
+            and developing_poc_migrated
+            and new_price_displacement
+            and price_expansion
+        )
+        if chart_acceptance:
+            chart_acceptance_count += 1
+        if (
+            variant.chart_scaling
+            and added_notional == 0.0
+            and pending_poc is None
+            and bias == side
+            and stop_raised
+            and chart_acceptance
+            and timestamp + strategy.bar_interval < window_end
+        ):
+            pending_poc = developing_poc
+            scale_trigger = "chart_acceptance_and_poc_migration"
+            qualified_scale_signal_count += 1
+            if pd.isna(scale_signal_time):
+                scale_signal_time = timestamp
+                scale_signal_poc = developing_poc
 
         exit_price = current_close
         exit_time = timestamp
@@ -552,6 +816,7 @@ def simulate_managed_trade(
         "setup": signal["setup"],
         "side": "long" if side > 0 else "short",
         "trend_bias": "long" if bias > 0 else "short" if bias < 0 else "neutral",
+        "trend_model": variant.trend_model,
         "trend_risk_multiplier": risk_multiplier,
         "entry_price": entry_price,
         "initial_stop_price": initial_stop,
@@ -577,6 +842,8 @@ def simulate_managed_trade(
         "aligned_poc_cross_count": aligned_poc_cross_count,
         "qualified_scale_signal_count": qualified_scale_signal_count,
         "scale_rejection_reason": scale_rejection_reason,
+        "scale_trigger": scale_trigger,
+        "chart_acceptance_count": chart_acceptance_count,
         "risk_fraction_deployed": deployed_risk,
         "gross_return": gross_return,
         "one_way_turnover": turnover,
@@ -664,6 +931,7 @@ def _render_plots(
     summary: pd.DataFrame,
     equity: pd.DataFrame,
     poc_event_summary: pd.DataFrame,
+    poc_timing_summary: pd.DataFrame,
     output: Path,
 ) -> list[Path]:
     from .nasdaq_session_backtest import _configure_plots
@@ -676,11 +944,11 @@ def _render_plots(
         "static_30m",
         "static_16m",
         "trend_sized_16m",
-        "trend_trail_16m",
-        "reserved_trend_trail_16m",
-        "reserved_poc_scale_16m",
+        "trend_3d_10d_sized_16m",
+        "aligned_poc_acceptance_16m",
+        "reserved_chart_scale_16m",
     ]
-    colors = ["#64748b", "#2563eb", "#d97706", "#7c3aed", "#be123c", "#0f766e"]
+    colors = ["#64748b", "#2563eb", "#d97706", "#7c3aed", "#0f766e", "#be123c"]
     fig, axes = plt.subplots(2, 1, figsize=(13, 9), sharex=True)
     for variant, color in zip(focus, colors, strict=True):
         frame = equity.loc[equity["variant"].eq(variant)]
@@ -731,8 +999,17 @@ def _render_plots(
     if not poc_event_summary.empty:
         fig, axis = plt.subplots(figsize=(10, 5.5))
         horizons = [2, 4, 6, 10]
-        event_colors = ["#64748b", "#2563eb", "#d97706", "#0f766e"]
-        for (_, row), color in zip(poc_event_summary.iterrows(), event_colors, strict=True):
+        plotted_groups = [
+            "all_poc_crosses",
+            "trend_10d_30d_aligned",
+            "trend_3d_10d_aligned",
+            "session_plus_3d_10d",
+            "3d_10d_plus_poc_migration",
+        ]
+        plot_frame = poc_event_summary.loc[poc_event_summary["group"].isin(plotted_groups)]
+        plot_frame = plot_frame.set_index("group").reindex(plotted_groups).reset_index()
+        event_colors = ["#64748b", "#2563eb", "#d97706", "#7c3aed", "#0f766e"]
+        for (_, row), color in zip(plot_frame.iterrows(), event_colors, strict=True):
             axis.plot(
                 horizons,
                 [row[f"mean_forward_{minutes}m_bps"] for minutes in horizons],
@@ -753,6 +1030,32 @@ def _render_plots(
         fig.savefig(path, dpi=180, bbox_inches="tight")
         plt.close(fig)
         paths.append(path)
+
+    if not poc_timing_summary.empty:
+        fig, axis = plt.subplots(figsize=(10, 5.5))
+        horizons = [2, 4, 6, 10]
+        timing_colors = ["#2563eb", "#d97706", "#7c3aed", "#64748b", "#0f766e"]
+        for (_, row), color in zip(poc_timing_summary.iterrows(), timing_colors, strict=True):
+            axis.plot(
+                horizons,
+                [row[f"mean_forward_{minutes}m_bps"] for minutes in horizons],
+                marker="o",
+                linewidth=2,
+                color=color,
+                label=f"{row['group']} (n={int(row['events'])})",
+            )
+        axis.axhline(0.0, color="#334155", linewidth=1)
+        axis.set_xticks(horizons)
+        axis.set_xlabel("Minutes after completed POC-cross bar")
+        axis.set_ylabel("Mean direction-aligned return (bps)")
+        axis.set_title("Does POC-cross impact decay through the execution phase?")
+        axis.legend(fontsize=8)
+        axis.grid(alpha=0.2)
+        fig.tight_layout()
+        path = output / "poc_cross_timing_impact.png"
+        fig.savefig(path, dpi=180, bbox_inches="tight")
+        plt.close(fig)
+        paths.append(path)
     return paths
 
 
@@ -762,6 +1065,7 @@ def _report(
     scaling_audit: pd.DataFrame,
     scaling_funnel: pd.DataFrame,
     poc_event_summary: pd.DataFrame,
+    poc_timing_summary: pd.DataFrame,
     cost_audit: pd.DataFrame,
     governance: dict[str, Any],
 ) -> str:
@@ -788,6 +1092,10 @@ Generated {governance['generated_at_utc']}. This is a separate extension of the 
 
 {_markdown_table(poc_event_summary)}
 
+## POC crossing by execution timing
+
+{_markdown_table(poc_timing_summary)}
+
 ## Session-block bootstrap
 
 {_markdown_table(bootstrap, rows=40)}
@@ -801,6 +1109,7 @@ Generated {governance['generated_at_utc']}. This is a separate extension of the 
 - [Managed equity curves and drawdowns](managed_equity_and_drawdowns.png)
 - [10/16/20/30-minute horizon comparison](horizon_comparison.png)
 - [POC-cross forward returns](poc_cross_forward_returns.png)
+- [POC-cross timing impact](poc_cross_timing_impact.png)
 
 ## Predeclared rules
 
@@ -811,6 +1120,7 @@ Generated {governance['generated_at_utc']}. This is a separate extension of the 
 - The reserved-scaling diagnostic starts with 75% of those risk allocations so an aligned trade can retain leverage capacity for an add-on. It was introduced after observing that the unconstrained signal was already at 10x, so it is diagnostic rather than validated.
 - The trail activates after a completed close reaches +1R, locks +0.25R, and then follows the best completed close by 1.5 ATR. Stop changes apply only to subsequent bars.
 - One add-on is eligible only after the stop is raised, trend is aligned, and an aggressive, delta-aligned completed bar crosses the 0.1-ATR band around one of the prior five completed-session POCs.
+- The chart-scaling extension instead requires two closes holding at least +0.5R, a new directional close, an edge close on a range-expansion bar, and current developing POC migration of at least 0.1 ATR from its signal-time value.
 - The add-on enters at the next bar open, is capped at 50% of base size and the remaining 10x capacity, and its stop risk plus round-trip cost cannot exceed net base profit already locked by the protected stop.
 - Same-bar stop/target ambiguity resolves to the stop. The 2R target and three-loss daily stop remain active.
 
@@ -857,9 +1167,20 @@ def build_poc_scaling_backtest(
     candidates["timestamp"] = pd.to_datetime(candidates["timestamp"], utc=True)
     candidates["session_open"] = pd.to_datetime(candidates["session_open"], utc=True)
     candidates["session_close"] = pd.to_datetime(candidates["session_close"], utc=True)
-    poc_events, poc_event_summary = poc_cross_event_study(
+    indicated, candidates = add_developing_auction_context(
+        indicated,
+        candidates,
+        strategy,
+    )
+    poc_events, poc_event_summary, poc_timing_summary = poc_cross_event_study(
         candidates,
         indicated,
+        strategy,
+        management,
+    )
+    poc_signal_sets = aligned_poc_signal_sets(
+        candidates,
+        poc_events,
         strategy,
         management,
     )
@@ -870,6 +1191,72 @@ def build_poc_scaling_backtest(
         ManagedVariant("static_20m", 20, 20),
         ManagedVariant("static_30m", 30, 30),
         ManagedVariant("trend_sized_16m", 16, 16, trend_sizing=True),
+        ManagedVariant(
+            "trend_3d_10d_sized_10m",
+            10,
+            10,
+            trend_sizing=True,
+            trend_model="3_10",
+        ),
+        ManagedVariant(
+            "trend_3d_10d_sized_16m",
+            16,
+            16,
+            trend_sizing=True,
+            trend_model="3_10",
+        ),
+        ManagedVariant(
+            "aligned_poc_immediate_10m",
+            10,
+            10,
+            trend_model="3_10",
+            signal_source="aligned_poc_immediate",
+        ),
+        ManagedVariant(
+            "aligned_poc_acceptance_16m",
+            16,
+            16,
+            trend_model="3_10",
+            signal_source="aligned_poc_acceptance",
+        ),
+        ManagedVariant(
+            "reserved_3d_10d_trail_16m",
+            16,
+            16,
+            trend_sizing=True,
+            trailing_stop=True,
+            base_risk_scale=0.75,
+            trend_model="3_10",
+        ),
+        ManagedVariant(
+            "reserved_chart_scale_16m",
+            16,
+            16,
+            trend_sizing=True,
+            trailing_stop=True,
+            base_risk_scale=0.75,
+            trend_model="3_10",
+            chart_scaling=True,
+        ),
+        ManagedVariant(
+            "reserved_3d_10d_trail_30m",
+            30,
+            30,
+            trend_sizing=True,
+            trailing_stop=True,
+            base_risk_scale=0.75,
+            trend_model="3_10",
+        ),
+        ManagedVariant(
+            "reserved_chart_scale_30m",
+            30,
+            30,
+            trend_sizing=True,
+            trailing_stop=True,
+            base_risk_scale=0.75,
+            trend_model="3_10",
+            chart_scaling=True,
+        ),
         ManagedVariant("trend_trail_16m", 16, 16, trend_sizing=True, trailing_stop=True),
         ManagedVariant(
             "trend_trail_poc_scale_16m",
@@ -925,8 +1312,13 @@ def build_poc_scaling_backtest(
     trades_by_variant: dict[str, pd.DataFrame] = {}
     blocked: dict[str, dict[str, int]] = {}
     for variant in variants:
+        variant_candidates = (
+            candidates
+            if variant.signal_source == "base"
+            else poc_signal_sets[variant.signal_source]
+        )
         trades, variant_blocked = run_managed_backtest(
-            candidates,
+            variant_candidates,
             indicated,
             strategy,
             execution,
@@ -979,13 +1371,21 @@ def build_poc_scaling_backtest(
             ) if len(trades) else 0,
             "qualified_scale_signals": int(trades["qualified_scale_signal_count"].sum())
             if len(trades) else 0,
+            "chart_acceptance_observations": int(trades["chart_acceptance_count"].sum())
+            if len(trades) else 0,
             "filled_add_ons": int(trades["scale_count"].sum()) if len(trades) else 0,
         })
     bootstrap = pd.concat(bootstrap_frames, ignore_index=True)
     cost_audit = pd.concat(cost_frames, ignore_index=True)
     scaling_audit = pd.DataFrame(scale_rows)
     scaling_funnel = pd.DataFrame(funnel_rows)
-    plot_paths = _render_plots(summary, equity, poc_event_summary, output)
+    plot_paths = _render_plots(
+        summary,
+        equity,
+        poc_event_summary,
+        poc_timing_summary,
+        output,
+    )
     governance = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "strategy": "two_minute_nasdaq_poc_trend_scaling_extension",
@@ -1010,6 +1410,7 @@ def build_poc_scaling_backtest(
     scaling_funnel.to_csv(output / "scaling_eligibility_funnel.csv", index=False)
     poc_events.to_csv(output / "poc_cross_events.csv", index=False)
     poc_event_summary.to_csv(output / "poc_cross_event_summary.csv", index=False)
+    poc_timing_summary.to_csv(output / "poc_cross_timing_summary.csv", index=False)
     (output / "governance.json").write_text(json.dumps(governance, indent=2), encoding="utf-8")
     (output / "report.md").write_text(
         _report(
@@ -1018,6 +1419,7 @@ def build_poc_scaling_backtest(
             scaling_audit,
             scaling_funnel,
             poc_event_summary,
+            poc_timing_summary,
             cost_audit,
             governance,
         ),
@@ -1032,6 +1434,7 @@ def build_poc_scaling_backtest(
         "scaling_funnel": scaling_funnel,
         "poc_cross_events": poc_events,
         "poc_cross_event_summary": poc_event_summary,
+        "poc_cross_timing_summary": poc_timing_summary,
         "governance": governance,
     }
 
