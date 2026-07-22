@@ -1,0 +1,104 @@
+{
+  "generated_at_utc": "2026-07-22T07:29:30.842471+00:00",
+  "status": "RESEARCH_ONLY_LIVE_DEPLOYMENT_BLOCKED",
+  "data_source": "D:\\dev\\price_action\\cache\\cache\\binance_asia_orb\\BTCUSDT_2022-01-01_2026-02-25_5m.csv.gz",
+  "data_quality": {
+    "input_rows": 436729,
+    "first_bar_utc": "2022-01-01T00:00:00+00:00",
+    "last_bar_utc": "2026-02-25T11:20:00+00:00",
+    "expected_rows_on_complete_grid": 436745,
+    "missing_five_minute_bars": 16,
+    "non_five_minute_steps": 1,
+    "maximum_gap_minutes": 85.0,
+    "duplicate_timestamps": 0,
+    "zero_volume_bars": 14,
+    "venue_product_identity": "unverified BTCUSDT klines; spot versus perpetual metadata absent"
+  },
+  "config": {
+    "vp_length": 50,
+    "vp_resolution": 24,
+    "value_area_fraction": 0.7,
+    "atr_length": 14,
+    "absorb_volume_multiplier": 2.0,
+    "absorb_price_threshold": 0.3,
+    "delta_lookback": 5,
+    "vwap_band_atr": 0.5,
+    "reward_to_risk": 2.0,
+    "maximum_daily_losses": 3,
+    "trail_activation_atr": 1.5,
+    "trail_offset_atr": 0.5,
+    "orb_minutes": 30,
+    "script_equity_fraction": 1.0,
+    "intended_risk_fraction": 0.01,
+    "intended_maximum_leverage": 10.0,
+    "realistic_one_way_cost_bps": 6.0
+  },
+  "donchian_length": 20,
+  "higher_timeframes_minutes": [
+    15,
+    60,
+    240
+  ],
+  "costs_bps_per_side": [
+    0.0,
+    1.0,
+    2.0,
+    3.0,
+    6.0
+  ],
+  "reference_one_way_cost_bps": 6.0,
+  "execution_diagnostics": {
+    "unfiltered": {
+      "raw_long_signals": 3193,
+      "raw_short_signals": 2948,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 1967,
+      "signals_blocked_daily_losses": 214,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "donchian_15m_20": {
+      "raw_long_signals": 2019,
+      "raw_short_signals": 1769,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 1138,
+      "signals_blocked_daily_losses": 36,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "donchian_60m_20": {
+      "raw_long_signals": 1684,
+      "raw_short_signals": 1496,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 936,
+      "signals_blocked_daily_losses": 29,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "donchian_240m_20": {
+      "raw_long_signals": 1782,
+      "raw_short_signals": 1318,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 936,
+      "signals_blocked_daily_losses": 33,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    }
+  },
+  "causality_audit": {
+    "status": "PASS",
+    "checks": {
+      "higher_timeframe_available_before_signal": true,
+      "signals_match_persistent_donchian_direction": true,
+      "entries_fill_on_next_five_minute_bar": true,
+      "higher_timeframe_prefix_invariance": true,
+      "channel_excludes_current_higher_timeframe_bar": true
+    },
+    "prefix_checks": {
+      "donchian_15m_20": true,
+      "donchian_60m_20": true,
+      "donchian_240m_20": true
+    },
+    "rule": "Long state begins when a completed HTF close exceeds the previous 20 complete HTF highs; short state begins below the previous 20 lows; state persists until the opposite breakout."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "checks": {
+    "higher_timeframe_available_before_signal": true,
+    "signals_match_persistent_donchian_direction": true,
+    "entries_fill_on_next_five_minute_bar": true,
+    "higher_timeframe_prefix_invariance": true,
+    "channel_excludes_current_higher_timeframe_bar": true
+  },
+  "prefix_checks": {
+    "donchian_15m_20": true,
+    "donchian_60m_20": true,
+    "donchian_240m_20": true
+  },
+  "rule": "Long state begins when a completed HTF close exceeds the previous 20 complete HTF highs; short state begins below the previous 20 lows; state persists until the opposite breakout."
+}
