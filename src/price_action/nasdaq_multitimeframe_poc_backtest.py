@@ -22,7 +22,12 @@ import numpy as np
 import pandas as pd
 
 from .data import resolve_project_root
-from .nasdaq_poc_scaling_backtest import _equity_frame, _variant_summary
+from .nasdaq_poc_scaling_backtest import (
+    _equity_frame,
+    _variant_summary,
+    short_trend_bias,
+    trend_bias,
+)
 from .nasdaq_session_backtest import (
     DEFAULT_DATA,
     DEFAULT_EXECUTION,
@@ -95,6 +100,16 @@ def build_composite_poc_context(
             "prior_daily_atr": prior_atr,
             "available_prior_sessions": len(completed),
         }
+        prior_closes = [float(item["close"]) for item in completed]
+        payload["sma_3d"] = (
+            float(np.mean(prior_closes[-3:])) if len(prior_closes) >= 3 else np.nan
+        )
+        payload["sma_10d"] = (
+            float(np.mean(prior_closes[-10:])) if len(prior_closes) >= 10 else np.nan
+        )
+        payload["sma_30d"] = (
+            float(np.mean(prior_closes[-30:])) if len(prior_closes) >= 30 else np.nan
+        )
         for window in (1, 3, 5):
             if len(completed) < window:
                 poc, val, vah = np.nan, np.nan, np.nan
@@ -129,6 +144,7 @@ def build_composite_poc_context(
                 "bars": rth[["open", "high", "low", "close", "volume"]].copy(),
                 "poc": float(poc),
                 "range": float(rth["high"].max() - rth["low"].min()),
+                "close": float(rth["close"].iloc[-1]),
             })
     return pd.DataFrame(rows)
 
@@ -345,6 +361,16 @@ def build_poc_signal_observations(
                 "zone_half_width": zone_half_width,
                 "individual_poc_migration_3d": int(context["individual_poc_migration_3d"]),
                 "daily_poc_migration_aligned": int(context["individual_poc_migration_3d"]) == side,
+                "trend_3d_10d_aligned": short_trend_bias(
+                    current_close,
+                    float(context["sma_3d"]),
+                    float(context["sma_10d"]),
+                ) == side,
+                "trend_10d_30d_aligned": trend_bias(
+                    current_close,
+                    float(context["sma_10d"]),
+                    float(context["sma_30d"]),
+                ) == side,
                 "minutes_from_open": minutes_from_open,
                 "session_bucket": _timing_bucket(minutes_from_open),
                 "block_number": block_number,

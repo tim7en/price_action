@@ -1,0 +1,97 @@
+{
+  "generated_at_utc": "2026-07-22T02:35:22.541467+00:00",
+  "data_file": "/Users/timursabitov/Dev/price_action/cache/Nasdaq.csv",
+  "data_quality": {
+    "input_rows": 681646,
+    "bar_minutes": 1,
+    "aggregated_rows": 681646,
+    "first_input_bar_utc": "2024-01-02T05:02:00+00:00",
+    "last_input_bar_utc": "2025-12-05T21:44:00+00:00",
+    "duplicate_timestamps": 0,
+    "zero_volume_rows": 0,
+    "non_one_minute_gap_events": 548,
+    "largest_gap_minutes": 4381.0,
+    "incomplete_aggregate_groups_dropped": 0,
+    "close_not_on_nq_quarter_tick_rows": 641336,
+    "close_not_on_nq_quarter_tick_share": 0.9408637327879867,
+    "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
+    "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
+  },
+  "execution": {
+    "instrument_assumption": "unverified_nasdaq_100_cash_or_cfd",
+    "commission_bps": 0.15,
+    "slippage_bps": 0.35,
+    "venue_and_contract_verified": false,
+    "historical_spread_supplied": false,
+    "one_way_cost_bps": 0.5,
+    "research_only": true,
+    "cost_note": "Commission plus slippage is charged to entry and exit notional."
+  },
+  "research_config": {
+    "profile_rows": 64,
+    "profile_value_fraction": 0.7,
+    "poc_zone_half_width_daily_atr": 0.025,
+    "poc_cluster_distance_daily_atr": 0.05,
+    "daily_atr_sessions": 14,
+    "fifteen_minute_reference_blocks": 20
+  },
+  "optimizer_config": {
+    "stop_factors_15m": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0,
+      1.25
+    ],
+    "holding_minutes": [
+      5,
+      10,
+      15,
+      30
+    ],
+    "poc_scopes": [
+      "3d_or_5d",
+      "focus_cluster"
+    ],
+    "timelines": [
+      "opening_15_30m",
+      "postopen_30_45m",
+      "rth_15_330m"
+    ],
+    "contexts": [
+      "none",
+      "poc_migration",
+      "trend_3d_10d",
+      "trend_3d_10d_plus_migration",
+      "trend_10d_30d"
+    ],
+    "risk_fraction": 0.01,
+    "max_effective_leverage": 100.0,
+    "fixed_leverage_levels": [
+      20.0,
+      40.0,
+      100.0
+    ],
+    "maintenance_margin_proxy": 0.005,
+    "max_session_losses": 3,
+    "minimum_training_trades": 20,
+    "bootstrap_samples": 20000,
+    "bootstrap_years": [
+      1,
+      3
+    ],
+    "survival_equity_floors": [
+      0.5,
+      0.2,
+      0.05
+    ]
+  },
+  "plot_files": [
+    "stop_holding_sensitivity.png",
+    "leverage_equity_and_drawdown.png",
+    "leverage_survival_probabilities.png",
+    "walk_forward_optimizer_equity.png"
+  ],
+  "status": "RESEARCH_ONLY"
+}
