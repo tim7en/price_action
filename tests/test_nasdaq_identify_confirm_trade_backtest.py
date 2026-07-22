@@ -5,11 +5,11 @@ import unittest
 import pandas as pd
 
 from price_action.nasdaq_identify_confirm_trade_backtest import (
+    NasdaqExecutionCosts,
     IdentifyConfirmTradeConfig,
     build_session_candidates,
     simulate_trade,
 )
-from price_action.nasdaq_session_backtest import NasdaqExecutionCosts
 
 
 class NasdaqIdentifyConfirmTradeTests(unittest.TestCase):

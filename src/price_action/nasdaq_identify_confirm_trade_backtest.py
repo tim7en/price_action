@@ -32,20 +32,46 @@ import pandas as pd
 
 from .btc_deepcharts_proxy_backtest import session_volume_profile_proxy
 from .data import resolve_project_root
-from .nasdaq_fabio_pine_v6_backtest import _markdown_table, pine_rma
-from .nasdaq_session_backtest import (
-    CALENDAR_NAME,
-    DEFAULT_DATA,
-    DEFAULT_EXECUTION,
-    HOLDOUT_START,
-    NasdaqExecutionCosts,
-    build_ny_schedule,
-    load_execution_costs,
-    load_nasdaq_bars,
-)
+from .nasdaq_fabio_pine_v6_backtest import _markdown_table, load_schedule, pine_rma
+from .nasdaq_macro_poc_assessment import load_nasdaq_source
 
 
+DEFAULT_DATA = Path("cache/Nasdaq.csv")
+DEFAULT_EXECUTION = Path("config/nasdaq_session_execution.json")
+DEFAULT_SCHEDULE = Path("outputs/nasdaq_session_backtest/session_schedule.csv")
 DEFAULT_OUTPUT = Path("outputs/nasdaq_identify_confirm_trade_backtest")
+HOLDOUT_START = pd.Timestamp("2025-01-01", tz="UTC")
+CALENDAR_NAME = "XNYS"
+
+
+@dataclass(frozen=True)
+class NasdaqExecutionCosts:
+    instrument_assumption: str = "unverified_nasdaq_100_cash_or_cfd"
+    commission_bps: float = 0.15
+    slippage_bps: float = 0.35
+    venue_and_contract_verified: bool = False
+    historical_spread_supplied: bool = False
+
+    def __post_init__(self) -> None:
+        if self.commission_bps < 0.0 or self.slippage_bps < 0.0:
+            raise ValueError("Execution-cost assumptions cannot be negative")
+
+    @property
+    def one_way_cost_bps(self) -> float:
+        return float(self.commission_bps + self.slippage_bps)
+
+    @property
+    def one_way_cost_rate(self) -> float:
+        return self.one_way_cost_bps / 10_000.0
+
+
+def load_execution_costs(path: str | Path) -> NasdaqExecutionCosts:
+    return NasdaqExecutionCosts(**json.loads(Path(path).read_text(encoding="utf-8")))
+
+
+def load_nasdaq_bars(path: str | Path) -> tuple[pd.DataFrame, dict[str, Any]]:
+    bars, audit = load_nasdaq_source(path)
+    return bars[["open", "high", "low", "close", "volume"]].copy(), audit
 
 
 @dataclass(frozen=True)
@@ -958,6 +984,7 @@ def build_identify_confirm_trade_backtest(
     *,
     data_path: str | Path = DEFAULT_DATA,
     execution_path: str | Path = DEFAULT_EXECUTION,
+    schedule_path: str | Path = DEFAULT_SCHEDULE,
     output_dir: str | Path = DEFAULT_OUTPUT,
     config: IdentifyConfirmTradeConfig | None = None,
 ) -> dict[str, Any]:
@@ -971,8 +998,8 @@ def build_identify_confirm_trade_backtest(
     output.mkdir(parents=True, exist_ok=True)
     strategy = config or IdentifyConfirmTradeConfig()
     execution = load_execution_costs(resolved(execution_path))
-    bars, data_audit = load_nasdaq_bars(resolved(data_path), 1)
-    schedule = build_ny_schedule(bars.index.min(), bars.index.max())
+    bars, data_audit = load_nasdaq_bars(resolved(data_path))
+    schedule = load_schedule(resolved(schedule_path))
     featured = add_intraday_features(bars, schedule, strategy)
     levels = build_identify_levels(bars, featured, schedule, strategy)
     candidates = build_candidates(featured, schedule, levels, strategy)
@@ -984,6 +1011,7 @@ def build_identify_confirm_trade_backtest(
         "calendar": CALENDAR_NAME,
         "data_file": str(resolved(data_path)),
         "execution_file": str(resolved(execution_path)),
+        "schedule_file": str(resolved(schedule_path)),
         "data_quality": data_audit,
         "config": asdict(strategy),
         "blocked_signals": blocked,
@@ -1019,12 +1047,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--project-root")
     parser.add_argument("--data-path", default=str(DEFAULT_DATA))
     parser.add_argument("--execution-path", default=str(DEFAULT_EXECUTION))
+    parser.add_argument("--schedule-path", default=str(DEFAULT_SCHEDULE))
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT))
     args = parser.parse_args(argv)
     result = build_identify_confirm_trade_backtest(
         project_root=args.project_root,
         data_path=args.data_path,
         execution_path=args.execution_path,
+        schedule_path=args.schedule_path,
         output_dir=args.output_dir,
     )
     print(f"Report: {result['report_path']}")
