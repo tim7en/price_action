@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": {
+    "five_minute_signal_ledger": true,
+    "entry_follows_signal_bar": true,
+    "chronological_non_overlapping_executed_trades": true,
+    "both_long_and_short_present": true,
+    "leverage_never_above_20x": true,
+    "deployed_stop_risk_never_above_2pct": true
+  }
+}

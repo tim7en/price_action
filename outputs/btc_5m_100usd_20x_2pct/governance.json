@@ -1,0 +1,20 @@
+{
+  "generated_at_utc": "2026-07-22T09:12:18.441293+00:00",
+  "status": "REJECT_AT_6_BPS_PER_SIDE",
+  "starting_equity": 100.0,
+  "risk_fraction": 0.02,
+  "maximum_leverage": 20.0,
+  "one_way_cost_bps": 6.0,
+  "source": "D:\\dev\\price_action\\outputs\\btc_deepcharts_cost_lock_backtest\\trades_cost_aware_profit_lock.csv",
+  "audit": {
+    "status": "PASS",
+    "checks": {
+      "five_minute_signal_ledger": true,
+      "entry_follows_signal_bar": true,
+      "chronological_non_overlapping_executed_trades": true,
+      "both_long_and_short_present": true,
+      "leverage_never_above_20x": true,
+      "deployed_stop_risk_never_above_2pct": true
+    }
+  }
+}
