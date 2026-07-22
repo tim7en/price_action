@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checks": {
+    "entries_fill_on_next_five_minute_open": true,
+    "regular_cost_lock_exits_preserve_requested_net_buffer": true,
+    "lock_floor_is_beyond_entry_in_trade_direction": true,
+    "activation_is_one_trailing_offset_beyond_lock_floor": true,
+    "gap_exits_are_not_assumed_to_fill_at_stop": true
+  },
+  "cost_model": {
+    "one_way_cost_bps": 6.0,
+    "round_trip_cost_bps": 12.0,
+    "locked_net_profit_bps": 2.0
+  }
+}

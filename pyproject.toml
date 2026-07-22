@@ -46,6 +46,7 @@ price-action-nasdaq-fabio-pine-v6-backtest = "price_action.nasdaq_fabio_pine_v6_
 price-action-btc-fabio-pine-v6-backtest = "price_action.btc_fabio_pine_v6_backtest:main"
 price-action-btc-fabio-donchian-backtest = "price_action.btc_fabio_donchian_backtest:main"
 price-action-btc-deepcharts-proxy-backtest = "price_action.btc_deepcharts_proxy_backtest:main"
+price-action-btc-deepcharts-cost-lock-backtest = "price_action.btc_deepcharts_cost_lock_backtest:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]
