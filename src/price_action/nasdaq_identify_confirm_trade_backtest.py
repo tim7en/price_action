@@ -77,7 +77,7 @@ def load_nasdaq_bars(path: str | Path) -> tuple[pd.DataFrame, dict[str, Any]]:
 
 @dataclass(frozen=True)
 class IdentifyConfirmTradeConfig:
-    execution_window_minutes: int = 60
+    execution_window_minutes: int = 390
     higher_timeframes: tuple[int, ...] = (240, 60, 30, 5)
     max_pivots_per_side: int = 3
     atr_bars: int = 14
@@ -1075,6 +1075,90 @@ def a_plus_qualification_summary(candidates: pd.DataFrame) -> pd.DataFrame:
     ])
 
 
+def session_time_block_summary(
+    candidates: pd.DataFrame,
+    trades: pd.DataFrame,
+    a_plus_candidates: pd.DataFrame,
+    a_plus_trades: pd.DataFrame,
+) -> pd.DataFrame:
+    boundaries = [-1, 60, 120, 180, 240, 300, 390]
+    labels = ["open_0_59", "60_119", "120_179", "180_239", "240_299", "close_300_389"]
+
+    def add_block(frame: pd.DataFrame, time_column: str) -> pd.DataFrame:
+        out = frame.copy()
+        if out.empty:
+            out["session_block"] = pd.Series(dtype=object)
+            return out
+        timestamps = pd.to_datetime(out[time_column], utc=True)
+        session_opens = pd.to_datetime(out["session_open"], utc=True)
+        minute = (timestamps - session_opens) / pd.Timedelta(minutes=1)
+        out["session_block"] = pd.cut(minute, boundaries, labels=labels, right=False)
+        return out
+
+    base_candidates = add_block(candidates, "timestamp")
+    strict_candidates = add_block(a_plus_candidates, "timestamp")
+    candidate_context = candidates[["timestamp", "session_open"]].drop_duplicates("timestamp")
+
+    def attach_trade_block(frame: pd.DataFrame) -> pd.DataFrame:
+        if frame.empty:
+            out = frame.copy()
+            out["session_block"] = pd.Series(dtype=object)
+            return out
+        out = frame.merge(
+            candidate_context,
+            left_on="signal_time",
+            right_on="timestamp",
+            how="left",
+        )
+        return add_block(out, "signal_time")
+
+    base_trades = attach_trade_block(trades)
+    strict_trades = attach_trade_block(a_plus_trades)
+    rows: list[dict[str, Any]] = []
+    for label in labels:
+        candidate_group = base_candidates.loc[base_candidates["session_block"].eq(label)]
+        trade_group = base_trades.loc[base_trades["session_block"].eq(label)]
+        strict_candidate_group = strict_candidates.loc[strict_candidates["session_block"].eq(label)]
+        strict_trade_group = strict_trades.loc[strict_trades["session_block"].eq(label)]
+        rows.append({
+            "session_block": label,
+            "candidate_signals": int(len(candidate_group)),
+            "executed_trades": int(len(trade_group)),
+            "baseline_win_rate": float(trade_group["net_return"].gt(0.0).mean()) if not trade_group.empty else np.nan,
+            "baseline_average_net_r": float(trade_group["net_r_multiple"].mean()) if not trade_group.empty else np.nan,
+            "baseline_cumulative_return": float((1.0 + trade_group["net_return"]).prod() - 1.0) if not trade_group.empty else np.nan,
+            "a_plus_candidates": int(len(strict_candidate_group)),
+            "a_plus_executed_trades": int(len(strict_trade_group)),
+            "a_plus_win_rate": float(strict_trade_group["net_return"].gt(0.0).mean()) if not strict_trade_group.empty else np.nan,
+            "a_plus_average_net_r": float(strict_trade_group["net_r_multiple"].mean()) if not strict_trade_group.empty else np.nan,
+            "a_plus_cumulative_return": float((1.0 + strict_trade_group["net_return"]).prod() - 1.0) if not strict_trade_group.empty else np.nan,
+        })
+    return pd.DataFrame(rows)
+
+
+def a_plus_outlier_robustness(trades: pd.DataFrame) -> pd.DataFrame:
+    if trades.empty:
+        return pd.DataFrame()
+    best_index = trades["net_r_multiple"].astype(float).idxmax()
+    best = trades.loc[best_index]
+    rows: list[dict[str, Any]] = []
+    for scope, frame in (
+        ("all_A_plus", trades),
+        ("excluding_best_trade", trades.drop(index=best_index)),
+    ):
+        rows.append({
+            "scope": scope,
+            "trades": int(len(frame)),
+            "win_rate": float(frame["net_return"].gt(0.0).mean()) if not frame.empty else np.nan,
+            "average_net_r": float(frame["net_r_multiple"].mean()) if not frame.empty else np.nan,
+            "median_net_r": float(frame["net_r_multiple"].median()) if not frame.empty else np.nan,
+            "cumulative_net_return": float((1.0 + frame["net_return"]).prod() - 1.0) if not frame.empty else np.nan,
+            "excluded_trade": "" if scope == "all_A_plus" else str(best["signal_time"]),
+            "excluded_trade_net_r": np.nan if scope == "all_A_plus" else float(best["net_r_multiple"]),
+        })
+    return pd.DataFrame(rows)
+
+
 def audit_causality(
     levels: pd.DataFrame,
     candidates: pd.DataFrame,
@@ -1236,6 +1320,9 @@ def build_report(
     a_plus_candidates: pd.DataFrame,
     a_plus_trades: pd.DataFrame,
     a_plus_qualification: pd.DataFrame,
+    a_plus_performance_comparison: pd.DataFrame,
+    time_block_summary: pd.DataFrame,
+    a_plus_robustness: pd.DataFrame,
     blocked: dict[str, int],
     a_plus_blocked: dict[str, int],
     causality: dict[str, Any],
@@ -1287,7 +1374,7 @@ def build_report(
         a_plus_examples["execution_status"] = np.where(
             a_plus_examples["exit_reason"].notna(),
             "executed",
-            "unexecutable_at_window_end",
+            "not_executed_by_portfolio_limits",
         )
     causality_frame = pd.DataFrame([
         {"check": name, "passed": passed}
@@ -1303,12 +1390,15 @@ Generated {governance['generated_at_utc']}. This is a causal one-minute proxy fo
 - Bookmap liquidity levels, true absorption, and discretionary trend-line selection are unavailable.
 - The proxy uses completed 4h, 1h, 30m, and 5m pivots plus prior-session profile levels as the identify layer.
 - Confirmation is reduced to one-minute approach direction, weak approach volume, rejection wick, and reversal volume.
+- Signals are searched throughout the full {governance['config']['execution_window_minutes']}-minute regular session; every position remains flat by the session close.
 - Trade management uses next-open entries, structural stops, a half-off first target, and a trailing runner.
 - The strict A+ proxy additionally requires a strong premarket level, a sweep/reclaim, at least two defended one-minute touches, a directional approach efficiency of at least {governance['config']['a_plus_minimum_approach_efficiency']:.2f}, and structural signal-close risk no wider than {governance['config']['a_plus_maximum_structural_risk_atr']:.2f} ATR.
+- Risk remains at {governance['config']['risk_fraction']:.2%} of current equity per trade, so position size automatically falls after a loss. The transcript's illustrative 10% risk was not adopted.
 
 ## Overview
 
-Candidate bars evaluated: **{len(candidates)}**  
+Candidate bars evaluated: **{len(candidates)}**
+
 Executed trades: **{len(trades)}**
 
 {_markdown_table(headline)}
@@ -1325,6 +1415,14 @@ Executed strict A+ trades: **{len(a_plus_trades)}**
 
 {_markdown_table(a_plus_headline)}
 
+A+ versus rejected baseline trades:
+
+{_markdown_table(a_plus_performance_comparison)}
+
+## Full-session timing
+
+{_markdown_table(time_block_summary)}
+
 Identified A+ candidates and realized outcomes:
 
 {_markdown_table(a_plus_examples)}
@@ -1332,6 +1430,10 @@ Identified A+ candidates and realized outcomes:
 Strict A+ session bootstrap:
 
 {_markdown_table(a_plus_bootstrap)}
+
+A+ sensitivity to its single best trade:
+
+{_markdown_table(a_plus_robustness)}
 
 With only {len(a_plus_trades)} executed A+ trades, the A+ return, win rate, bootstrap interval, and positive-mean probability are descriptive only. They are not enough to estimate a stable edge.
 
@@ -1423,6 +1525,27 @@ def build_identify_confirm_trade_backtest(
     a_plus_summary = trade_summary(a_plus_trades)
     a_plus_bootstrap = session_bootstrap(a_plus_trades)
     a_plus_qualification = a_plus_qualification_summary(candidates)
+    non_a_plus_trades = trades.loc[~trades["a_plus_setup"].astype(bool)].copy()
+    comparison_columns = [
+        "scope",
+        "trades",
+        "win_rate",
+        "average_net_r",
+        "break_even_one_way_cost_bps",
+        "cumulative_net_return",
+        "max_drawdown",
+    ]
+    a_plus_performance_comparison = pd.DataFrame([
+        _scope_metrics(a_plus_trades, "strict_A_plus"),
+        _scope_metrics(non_a_plus_trades, "rejected_non_A_plus"),
+    ]).reindex(columns=comparison_columns)
+    time_block_summary = session_time_block_summary(
+        candidates,
+        trades,
+        a_plus_candidates,
+        a_plus_trades,
+    )
+    a_plus_robustness = a_plus_outlier_robustness(a_plus_trades)
     causality = audit_causality(levels, candidates, trades, featured, schedule, strategy)
     plot_paths = create_plots(trades, output)
     comparison_plot = create_a_plus_comparison_plot(trades, a_plus_trades, output)
@@ -1461,6 +1584,12 @@ def build_identify_confirm_trade_backtest(
     a_plus_summary.to_csv(output / "a_plus_summary.csv", index=False)
     a_plus_bootstrap.to_csv(output / "a_plus_bootstrap.csv", index=False)
     a_plus_qualification.to_csv(output / "a_plus_qualification.csv", index=False)
+    a_plus_performance_comparison.to_csv(
+        output / "a_plus_performance_comparison.csv",
+        index=False,
+    )
+    time_block_summary.to_csv(output / "session_time_blocks.csv", index=False)
+    a_plus_robustness.to_csv(output / "a_plus_robustness.csv", index=False)
     (output / "causality_audit.json").write_text(
         json.dumps(causality, indent=2), encoding="utf-8"
     )
@@ -1475,6 +1604,9 @@ def build_identify_confirm_trade_backtest(
         a_plus_candidates,
         a_plus_trades,
         a_plus_qualification,
+        a_plus_performance_comparison,
+        time_block_summary,
+        a_plus_robustness,
         blocked,
         a_plus_blocked,
         causality,
@@ -1494,6 +1626,9 @@ def build_identify_confirm_trade_backtest(
         "a_plus_summary": a_plus_summary,
         "a_plus_bootstrap": a_plus_bootstrap,
         "a_plus_qualification": a_plus_qualification,
+        "a_plus_performance_comparison": a_plus_performance_comparison,
+        "session_time_blocks": time_block_summary,
+        "a_plus_robustness": a_plus_robustness,
         "causality": causality,
         "governance": governance,
         "report_path": report_path,

@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-22T18:00:43.028518+00:00",
+  "generated_at_utc": "2026-07-22T18:13:07.878037+00:00",
   "strategy": "identify_confirm_trade_transcript_proxy",
   "calendar": "XNYS",
   "data_file": "/Users/timursabitov/Dev/price_action/cache/Nasdaq.csv",
@@ -16,7 +16,7 @@
     "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
   },
   "config": {
-    "execution_window_minutes": 60,
+    "execution_window_minutes": 390,
     "higher_timeframes": [
       240,
       60,
@@ -55,21 +55,21 @@
     "a_plus_maximum_structural_risk_atr": 1.5
   },
   "blocked_signals": {
-    "overlap": 0,
+    "overlap": 3,
     "daily_loss_stop": 0,
-    "session_trade_limit": 0,
-    "unexecutable": 1
+    "session_trade_limit": 27,
+    "unexecutable": 0
   },
   "a_plus_blocked_signals": {
     "overlap": 0,
     "daily_loss_stop": 0,
-    "session_trade_limit": 0,
-    "unexecutable": 1
+    "session_trade_limit": 3,
+    "unexecutable": 0
   },
-  "raw_candidates": 15,
-  "executed_trades": 14,
-  "a_plus_candidates": 3,
-  "a_plus_executed_trades": 2,
+  "raw_candidates": 138,
+  "executed_trades": 108,
+  "a_plus_candidates": 17,
+  "a_plus_executed_trades": 14,
   "causality_audit_status": "PASS",
   "plot_files": [
     "equity_and_drawdown.png",

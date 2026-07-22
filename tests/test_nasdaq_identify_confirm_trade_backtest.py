@@ -17,6 +17,9 @@ from price_action.nasdaq_identify_confirm_trade_backtest import (
 
 
 class NasdaqIdentifyConfirmTradeTests(unittest.TestCase):
+    def test_default_searches_full_regular_session(self) -> None:
+        self.assertEqual(IdentifyConfirmTradeConfig().execution_window_minutes, 390)
+
     def test_higher_timeframe_bar_is_labelled_at_completion(self) -> None:
         index = pd.date_range("2025-01-02 14:00", periods=60, freq="min", tz="UTC")
         bars = pd.DataFrame(
