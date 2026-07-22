@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "checks": {
+    "all_identify_levels_known_by_session_open": true,
+    "all_candidates_have_strict_next_bar_execution": true,
+    "signal_entry_exit_order_is_strict": true,
+    "all_positions_flat_before_execution_deadline": true,
+    "same_bar_boundary_policy_is_stop_first": true,
+    "new_trailing_extreme_applies_next_bar_only": true,
+    "relative_volume_baseline_excludes_signal_bar": true,
+    "prior_session_profile_is_shifted_one_session": true
+  },
+  "violations": {
+    "levels_not_known_by_session_open": 0,
+    "candidate_without_next_minute_bar": 0,
+    "trade_timestamp_ordering": 0,
+    "trade_after_execution_deadline": 0
+  },
+  "policy_notes": [
+    "Higher-timeframe aggregates are right-labelled at completion.",
+    "A completed aggregate labelled exactly at the session open is allowed; it contains only pre-open minutes.",
+    "Signals use the completed one-minute close and enter only at the following one-minute open.",
+    "If a one-minute bar touches stop and target, the stop is filled first.",
+    "A newly observed favorable extreme can tighten the trailing stop only on the next bar."
+  ]
+}

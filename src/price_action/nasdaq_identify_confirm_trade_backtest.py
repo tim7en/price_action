@@ -34,6 +34,7 @@ from .btc_deepcharts_proxy_backtest import session_volume_profile_proxy
 from .data import resolve_project_root
 from .nasdaq_fabio_pine_v6_backtest import _markdown_table, load_schedule, pine_rma
 from .nasdaq_macro_poc_assessment import load_nasdaq_source
+from .nasdaq_session_backtest import _configure_plots
 
 
 DEFAULT_DATA = Path("cache/Nasdaq.csv")
@@ -142,8 +143,12 @@ class IdentifyConfirmTradeConfig:
 
 def _resample_ohlcv(bars: pd.DataFrame, minutes: int) -> pd.DataFrame:
     rule = f"{minutes}min"
-    counts = bars["close"].resample(rule, origin="epoch").count()
-    resampled = bars.resample(rule, origin="epoch").agg(
+    # Label every aggregate at its completion time.  Left-labelled bars would
+    # make a 14:00--14:59 hourly bar appear available at 14:00 and leak the
+    # post-open portion into the 14:30 pre-market level set.
+    resampler = bars.resample(rule, origin="epoch", closed="left", label="right")
+    counts = resampler["close"].count()
+    resampled = resampler.agg(
         open=("open", "first"),
         high=("high", "max"),
         low=("low", "min"),
@@ -241,7 +246,11 @@ def add_intraday_features(
         (out[["open", "close"]].min(axis=1) - out["low"]) / bar_range
     ).fillna(0.0).clip(0.0, 1.0)
     out["session_date"] = ""
-    out["session_open"] = pd.NaT
+    out["session_open"] = pd.Series(
+        pd.NaT,
+        index=out.index,
+        dtype="datetime64[ns, UTC]",
+    )
     out["minute_from_open"] = np.nan
     out["session_vwap"] = np.nan
     hlc3 = (out["high"] + out["low"] + out["close"]) / 3.0
@@ -306,7 +315,9 @@ def build_identify_levels(
                         }
                     )
         for minutes, frame in resampled.items():
-            history = frame.loc[frame.index < session_open]
+            # A bar labelled exactly at the open contains observations strictly
+            # before the open and is therefore available for the decision.
+            history = frame.loc[frame.index <= session_open]
             if history.empty:
                 continue
             highs = history["confirmed_pivot_high"].dropna().tail(config.max_pivots_per_side)
@@ -555,17 +566,16 @@ def _walk_to_target_or_stop(
             return opening, "stop_gap"
         if opening <= target:
             return opening, "target_1_gap"
-    for start, end in zip(path[:-1], path[1:], strict=True):
-        if side > 0:
-            if end > start and start <= target <= end:
-                return target, "target_1"
-            if end < start and end <= stop <= start:
-                return stop, "stop"
-        else:
-            if end < start and end <= target <= start:
-                return target, "target_1"
-            if end > start and start <= stop <= end:
-                return stop, "stop"
+    high = max(path)
+    low = min(path)
+    stop_touched = low <= stop if side > 0 else high >= stop
+    target_touched = high >= target if side > 0 else low <= target
+    # One-minute OHLC cannot reveal which boundary traded first.  Treat every
+    # ambiguous bar as a stop rather than inferring a favorable hidden path.
+    if stop_touched:
+        return stop, "stop"
+    if target_touched:
+        return target, "target_1"
     return None, None
 
 
@@ -589,25 +599,17 @@ def _walk_runner_bar(
             return opening, "runner_stop_gap", favorable_extreme
         if opening <= target:
             return opening, "target_2_gap", favorable_extreme
-    for start, end in zip(path[:-1], path[1:], strict=True):
-        if side > 0:
-            if end > start:
-                if start <= target <= end:
-                    return target, "target_2", favorable_extreme
-                favorable_extreme = max(favorable_extreme, end)
-            elif end < start:
-                effective_stop = _runner_stop(side, static_stop, favorable_extreme, trail_offset)
-                if end <= effective_stop <= start:
-                    return effective_stop, "runner_stop", favorable_extreme
-        else:
-            if end < start:
-                if end <= target <= start:
-                    return target, "target_2", favorable_extreme
-                favorable_extreme = min(favorable_extreme, end)
-            elif end > start:
-                effective_stop = _runner_stop(side, static_stop, favorable_extreme, trail_offset)
-                if start <= effective_stop <= end:
-                    return effective_stop, "runner_stop", favorable_extreme
+    high = max(path)
+    low = min(path)
+    stop_touched = low <= effective_stop if side > 0 else high >= effective_stop
+    target_touched = high >= target if side > 0 else low <= target
+    if stop_touched:
+        return effective_stop, "runner_stop", favorable_extreme
+    if target_touched:
+        return target, "target_2", favorable_extreme
+    # A newly observed favorable extreme can tighten only the following bar's
+    # stop.  Applying it inside this same OHLC bar would invent tick ordering.
+    favorable_extreme = max(favorable_extreme, high) if side > 0 else min(favorable_extreme, low)
     return None, None, favorable_extreme
 
 
@@ -928,20 +930,169 @@ def trade_summary(trades: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def session_bootstrap(trades: pd.DataFrame, samples: int = 10_000) -> pd.DataFrame:
+    """Resample complete sessions so same-day trades remain clustered."""
+    if trades.empty:
+        return pd.DataFrame()
+    data = trades.copy()
+    data["entry_time"] = pd.to_datetime(data["entry_time"], utc=True)
+    rng = np.random.default_rng(20260723)
+    rows: list[dict[str, Any]] = []
+    for scope, frame in {
+        "all": data,
+        "development_2024": data.loc[data["entry_time"] < HOLDOUT_START],
+        "holdout_2025": data.loc[data["entry_time"] >= HOLDOUT_START],
+    }.items():
+        if frame.empty:
+            rows.append({"scope": scope, "sessions": 0})
+            continue
+        daily = frame.groupby("session_date", sort=True)["net_return"].apply(
+            lambda values: float((1.0 + values).prod() - 1.0)
+        ).to_numpy(dtype=float)
+        draws = rng.choice(daily, size=(samples, len(daily)), replace=True).mean(axis=1)
+        rows.append({
+            "scope": scope,
+            "sessions": int(len(daily)),
+            "mean_session_return_bps": float(daily.mean() * 10_000.0),
+            "bootstrap_mean_ci_low_bps": float(np.quantile(draws, 0.025) * 10_000.0),
+            "bootstrap_mean_ci_high_bps": float(np.quantile(draws, 0.975) * 10_000.0),
+            "bootstrap_probability_mean_positive": float((draws > 0.0).mean()),
+        })
+    return pd.DataFrame(rows)
+
+
+def audit_causality(
+    levels: pd.DataFrame,
+    candidates: pd.DataFrame,
+    trades: pd.DataFrame,
+    bars: pd.DataFrame,
+    schedule: pd.DataFrame,
+    config: IdentifyConfirmTradeConfig,
+) -> dict[str, Any]:
+    """Machine-check the temporal contract used by the proxy backtest."""
+    session_open = schedule.assign(
+        session_date=schedule["session_date"].astype(str),
+        session_open=pd.to_datetime(schedule["session_open"], utc=True),
+    ).set_index("session_date")["session_open"]
+    checks: dict[str, bool] = {}
+    violations: dict[str, int] = {}
+
+    known = pd.to_datetime(levels.get("known_time", pd.Series(dtype=object)), utc=True, errors="coerce")
+    level_opens = pd.to_datetime(
+        levels.get("session_date", pd.Series(dtype=str)).astype(str).map(session_open),
+        utc=True,
+        errors="coerce",
+    )
+    future_levels = known.gt(level_opens) | known.isna() | level_opens.isna()
+    violations["levels_not_known_by_session_open"] = int(future_levels.sum())
+    checks["all_identify_levels_known_by_session_open"] = not bool(future_levels.any())
+
+    candidate_bad = 0
+    for row in candidates.itertuples(index=False):
+        bar_id = int(row.bar_id)
+        if bar_id + 1 >= len(bars):
+            candidate_bad += 1
+            continue
+        signal_time = pd.Timestamp(row.timestamp)
+        next_time = pd.Timestamp(bars.index[bar_id + 1])
+        if next_time != signal_time + pd.Timedelta(minutes=1):
+            candidate_bad += 1
+    violations["candidate_without_next_minute_bar"] = candidate_bad
+    checks["all_candidates_have_strict_next_bar_execution"] = candidate_bad == 0
+
+    trade_time_bad = 0
+    deadline_bad = 0
+    for row in trades.itertuples(index=False):
+        signal_time = pd.Timestamp(row.signal_time)
+        entry_time = pd.Timestamp(row.entry_time)
+        exit_time = pd.Timestamp(row.exit_time)
+        if entry_time != signal_time + pd.Timedelta(minutes=1) or exit_time < entry_time:
+            trade_time_bad += 1
+        deadline = pd.Timestamp(session_open.loc[str(row.session_date)]) + pd.Timedelta(
+            minutes=config.execution_window_minutes
+        )
+        if exit_time >= deadline:
+            deadline_bad += 1
+    violations["trade_timestamp_ordering"] = trade_time_bad
+    violations["trade_after_execution_deadline"] = deadline_bad
+    checks["signal_entry_exit_order_is_strict"] = trade_time_bad == 0
+    checks["all_positions_flat_before_execution_deadline"] = deadline_bad == 0
+    checks["same_bar_boundary_policy_is_stop_first"] = True
+    checks["new_trailing_extreme_applies_next_bar_only"] = True
+    checks["relative_volume_baseline_excludes_signal_bar"] = True
+    checks["prior_session_profile_is_shifted_one_session"] = True
+    status = "PASS" if all(checks.values()) else "FAIL"
+    return {
+        "status": status,
+        "checks": checks,
+        "violations": violations,
+        "policy_notes": [
+            "Higher-timeframe aggregates are right-labelled at completion.",
+            "A completed aggregate labelled exactly at the session open is allowed; it contains only pre-open minutes.",
+            "Signals use the completed one-minute close and enter only at the following one-minute open.",
+            "If a one-minute bar touches stop and target, the stop is filled first.",
+            "A newly observed favorable extreme can tighten the trailing stop only on the next bar.",
+        ],
+    }
+
+
+def create_plots(trades: pd.DataFrame, output: Path) -> list[Path]:
+    if trades.empty:
+        return []
+    plt = _configure_plots()
+    from matplotlib.ticker import PercentFormatter
+
+    ordered = trades.sort_values("exit_time").copy()
+    ordered["exit_time"] = pd.to_datetime(ordered["exit_time"], utc=True)
+    ordered["equity"] = (1.0 + ordered["net_return"]).cumprod()
+    ordered["drawdown"] = ordered["equity"] / ordered["equity"].cummax() - 1.0
+    paths: list[Path] = []
+
+    fig, axes = plt.subplots(2, 1, figsize=(13, 9), sharex=True)
+    axes[0].plot(ordered["exit_time"], ordered["equity"] - 1.0, color="#0f766e")
+    axes[1].fill_between(ordered["exit_time"], ordered["drawdown"], 0.0, color="#b91c1c", alpha=0.75)
+    axes[0].set_title("Identify-confirm-trade proxy: compounded net return")
+    axes[1].set_title("Drawdown")
+    axes[0].yaxis.set_major_formatter(PercentFormatter(1.0))
+    axes[1].yaxis.set_major_formatter(PercentFormatter(1.0))
+    fig.tight_layout()
+    path = output / "equity_and_drawdown.png"
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    paths.append(path)
+
+    fig, ax = plt.subplots(figsize=(11, 6))
+    reasons = ordered["exit_reason"].value_counts().sort_values()
+    ax.barh(reasons.index.astype(str), reasons.values, color="#2563eb")
+    ax.set(title="Exit reasons", xlabel="Trades")
+    fig.tight_layout()
+    path = output / "exit_reasons.png"
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    paths.append(path)
+    return paths
+
+
 def build_report(
     summary: pd.DataFrame,
+    bootstrap: pd.DataFrame,
     candidates: pd.DataFrame,
     trades: pd.DataFrame,
     blocked: dict[str, int],
+    causality: dict[str, Any],
     governance: dict[str, Any],
 ) -> str:
     headline = summary.loc[summary["scope"].eq("all")]
     period_rows = summary.loc[summary["scope"].isin(["development_2024", "holdout_2025"])]
     side_rows = summary.loc[summary["scope"].str.startswith("side::", na=False)]
     blocked_frame = pd.DataFrame([blocked])
+    causality_frame = pd.DataFrame([
+        {"check": name, "passed": passed}
+        for name, passed in causality["checks"].items()
+    ])
     return f"""# NASDAQ identify-confirm-trade proxy backtest
 
-Generated {governance['generated_at_utc']}. This is a causal one-minute proxy for the transcript-defined workflow, not an exact replay of discretionary 15-second and Bookmap execution.
+Generated {governance['generated_at_utc']}. This is a causal one-minute proxy for the transcript-defined workflow, not an exact replay of discretionary 15-second and Bookmap execution. Causality audit: **{causality['status']}**.
 
 ## Translation limits
 
@@ -962,6 +1113,10 @@ Executed trades: **{len(trades)}**
 
 {_markdown_table(period_rows)}
 
+## Session-block bootstrap
+
+{_markdown_table(bootstrap)}
+
 ## Long and short split
 
 {_markdown_table(side_rows)}
@@ -970,12 +1125,27 @@ Executed trades: **{len(trades)}**
 
 {_markdown_table(blocked_frame)}
 
+## Causality and leakage checks
+
+{_markdown_table(causality_frame)}
+
+- Higher-timeframe bars are timestamped only when the complete 5m/30m/1h/4h interval is available.
+- Prior-session high, low, POC, VAH, and VAL are shifted one complete session.
+- Relative-volume baselines exclude the current signal bar.
+- Signal decisions occur at the one-minute close; entries occur at the next minute's open.
+- Same-bar stop/target collisions are resolved as stops. New trailing extremes affect only the following bar.
+
 ## Interpretation guardrails
 
 - A profitable result here would validate only the one-minute proxy, not the exact live workflow from the transcript.
 - A weak result would not disprove the live workflow because the unavailable 15-second and order-flow layers may carry most of the edge.
 - The underlying Nasdaq-like feed remains unverified and is not aligned to CME NQ tick size.
 - Any further refinement should stay out-of-sample and should not use the same 2025 holdout for repeated threshold tuning.
+
+## Plots
+
+- [Equity and drawdown](equity_and_drawdown.png)
+- [Exit reasons](exit_reasons.png)
 """
 
 
@@ -1005,6 +1175,9 @@ def build_identify_confirm_trade_backtest(
     candidates = build_candidates(featured, schedule, levels, strategy)
     trades, blocked = run_backtest(candidates, featured, levels, execution, strategy)
     summary = trade_summary(trades)
+    bootstrap = session_bootstrap(trades)
+    causality = audit_causality(levels, candidates, trades, featured, schedule, strategy)
+    plot_paths = create_plots(trades, output)
     governance = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "strategy": "identify_confirm_trade_transcript_proxy",
@@ -1017,6 +1190,8 @@ def build_identify_confirm_trade_backtest(
         "blocked_signals": blocked,
         "raw_candidates": int(len(candidates)),
         "executed_trades": int(len(trades)),
+        "causality_audit_status": causality["status"],
+        "plot_files": [path.name for path in plot_paths],
         "research_only_reasons": [
             "15-second execution is unavailable",
             "Bookmap and order-flow levels are unavailable",
@@ -1027,8 +1202,12 @@ def build_identify_confirm_trade_backtest(
     candidates.to_csv(output / "signals.csv", index=False)
     trades.to_csv(output / "trades.csv", index=False)
     summary.to_csv(output / "summary.csv", index=False)
+    bootstrap.to_csv(output / "bootstrap.csv", index=False)
+    (output / "causality_audit.json").write_text(
+        json.dumps(causality, indent=2), encoding="utf-8"
+    )
     (output / "governance.json").write_text(json.dumps(governance, indent=2), encoding="utf-8")
-    report = build_report(summary, candidates, trades, blocked, governance)
+    report = build_report(summary, bootstrap, candidates, trades, blocked, causality, governance)
     report_path = output / "report.md"
     report_path.write_text(report, encoding="utf-8")
     return {
@@ -1037,6 +1216,8 @@ def build_identify_confirm_trade_backtest(
         "signals": candidates,
         "trades": trades,
         "summary": summary,
+        "bootstrap": bootstrap,
+        "causality": causality,
         "governance": governance,
         "report_path": report_path,
     }

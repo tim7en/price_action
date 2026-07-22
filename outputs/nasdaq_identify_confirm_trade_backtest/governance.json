@@ -1,0 +1,71 @@
+{
+  "generated_at_utc": "2026-07-22T17:52:20.065264+00:00",
+  "strategy": "identify_confirm_trade_transcript_proxy",
+  "calendar": "XNYS",
+  "data_file": "/Users/timursabitov/Dev/price_action/cache/Nasdaq.csv",
+  "execution_file": "/Users/timursabitov/Dev/price_action/config/nasdaq_session_execution.json",
+  "schedule_file": "/Users/timursabitov/Dev/price_action/outputs/nasdaq_session_backtest/session_schedule.csv",
+  "data_quality": {
+    "input_rows": 681646,
+    "first_input_bar_utc": "2024-01-02T05:02:00+00:00",
+    "last_input_bar_utc": "2025-12-05T21:44:00+00:00",
+    "duplicate_timestamps": 0,
+    "close_not_on_nq_quarter_tick_rows": 641336,
+    "close_not_on_nq_quarter_tick_share": 0.9408637327879867,
+    "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
+    "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
+  },
+  "config": {
+    "execution_window_minutes": 60,
+    "higher_timeframes": [
+      240,
+      60,
+      30,
+      5
+    ],
+    "max_pivots_per_side": 3,
+    "atr_bars": 14,
+    "relative_volume_bars": 50,
+    "approach_bars": 3,
+    "level_touch_tolerance_atr": 0.2,
+    "minimum_level_count": 2,
+    "maximum_approach_volume_strength": 1.05,
+    "minimum_reversal_volume_strength": 0.9,
+    "minimum_reversal_vs_approach_ratio": 1.1,
+    "minimum_rejection_wick_share": 0.3,
+    "maximum_short_close_location": 0.4,
+    "minimum_long_close_location": 0.6,
+    "vwap_slack_atr": 0.1,
+    "stop_buffer_atr": 0.1,
+    "first_target_minimum_r": 0.75,
+    "first_target_fallback_r": 1.0,
+    "final_target_fallback_r": 2.0,
+    "locked_profit_r": 0.25,
+    "trail_offset_atr": 0.75,
+    "max_holding_minutes": 60,
+    "risk_fraction": 0.0025,
+    "max_notional_fraction": 10.0,
+    "max_daily_losses": 2,
+    "max_trades_per_session": 1,
+    "profile_bins": 24,
+    "profile_value_fraction": 0.7
+  },
+  "blocked_signals": {
+    "overlap": 0,
+    "daily_loss_stop": 0,
+    "session_trade_limit": 0,
+    "unexecutable": 1
+  },
+  "raw_candidates": 15,
+  "executed_trades": 14,
+  "causality_audit_status": "PASS",
+  "plot_files": [
+    "equity_and_drawdown.png",
+    "exit_reasons.png"
+  ],
+  "research_only_reasons": [
+    "15-second execution is unavailable",
+    "Bookmap and order-flow levels are unavailable",
+    "the source is one-minute OHLCV with unverified instrument identity"
+  ]
+}

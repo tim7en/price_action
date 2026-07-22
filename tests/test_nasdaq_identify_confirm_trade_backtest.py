@@ -7,12 +7,91 @@ import pandas as pd
 from price_action.nasdaq_identify_confirm_trade_backtest import (
     NasdaqExecutionCosts,
     IdentifyConfirmTradeConfig,
+    _resample_ohlcv,
+    _walk_to_target_or_stop,
+    audit_causality,
     build_session_candidates,
     simulate_trade,
 )
 
 
 class NasdaqIdentifyConfirmTradeTests(unittest.TestCase):
+    def test_higher_timeframe_bar_is_labelled_at_completion(self) -> None:
+        index = pd.date_range("2025-01-02 14:00", periods=60, freq="min", tz="UTC")
+        bars = pd.DataFrame(
+            {
+                "open": range(60),
+                "high": range(1, 61),
+                "low": range(60),
+                "close": range(1, 61),
+                "volume": 1.0,
+            },
+            index=index,
+        )
+
+        resampled = _resample_ohlcv(bars, 30)
+
+        self.assertEqual(resampled.index.tolist(), [
+            pd.Timestamp("2025-01-02 14:30", tz="UTC"),
+            pd.Timestamp("2025-01-02 15:00", tz="UTC"),
+        ])
+        self.assertEqual(float(resampled.iloc[0]["close"]), 30.0)
+
+    def test_completed_higher_timeframe_context_is_prefix_invariant(self) -> None:
+        index = pd.date_range("2025-01-02 13:00", periods=180, freq="min", tz="UTC")
+        bars = pd.DataFrame(
+            {
+                "open": range(180),
+                "high": range(1, 181),
+                "low": range(180),
+                "close": range(1, 181),
+                "volume": [100.0] * 180,
+            },
+            index=index,
+        )
+        decision_time = pd.Timestamp("2025-01-02 14:30", tz="UTC")
+        full_known = _resample_ohlcv(bars, 60).loc[:decision_time]
+        prefix_known = _resample_ohlcv(bars.loc[:decision_time], 60).loc[:decision_time]
+
+        pd.testing.assert_frame_equal(full_known, prefix_known)
+
+    def test_ambiguous_same_bar_boundary_is_a_stop(self) -> None:
+        price, reason = _walk_to_target_or_stop(
+            1,
+            [100.0, 106.0, 94.0, 102.0],
+            stop=95.0,
+            target=105.0,
+        )
+
+        self.assertEqual(price, 95.0)
+        self.assertEqual(reason, "stop")
+
+    def test_causality_audit_rejects_future_level(self) -> None:
+        schedule = pd.DataFrame({
+            "session_date": ["2025-01-02"],
+            "session_open": [pd.Timestamp("2025-01-02 14:30", tz="UTC")],
+            "session_close": [pd.Timestamp("2025-01-02 21:00", tz="UTC")],
+        })
+        levels = pd.DataFrame({
+            "session_date": ["2025-01-02"],
+            "known_time": [pd.Timestamp("2025-01-02 15:00", tz="UTC")],
+        })
+        bars = pd.DataFrame(index=pd.date_range(
+            "2025-01-02 14:30", periods=2, freq="min", tz="UTC"
+        ))
+
+        audit = audit_causality(
+            levels,
+            pd.DataFrame(),
+            pd.DataFrame(),
+            bars,
+            schedule,
+            IdentifyConfirmTradeConfig(),
+        )
+
+        self.assertEqual(audit["status"], "FAIL")
+        self.assertEqual(audit["violations"]["levels_not_known_by_session_open"], 1)
+
     def test_build_session_candidates_flags_short_rejection(self) -> None:
         index = pd.date_range("2025-01-02 14:30", periods=5, freq="min", tz="UTC")
         session_frame = pd.DataFrame(
