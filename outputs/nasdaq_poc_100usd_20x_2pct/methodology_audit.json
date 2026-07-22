@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "checks": {
+    "only_hierarchy_score_ge_minimum": true,
+    "chronological_non_overlapping_trades": true,
+    "risk_sized_leverage_never_above_cap": true,
+    "risk_sized_stop_risk_never_above_target": true,
+    "compounding_identity": true
+  }
+}

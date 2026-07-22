@@ -1,0 +1,61 @@
+{
+  "generated_at_utc": "2026-07-22T08:57:41.308193+00:00",
+  "status": "RESEARCH_ONLY_LIVE_DEPLOYMENT_BLOCKED",
+  "source_trades": "D:\\dev\\price_action\\outputs\\nasdaq_macro_poc_assessment\\annotated_trades.csv",
+  "source_bars": "D:\\dev\\price_action\\cache\\Nasdaq.csv",
+  "data_quality": {
+    "input_rows": 681646,
+    "first_input_bar_utc": "2024-01-02T05:02:00+00:00",
+    "last_input_bar_utc": "2025-12-05T21:44:00+00:00",
+    "duplicate_timestamps": 0,
+    "close_not_on_nq_quarter_tick_rows": 641336,
+    "close_not_on_nq_quarter_tick_share": 0.9408637327879867,
+    "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
+    "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
+  },
+  "hierarchy_spec": {
+    "status": "RESEARCH_ONLY_NOT_DEPLOYABLE",
+    "score_components": [
+      "macro_daily_gate",
+      "poc_location_gate",
+      "opening_break_gate",
+      "prior_extreme_gate",
+      "impulse_gate",
+      "volume_gate"
+    ],
+    "component_roles": {
+      "core": "POC migration and confirmed one-minute acceptance",
+      "directional_prior": "macro/daily alignment; golden cross is slower context",
+      "stable_location": "directional side of prior POC plus current session VWAP",
+      "trigger_confirmation": "opening-range break and directional impulse",
+      "bonus_only": "relative volume",
+      "map_not_required_gate": "previous-session high and low"
+    },
+    "risk_by_score": {
+      "0_to_2": 0.0,
+      "3": 0.001,
+      "4": 0.0015,
+      "5_to_6": 0.0025
+    },
+    "thresholds_fit_on": "2024 signal rows only",
+    "validation_period": "2025",
+    "reference_one_way_cost_bps": 0.5,
+    "thresholds": {
+      "directional_impulse_atr_median": 0.3306216677257144,
+      "volume_strength_median": 1.0025157232704403,
+      "opening_width_atr_median": 8.682841673099277
+    }
+  },
+  "audit": {
+    "status": "PASS",
+    "checks": {
+      "previous_session_context_available_before_signal": true,
+      "signal_bar_precedes_entry": true,
+      "development_thresholds_end_before_2025": true,
+      "candidate_ranking_uses_2024_only": true,
+      "opening_range_uses_schedule_0930_to_1000_new_york": true,
+      "hierarchy_risk_never_exceeds_0_25pct": true
+    }
+  },
+  "known_selection_limit": "The frozen POC ledger was originally selected with visibility into 2024 and 2025."
+}

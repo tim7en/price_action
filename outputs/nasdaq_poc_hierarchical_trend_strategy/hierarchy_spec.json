@@ -1,0 +1,33 @@
+{
+  "status": "RESEARCH_ONLY_NOT_DEPLOYABLE",
+  "score_components": [
+    "macro_daily_gate",
+    "poc_location_gate",
+    "opening_break_gate",
+    "prior_extreme_gate",
+    "impulse_gate",
+    "volume_gate"
+  ],
+  "component_roles": {
+    "core": "POC migration and confirmed one-minute acceptance",
+    "directional_prior": "macro/daily alignment; golden cross is slower context",
+    "stable_location": "directional side of prior POC plus current session VWAP",
+    "trigger_confirmation": "opening-range break and directional impulse",
+    "bonus_only": "relative volume",
+    "map_not_required_gate": "previous-session high and low"
+  },
+  "risk_by_score": {
+    "0_to_2": 0.0,
+    "3": 0.001,
+    "4": 0.0015,
+    "5_to_6": 0.0025
+  },
+  "thresholds_fit_on": "2024 signal rows only",
+  "validation_period": "2025",
+  "reference_one_way_cost_bps": 0.5,
+  "thresholds": {
+    "directional_impulse_atr_median": 0.3306216677257144,
+    "volume_strength_median": 1.0025157232704403,
+    "opening_width_atr_median": 8.682841673099277
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "generated_at_utc": "2026-07-22T09:04:37.280936+00:00",
+  "status": "SCENARIO_ONLY_NOT_LIVE_DEPLOYABLE",
+  "starting_equity": 100.0,
+  "risk_fraction": 0.02,
+  "maximum_leverage": 20.0,
+  "one_way_cost_bps": 0.5,
+  "minimum_hierarchy_score": 3,
+  "audit": {
+    "status": "PASS",
+    "checks": {
+      "only_hierarchy_score_ge_minimum": true,
+      "chronological_non_overlapping_trades": true,
+      "risk_sized_leverage_never_above_cap": true,
+      "risk_sized_stop_risk_never_above_target": true,
+      "compounding_identity": true
+    }
+  }
+}

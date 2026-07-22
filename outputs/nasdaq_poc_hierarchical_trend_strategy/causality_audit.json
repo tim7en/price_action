@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": {
+    "previous_session_context_available_before_signal": true,
+    "signal_bar_precedes_entry": true,
+    "development_thresholds_end_before_2025": true,
+    "candidate_ranking_uses_2024_only": true,
+    "opening_range_uses_schedule_0930_to_1000_new_york": true,
+    "hierarchy_risk_never_exceeds_0_25pct": true
+  }
+}
