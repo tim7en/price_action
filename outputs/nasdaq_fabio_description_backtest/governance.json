@@ -1,0 +1,85 @@
+{
+  "generated_at_utc": "2026-07-22T06:51:22.450430+00:00",
+  "status": "RESEARCH_ONLY_LIVE_DEPLOYMENT_BLOCKED",
+  "description": "one frozen OHLCV interpretation of the attached strategy prose",
+  "config": {
+    "profile_lookback_bars": 50,
+    "profile_rows": 24,
+    "profile_value_fraction": 0.7,
+    "atr_bars": 14,
+    "average_volume_bars": 50,
+    "delta_smoothing_bars": 5,
+    "absorption_volume_multiplier": 2.0,
+    "absorption_range_atr": 0.3,
+    "absorption_memory_bars": 6,
+    "accumulation_bars": 3,
+    "accumulation_range_atr": 0.8,
+    "aggression_volume_multiplier": 1.25,
+    "aggression_range_atr": 0.8,
+    "location_tolerance_atr": 0.2,
+    "vwap_band_atr": 0.5,
+    "opening_range_minutes": 30,
+    "orb_entry_window_minutes": 30,
+    "stop_atr": 1.0,
+    "reward_to_risk": 2.0,
+    "maximum_holding_minutes": 30,
+    "base_risk_fraction": 0.0025,
+    "maximum_risk_fraction": 0.0075,
+    "profit_reinvestment_fraction": 0.5,
+    "maximum_leverage": 10.0,
+    "maximum_daily_losses": 3,
+    "reference_one_way_cost_bps": 0.5,
+    "cost_scenarios_bps": [
+      0.0,
+      0.25,
+      0.5,
+      1.0,
+      1.5,
+      2.0
+    ],
+    "mnq_multiplier": 2.0,
+    "mnq_round_turn_fees": 1.5,
+    "mnq_round_turn_slippage_points": 0.5,
+    "account_sizes": [
+      25000.0,
+      100000.0
+    ],
+    "bootstrap_samples": 5000,
+    "bootstrap_seed": 29
+  },
+  "data_quality": {
+    "input_rows": 681646,
+    "first_input_bar_utc": "2024-01-02T05:02:00+00:00",
+    "last_input_bar_utc": "2025-12-05T21:44:00+00:00",
+    "duplicate_timestamps": 0,
+    "close_not_on_nq_quarter_tick_rows": 641336,
+    "close_not_on_nq_quarter_tick_share": 0.9408637327879867,
+    "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
+    "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
+  },
+  "blocked_signals": {
+    "1": {
+      "overlap": "not_recomputed_from_cached_ledgers",
+      "daily_loss_stop": "not_recomputed_from_cached_ledgers",
+      "unexecutable": "not_recomputed_from_cached_ledgers"
+    },
+    "2": {
+      "overlap": "not_recomputed_from_cached_ledgers",
+      "daily_loss_stop": "not_recomputed_from_cached_ledgers",
+      "unexecutable": "not_recomputed_from_cached_ledgers"
+    },
+    "5": {
+      "overlap": "not_recomputed_from_cached_ledgers",
+      "daily_loss_stop": "not_recomputed_from_cached_ledgers",
+      "unexecutable": "not_recomputed_from_cached_ledgers"
+    }
+  },
+  "rule_choices_not_specified_by_source": [
+    "Typical-price volume assignment and contiguous 70% value-area expansion.",
+    "Fresh ORB cross restricted to minutes 30-60.",
+    "Triple-A and value-area bounces allowed throughout RTH.",
+    "Maximum 30-minute hold and no trailing stop.",
+    "Same-bar stop/target ambiguity resolves to stop.",
+    "Maximum 10x notional and no simultaneous positions."
+  ]
+}
