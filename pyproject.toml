@@ -35,6 +35,7 @@ price-action-hierarchical-research = "price_action.hierarchical_research:main"
 price-action-final-hierarchy = "price_action.final_hierarchy:main"
 price-action-factor-drivers = "price_action.factor_driver_model:main"
 price-action-binance-session-scalper = "price_action.binance_session_scalper:main"
+price-action-nasdaq-session-backtest = "price_action.nasdaq_session_backtest:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]

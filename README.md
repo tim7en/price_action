@@ -147,6 +147,27 @@ This writes setup-level holdout cost sensitivity and the full audit trail under
 `outputs/binance_ny_open_scalper_leveraged/`. Profit-based intraday risk scaling
 remains disabled until an exact, testable sizing equation is supplied.
 
+## Standalone Nasdaq-100 New York-open backtest
+
+The local `cache/Nasdaq.csv` one-minute OHLCV file can be tested with:
+
+```bash
+python build_nasdaq_session_backtest.py
+```
+
+The strategy resamples complete five-minute bars, uses the official XNYS
+calendar, builds the opening range and prior-session value area causally, and
+separates imbalance continuation from balance rejection. It enters on the next
+bar, risks 1% at a one-ATR stop subject to a 10x cap, targets 2R, and applies a
+three-loss session stop. Development is 2024 and the untouched holdout is 2025.
+Reports, trades, session-block bootstrap intervals, cost sensitivity and the
+data-identity audit are written under `outputs/nasdaq_session_backtest/`.
+
+The CSV is not identified as CME NQ: most prices are off NQ's quarter-point
+tick grid, and volume provenance is absent. The output is therefore explicitly
+research-only until venue, contract/roll, spread and commission metadata are
+supplied.
+
 
 ## Run it
 
