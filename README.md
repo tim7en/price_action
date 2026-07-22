@@ -175,10 +175,15 @@ python build_nasdaq_poc_scaling_backtest.py
 ```
 
 It compares 10-, 16-, 20-, and 30-minute post-observation phases, then audits
-incremental trend sizing, a causal 1.5-ATR profit-protecting stop, and one
-profit-financed add-on through a prior-five-session POC. It never charges an
-add-on's stop risk to base capital and leaves the original baseline unchanged.
-Results are written under `outputs/nasdaq_poc_scaling_backtest/`.
+10d/30d strategic trend context against 3d/10d tactical context, migration of
+the last three completed-session POCs, and POC crosses in each ten-minute
+execution bucket. A separate signal waits one full two-minute bar for price to
+accept beyond a crossed POC and remain aligned with session VWAP. The study
+also tests a causal 1.5-ATR profit-protecting stop and one chart-confirmed,
+profit-financed add-on after developing POC migration and price follow-through.
+It never charges an add-on's stop risk to base capital and leaves the original
+baseline unchanged. Results, event studies, scaling paths, equity curves, and
+drawdowns are written under `outputs/nasdaq_poc_scaling_backtest/`.
 
 The CSV is not identified as CME NQ: most prices are off NQ's quarter-point
 tick grid, and volume provenance is absent. The output is therefore explicitly

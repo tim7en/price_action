@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from price_action.nasdaq_poc_scaling_backtest import (
+    ManagedVariant,
     PocManagementConfig,
     crossed_prior_poc,
     financed_add_notional,
@@ -12,6 +13,19 @@ from price_action.nasdaq_poc_scaling_backtest import (
 
 
 class NasdaqPocScalingBacktestTests(unittest.TestCase):
+    def test_chart_scaling_requires_trailing_stop_and_exclusive_trigger(self) -> None:
+        with self.assertRaises(ValueError):
+            ManagedVariant("bad", 16, 16, chart_scaling=True)
+        with self.assertRaises(ValueError):
+            ManagedVariant(
+                "bad",
+                16,
+                16,
+                chart_scaling=True,
+                poc_scaling=True,
+                trailing_stop=True,
+            )
+
     def test_trend_bias_requires_price_and_moving_average_ordering(self) -> None:
         self.assertEqual(trend_bias(110.0, 105.0, 100.0), 1)
         self.assertEqual(trend_bias(90.0, 95.0, 100.0), -1)

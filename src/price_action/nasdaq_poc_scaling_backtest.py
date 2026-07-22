@@ -1,10 +1,11 @@
-"""Two-minute Nasdaq POC/trend/scaling research extension.
+"""Two-minute Nasdaq auction-state, POC, trend, and scaling extension.
 
 This module deliberately leaves the original session backtest unchanged.  It
 tests shorter post-opening horizons and an auditable extension of the supplied
-Direction/Location/Aggression framework: a causal daily trend bias, POCs from
-the prior five complete sessions, a profit-protecting trailing stop, and at
-most one add-on financed only by profit already locked on the base position.
+State/Location/Aggression framework: causal 3/10- and 10/30-session trend
+biases, POC migration from completed sessions, acceptance beyond a crossed
+POC, a profit-protecting trailing stop, and at most one add-on financed only by
+profit already locked on the base position.
 
 The input remains unidentified OHLCV.  Its volume profile and delta fields are
 proxies, not CME price-at-volume, bid/ask delta, or executable order flow.
@@ -1130,11 +1131,51 @@ def _report(
     governance: dict[str, Any],
 ) -> str:
     decision = summary.loc[summary["scope"].isin(["all", "development_2024", "holdout_2025"])]
+
+    def event_value(frame: pd.DataFrame, group: str, column: str) -> float:
+        match = frame.loc[frame["group"].eq(group), column]
+        return float(match.iloc[0]) if len(match) else np.nan
+
+    def performance_value(variant: str, scope: str, column: str) -> float:
+        match = decision.loc[
+            decision["variant"].eq(variant) & decision["scope"].eq(scope),
+            column,
+        ]
+        return float(match.iloc[0]) if len(match) else np.nan
+
+    def scale_value(variant: str, column: str) -> float:
+        match = scaling_audit.loc[scaling_audit["variant"].eq(variant), column]
+        return float(match.iloc[0]) if len(match) else np.nan
+
+    all_crosses = int(event_value(poc_event_summary, "all_poc_crosses", "events"))
+    migration_crosses = int(
+        event_value(poc_event_summary, "poc_migration_3d_aligned", "events")
+    )
+    combined_crosses = int(
+        event_value(poc_event_summary, "3d_10d_plus_poc_migration", "events")
+    )
+    early_combined_crosses = int(
+        event_value(
+            poc_timing_summary,
+            "first_10m_3d_10d_poc_migration",
+            "events",
+        )
+    )
     return f"""# Two-Minute Nasdaq POC, Trend, Scaling, and Trailing Study
 
 Generated {governance['generated_at_utc']}. This is a separate extension of the fixed-position New York-open baseline.
 
 > The supplied Fabio notes document 1.5-ATR optional trailing stops and increasing risk only from the day's profits. They do not establish pyramiding into an open trade; the example payload says `pyramid: false`. The POC add-on below is our research hypothesis and is sized only from profit already locked by the raised base stop.
+
+## Research conclusion
+
+- A POC is useful as **location**, not as a standalone signal. All {all_crosses} crosses averaged {event_value(poc_event_summary, "all_poc_crosses", "mean_forward_10m_bps"):+.2f} bps over the next ten minutes. Immediate trading of the filtered cross returned {performance_value("aligned_poc_immediate_10m", "all", "cumulative_net_return"):.2%} net over only {int(performance_value("aligned_poc_immediate_10m", "all", "trades"))} trades.
+- The strongest contextual variable was three-session POC migration: {migration_crosses} direction-aligned events averaged {event_value(poc_event_summary, "poc_migration_3d_aligned", "mean_forward_10m_bps"):+.2f} bps, with a session-bootstrap 95% interval of [{event_value(poc_event_summary, "poc_migration_3d_aligned", "session_bootstrap_10m_ci_low_bps"):+.2f}, {event_value(poc_event_summary, "poc_migration_3d_aligned", "session_bootstrap_10m_ci_high_bps"):+.2f}] bps. The 3d/10d plus POC-migration subset improved to {event_value(poc_event_summary, "3d_10d_plus_poc_migration", "mean_forward_10m_bps"):+.2f} bps, but had only {combined_crosses} events.
+- Alignment with the opening-session balance/imbalance classification averaged {event_value(poc_event_summary, "session_regime_aligned", "mean_forward_10m_bps"):+.2f} bps across {int(event_value(poc_event_summary, "session_regime_aligned", "events"))} events. Requiring session state, 3d/10d, and POC migration together left only {int(event_value(poc_event_summary, "session_trend_poc_migration", "events"))} events, too few to estimate an edge.
+- Impact was front-loaded. Crosses in the first ten execution minutes averaged {event_value(poc_timing_summary, "first_10m_after_observation", "mean_forward_10m_bps"):+.2f} bps, the middle ten averaged {event_value(poc_timing_summary, "middle_10m_after_observation", "mean_forward_10m_bps"):+.2f} bps, and the last ten averaged {event_value(poc_timing_summary, "last_10m_after_observation", "mean_forward_10m_bps"):+.2f} bps. The early 3d/10d plus POC-migration subset averaged {event_value(poc_timing_summary, "first_10m_3d_10d_poc_migration", "mean_forward_10m_bps"):+.2f} bps, but only {early_combined_crosses} observations make it exploratory.
+- Waiting one completed two-minute bar for acceptance beyond the POC and alignment with session VWAP improved the direct strategy to {performance_value("aligned_poc_acceptance_16m", "all", "cumulative_net_return"):.2%}, but that is only {int(performance_value("aligned_poc_acceptance_16m", "all", "trades"))} trades and the development/2025 signs disagree. It is not deployment evidence.
+- Broadly sizing every signal from 3d/10d reduced the 16-minute result to {performance_value("trend_3d_10d_sized_16m", "all", "cumulative_net_return"):.2%}, versus {performance_value("trend_sized_16m", "all", "cumulative_net_return"):.2%} for 10d/30d sizing. Use 10d/30d for strategic risk context and 3d/10d only as tactical confirmation at a POC.
+- Chart-confirmed scaling was rare: {int(scale_value("reserved_chart_scale_16m", "trades_with_add_on"))} of {int(scale_value("reserved_chart_scale_16m", "trades"))} 16-minute trades and {int(scale_value("reserved_chart_scale_30m", "trades_with_add_on"))} of {int(scale_value("reserved_chart_scale_30m", "trades"))} 30-minute trades. It did not improve the 16-minute aggregate and only marginally improved a weak 30-minute base. Keep it in paper observation, not live sizing.
 
 ## Decision table
 
@@ -1172,11 +1213,14 @@ Generated {governance['generated_at_utc']}. This is a separate extension of the 
 - [POC-cross timing impact](poc_cross_timing_impact.png)
 - [Chart-scaling event paths](chart_scaling_event_paths.png)
 
-## Predeclared rules
+## Causal rules and philosophy mapping
 
-- Signals remain the causal two-minute ORB/value-rejection signals from the first-hour model. The first 30 minutes is observation only.
-- Static horizons end the execution phase 10, 16, 20, or 30 minutes after the observation window; open positions are closed at that phase boundary. Sixteen minutes is used because complete two-minute bars cannot represent 15 minutes without truncation or boundary leakage.
-- Trend is causal and frozen at the signal: long only when signal price > prior-session SMA10 > SMA30, short for the inverse, otherwise neutral.
+- **State:** the original causal two-minute ORB/value-rejection model classifies the first 30 minutes as balance or imbalance. The 10d/30d stack supplies broad risk context; 3d/10d supplies faster tactical context; monotonic migration of the last three completed-session POCs approximates shifting accepted value.
+- **Location:** the prior three-to-five completed-session POCs are zones of earlier acceptance, not automatic buyer/seller labels and not entries by themselves. The developing current-session POC and session VWAP describe whether value is following price.
+- **Aggression and follow-through:** true bid/ask order flow is unavailable, so the original range/volume/delta fields remain OHLCV proxies. A POC-breakout signal therefore waits for a second completed close outside the 0.1-ATR POC band and on the correct side of session VWAP; reclaim of the level means rejection, not continuation.
+- **Timing:** the first 30 minutes remains observation only. Static horizons end the execution phase 10, 16, 20, or 30 minutes later. Sixteen minutes is used because complete two-minute bars cannot represent 15 minutes without truncation or boundary leakage.
+- The immediate POC-cross strategy is an explicit control for the maxim “a level is not a trade.” The acceptance-confirmed strategy is the philosophy-aligned version. The 3d/10d, POC-migration, timing, acceptance, and chart-scaling extensions are adaptive exploratory tests, not predeclared confirmation.
+- Trend is causal and frozen at the signal: long only when signal price exceeds the shorter average and the shorter average exceeds the longer average, short for the inverse, otherwise neutral.
 - Trend sizing risks 1.00% when aligned, 0.75% when neutral, and 0.50% when countertrend, always subject to the 10x notional cap.
 - The reserved-scaling diagnostic starts with 75% of those risk allocations so an aligned trade can retain leverage capacity for an add-on. It was introduced after observing that the unconstrained signal was already at 10x, so it is diagnostic rather than validated.
 - The trail activates after a completed close reaches +1R, locks +0.25R, and then follows the best completed close by 1.5 ATR. Stop changes apply only to subsequent bars.
@@ -1187,8 +1231,9 @@ Generated {governance['generated_at_utc']}. This is a separate extension of the 
 
 ## Limitations
 
-- This evaluates several variants on the same 2024–2025 sample; 2025 is now an evaluation set, not a fresh untouched holdout.
+- This evaluates several variants and filters on the same 2024–2025 sample. Multiple comparisons raise the chance of a lucky subgroup; 2025 is now an evaluation set, not a fresh untouched holdout.
 - POCs allocate each bar's entire volume to typical price. They show estimated acceptance, not separate buyer/seller concentration.
+- Strictly rising/falling POCs are a deliberately simple migration proxy. A fuller Auction Market Theory implementation would also model value-area overlap, time outside value, LVNs, failed auctions, and POC persistence/migration from true price-at-volume data.
 - OHLCV cannot show aggressor side, footprint imbalance, resting liquidity, queue position, or the intrabar path. Scaling around POC therefore remains a proxy experiment.
 - The feed has no verified venue or contract identity and is inconsistent with CME NQ's tick grid. The {governance['execution']['one_way_cost_bps']:.2f}-bps one-way cost is a scenario, not measured execution.
 """

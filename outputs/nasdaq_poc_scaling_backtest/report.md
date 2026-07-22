@@ -1,8 +1,18 @@
 # Two-Minute Nasdaq POC, Trend, Scaling, and Trailing Study
 
-Generated 2026-07-22T01:44:47.751699+00:00. This is a separate extension of the fixed-position New York-open baseline.
+Generated 2026-07-22T01:51:07.416534+00:00. This is a separate extension of the fixed-position New York-open baseline.
 
 > The supplied Fabio notes document 1.5-ATR optional trailing stops and increasing risk only from the day's profits. They do not establish pyramiding into an open trade; the example payload says `pyramid: false`. The POC add-on below is our research hypothesis and is sized only from profit already locked by the raised base stop.
+
+## Research conclusion
+
+- A POC is useful as **location**, not as a standalone signal. All 332 crosses averaged -1.23 bps over the next ten minutes. Immediate trading of the filtered cross returned -1.51% net over only 13 trades.
+- The strongest contextual variable was three-session POC migration: 66 direction-aligned events averaged +4.86 bps, with a session-bootstrap 95% interval of [+0.38, +10.32] bps. The 3d/10d plus POC-migration subset improved to +5.49 bps, but had only 32 events.
+- Alignment with the opening-session balance/imbalance classification averaged +2.16 bps across 43 events. Requiring session state, 3d/10d, and POC migration together left only 4 events, too few to estimate an edge.
+- Impact was front-loaded. Crosses in the first ten execution minutes averaged +1.39 bps, the middle ten averaged -6.13 bps, and the last ten averaged +0.16 bps. The early 3d/10d plus POC-migration subset averaged +6.43 bps, but only 14 observations make it exploratory.
+- Waiting one completed two-minute bar for acceptance beyond the POC and alignment with session VWAP improved the direct strategy to 0.57%, but that is only 8 trades and the development/2025 signs disagree. It is not deployment evidence.
+- Broadly sizing every signal from 3d/10d reduced the 16-minute result to 8.20%, versus 11.05% for 10d/30d sizing. Use 10d/30d for strategic risk context and 3d/10d only as tactical confirmation at a POC.
+- Chart-confirmed scaling was rare: 2 of 115 16-minute trades and 3 of 142 30-minute trades. It did not improve the 16-minute aggregate and only marginally improved a weak 30-minute base. Keep it in paper observation, not live sizing.
 
 ## Decision table
 
@@ -292,11 +302,14 @@ Generated 2026-07-22T01:44:47.751699+00:00. This is a separate extension of the 
 - [POC-cross timing impact](poc_cross_timing_impact.png)
 - [Chart-scaling event paths](chart_scaling_event_paths.png)
 
-## Predeclared rules
+## Causal rules and philosophy mapping
 
-- Signals remain the causal two-minute ORB/value-rejection signals from the first-hour model. The first 30 minutes is observation only.
-- Static horizons end the execution phase 10, 16, 20, or 30 minutes after the observation window; open positions are closed at that phase boundary. Sixteen minutes is used because complete two-minute bars cannot represent 15 minutes without truncation or boundary leakage.
-- Trend is causal and frozen at the signal: long only when signal price > prior-session SMA10 > SMA30, short for the inverse, otherwise neutral.
+- **State:** the original causal two-minute ORB/value-rejection model classifies the first 30 minutes as balance or imbalance. The 10d/30d stack supplies broad risk context; 3d/10d supplies faster tactical context; monotonic migration of the last three completed-session POCs approximates shifting accepted value.
+- **Location:** the prior three-to-five completed-session POCs are zones of earlier acceptance, not automatic buyer/seller labels and not entries by themselves. The developing current-session POC and session VWAP describe whether value is following price.
+- **Aggression and follow-through:** true bid/ask order flow is unavailable, so the original range/volume/delta fields remain OHLCV proxies. A POC-breakout signal therefore waits for a second completed close outside the 0.1-ATR POC band and on the correct side of session VWAP; reclaim of the level means rejection, not continuation.
+- **Timing:** the first 30 minutes remains observation only. Static horizons end the execution phase 10, 16, 20, or 30 minutes later. Sixteen minutes is used because complete two-minute bars cannot represent 15 minutes without truncation or boundary leakage.
+- The immediate POC-cross strategy is an explicit control for the maxim “a level is not a trade.” The acceptance-confirmed strategy is the philosophy-aligned version. The 3d/10d, POC-migration, timing, acceptance, and chart-scaling extensions are adaptive exploratory tests, not predeclared confirmation.
+- Trend is causal and frozen at the signal: long only when signal price exceeds the shorter average and the shorter average exceeds the longer average, short for the inverse, otherwise neutral.
 - Trend sizing risks 1.00% when aligned, 0.75% when neutral, and 0.50% when countertrend, always subject to the 10x notional cap.
 - The reserved-scaling diagnostic starts with 75% of those risk allocations so an aligned trade can retain leverage capacity for an add-on. It was introduced after observing that the unconstrained signal was already at 10x, so it is diagnostic rather than validated.
 - The trail activates after a completed close reaches +1R, locks +0.25R, and then follows the best completed close by 1.5 ATR. Stop changes apply only to subsequent bars.
@@ -307,7 +320,8 @@ Generated 2026-07-22T01:44:47.751699+00:00. This is a separate extension of the 
 
 ## Limitations
 
-- This evaluates several variants on the same 2024–2025 sample; 2025 is now an evaluation set, not a fresh untouched holdout.
+- This evaluates several variants and filters on the same 2024–2025 sample. Multiple comparisons raise the chance of a lucky subgroup; 2025 is now an evaluation set, not a fresh untouched holdout.
 - POCs allocate each bar's entire volume to typical price. They show estimated acceptance, not separate buyer/seller concentration.
+- Strictly rising/falling POCs are a deliberately simple migration proxy. A fuller Auction Market Theory implementation would also model value-area overlap, time outside value, LVNs, failed auctions, and POC persistence/migration from true price-at-volume data.
 - OHLCV cannot show aggressor side, footprint imbalance, resting liquidity, queue position, or the intrabar path. Scaling around POC therefore remains a proxy experiment.
 - The feed has no verified venue or contract identity and is inconsistent with CME NQ's tick grid. The 0.50-bps one-way cost is a scenario, not measured execution.
