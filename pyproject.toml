@@ -42,6 +42,7 @@ price-action-nasdaq-poc-leverage-optimizer = "price_action.nasdaq_poc_leverage_o
 price-action-nasdaq-poc-asymmetric-runner = "price_action.nasdaq_poc_asymmetric_runner:main"
 price-action-nasdaq-macro-poc-assessment = "price_action.nasdaq_macro_poc_assessment:main"
 price-action-nasdaq-fabio-description-backtest = "price_action.nasdaq_fabio_description_backtest:main"
+price-action-nasdaq-fabio-pine-v6-backtest = "price_action.nasdaq_fabio_pine_v6_backtest:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]
