@@ -1059,6 +1059,66 @@ def _render_plots(
     return paths
 
 
+def _render_chart_scale_paths(
+    trades: pd.DataFrame,
+    indicated_bars: pd.DataFrame,
+    output: Path,
+) -> Path | None:
+    scaled = trades.loc[trades["scale_count"].gt(0)].copy()
+    if scaled.empty:
+        return None
+    from .nasdaq_session_backtest import _configure_plots
+
+    plt = _configure_plots()
+    fig, axes = plt.subplots(len(scaled), 1, figsize=(12, 3.6 * len(scaled)))
+    if len(scaled) == 1:
+        axes = [axes]
+    for axis, trade in zip(axes, scaled.itertuples(index=False), strict=True):
+        entry_time = pd.Timestamp(trade.entry_time)
+        exit_time = pd.Timestamp(trade.exit_time)
+        path = indicated_bars.loc[
+            (indicated_bars.index >= entry_time)
+            & (indicated_bars.index <= exit_time)
+        ].copy()
+        minutes = (path.index - entry_time) / pd.Timedelta(minutes=1)
+        axis.plot(minutes, path["close"], color="#1d4ed8", marker="o", linewidth=2, label="Close")
+        axis.plot(
+            minutes,
+            path["developing_poc"],
+            color="#d97706",
+            linestyle="--",
+            linewidth=1.5,
+            label="Developing POC",
+        )
+        axis.axhline(float(trade.entry_price), color="#334155", linewidth=1, label="Base entry")
+        axis.axhline(float(trade.target_price), color="#0f766e", linestyle=":", linewidth=1.5, label="2R target")
+        axis.axhline(float(trade.final_stop_price), color="#be123c", linestyle=":", linewidth=1.5, label="Final protected stop")
+        scale_minutes = (
+            pd.Timestamp(trade.scale_entry_time) - entry_time
+        ) / pd.Timedelta(minutes=1)
+        axis.scatter(
+            [scale_minutes],
+            [float(trade.scale_entry_price)],
+            marker="^" if trade.side == "long" else "v",
+            s=100,
+            color="#7c3aed",
+            zorder=5,
+            label=f"Add {float(trade.added_notional_fraction):.2f}x",
+        )
+        axis.set_title(
+            f"{str(trade.entry_time)[:10]} {trade.side}: chart-acceptance add-on"
+        )
+        axis.set_xlabel("Minutes after base entry")
+        axis.set_ylabel("Price")
+        axis.grid(alpha=0.2)
+        axis.legend(fontsize=8, ncol=3)
+    fig.tight_layout()
+    path = output / "chart_scaling_event_paths.png"
+    fig.savefig(path, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
 def _report(
     summary: pd.DataFrame,
     bootstrap: pd.DataFrame,
@@ -1110,6 +1170,7 @@ Generated {governance['generated_at_utc']}. This is a separate extension of the 
 - [10/16/20/30-minute horizon comparison](horizon_comparison.png)
 - [POC-cross forward returns](poc_cross_forward_returns.png)
 - [POC-cross timing impact](poc_cross_timing_impact.png)
+- [Chart-scaling event paths](chart_scaling_event_paths.png)
 
 ## Predeclared rules
 
@@ -1218,6 +1279,25 @@ def build_poc_scaling_backtest(
             16,
             trend_model="3_10",
             signal_source="aligned_poc_acceptance",
+        ),
+        ManagedVariant(
+            "aligned_poc_acceptance_reserved_16m",
+            16,
+            16,
+            trailing_stop=True,
+            base_risk_scale=0.75,
+            trend_model="3_10",
+            signal_source="aligned_poc_acceptance",
+        ),
+        ManagedVariant(
+            "aligned_poc_acceptance_chart_scale_16m",
+            16,
+            16,
+            trailing_stop=True,
+            base_risk_scale=0.75,
+            trend_model="3_10",
+            signal_source="aligned_poc_acceptance",
+            chart_scaling=True,
         ),
         ManagedVariant(
             "reserved_3d_10d_trail_16m",
@@ -1386,6 +1466,13 @@ def build_poc_scaling_backtest(
         poc_timing_summary,
         output,
     )
+    scale_path = _render_chart_scale_paths(
+        trades_by_variant["reserved_chart_scale_30m"],
+        indicated,
+        output,
+    )
+    if scale_path is not None:
+        plot_paths.append(scale_path)
     governance = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "strategy": "two_minute_nasdaq_poc_trend_scaling_extension",

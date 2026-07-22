@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-22T01:39:48.563975+00:00",
+  "generated_at_utc": "2026-07-22T01:44:47.751699+00:00",
   "strategy": "two_minute_nasdaq_poc_trend_scaling_extension",
   "data_file": "/Users/timursabitov/Dev/price_action/cache/Nasdaq.csv",
   "data_quality": {
@@ -66,7 +66,8 @@
       "poc_scaling": false,
       "base_risk_scale": 1.0,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "static_16m",
@@ -77,7 +78,8 @@
       "poc_scaling": false,
       "base_risk_scale": 1.0,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "static_20m",
@@ -88,7 +90,8 @@
       "poc_scaling": false,
       "base_risk_scale": 1.0,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "static_30m",
@@ -99,7 +102,8 @@
       "poc_scaling": false,
       "base_risk_scale": 1.0,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "trend_sized_16m",
@@ -110,7 +114,8 @@
       "poc_scaling": false,
       "base_risk_scale": 1.0,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "trend_3d_10d_sized_10m",
@@ -121,7 +126,8 @@
       "poc_scaling": false,
       "base_risk_scale": 1.0,
       "trend_model": "3_10",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "trend_3d_10d_sized_16m",
@@ -132,7 +138,8 @@
       "poc_scaling": false,
       "base_risk_scale": 1.0,
       "trend_model": "3_10",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "aligned_poc_immediate_10m",
@@ -143,7 +150,8 @@
       "poc_scaling": false,
       "base_risk_scale": 1.0,
       "trend_model": "3_10",
-      "signal_source": "aligned_poc_immediate"
+      "signal_source": "aligned_poc_immediate",
+      "chart_scaling": false
     },
     {
       "name": "aligned_poc_acceptance_16m",
@@ -154,7 +162,80 @@
       "poc_scaling": false,
       "base_risk_scale": 1.0,
       "trend_model": "3_10",
-      "signal_source": "aligned_poc_acceptance"
+      "signal_source": "aligned_poc_acceptance",
+      "chart_scaling": false
+    },
+    {
+      "name": "aligned_poc_acceptance_reserved_16m",
+      "entry_window_minutes": 16,
+      "max_holding_minutes": 16,
+      "trend_sizing": false,
+      "trailing_stop": true,
+      "poc_scaling": false,
+      "base_risk_scale": 0.75,
+      "trend_model": "3_10",
+      "signal_source": "aligned_poc_acceptance",
+      "chart_scaling": false
+    },
+    {
+      "name": "aligned_poc_acceptance_chart_scale_16m",
+      "entry_window_minutes": 16,
+      "max_holding_minutes": 16,
+      "trend_sizing": false,
+      "trailing_stop": true,
+      "poc_scaling": false,
+      "base_risk_scale": 0.75,
+      "trend_model": "3_10",
+      "signal_source": "aligned_poc_acceptance",
+      "chart_scaling": true
+    },
+    {
+      "name": "reserved_3d_10d_trail_16m",
+      "entry_window_minutes": 16,
+      "max_holding_minutes": 16,
+      "trend_sizing": true,
+      "trailing_stop": true,
+      "poc_scaling": false,
+      "base_risk_scale": 0.75,
+      "trend_model": "3_10",
+      "signal_source": "base",
+      "chart_scaling": false
+    },
+    {
+      "name": "reserved_chart_scale_16m",
+      "entry_window_minutes": 16,
+      "max_holding_minutes": 16,
+      "trend_sizing": true,
+      "trailing_stop": true,
+      "poc_scaling": false,
+      "base_risk_scale": 0.75,
+      "trend_model": "3_10",
+      "signal_source": "base",
+      "chart_scaling": true
+    },
+    {
+      "name": "reserved_3d_10d_trail_30m",
+      "entry_window_minutes": 30,
+      "max_holding_minutes": 30,
+      "trend_sizing": true,
+      "trailing_stop": true,
+      "poc_scaling": false,
+      "base_risk_scale": 0.75,
+      "trend_model": "3_10",
+      "signal_source": "base",
+      "chart_scaling": false
+    },
+    {
+      "name": "reserved_chart_scale_30m",
+      "entry_window_minutes": 30,
+      "max_holding_minutes": 30,
+      "trend_sizing": true,
+      "trailing_stop": true,
+      "poc_scaling": false,
+      "base_risk_scale": 0.75,
+      "trend_model": "3_10",
+      "signal_source": "base",
+      "chart_scaling": true
     },
     {
       "name": "trend_trail_16m",
@@ -165,7 +246,8 @@
       "poc_scaling": false,
       "base_risk_scale": 1.0,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "trend_trail_poc_scale_16m",
@@ -176,7 +258,8 @@
       "poc_scaling": true,
       "base_risk_scale": 1.0,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "trend_trail_poc_scale_30m",
@@ -187,7 +270,8 @@
       "poc_scaling": true,
       "base_risk_scale": 1.0,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "reserved_trend_trail_16m",
@@ -198,7 +282,8 @@
       "poc_scaling": false,
       "base_risk_scale": 0.75,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "reserved_poc_scale_16m",
@@ -209,7 +294,8 @@
       "poc_scaling": true,
       "base_risk_scale": 0.75,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "reserved_trend_trail_30m",
@@ -220,7 +306,8 @@
       "poc_scaling": false,
       "base_risk_scale": 0.75,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     },
     {
       "name": "reserved_poc_scale_30m",
@@ -231,7 +318,8 @@
       "poc_scaling": true,
       "base_risk_scale": 0.75,
       "trend_model": "10_30",
-      "signal_source": "base"
+      "signal_source": "base",
+      "chart_scaling": false
     }
   ],
   "execution": {
@@ -290,6 +378,36 @@
       "daily_loss_stop": 0,
       "unexecutable": 0
     },
+    "aligned_poc_acceptance_reserved_16m": {
+      "overlap": 0,
+      "daily_loss_stop": 0,
+      "unexecutable": 0
+    },
+    "aligned_poc_acceptance_chart_scale_16m": {
+      "overlap": 0,
+      "daily_loss_stop": 0,
+      "unexecutable": 0
+    },
+    "reserved_3d_10d_trail_16m": {
+      "overlap": 13,
+      "daily_loss_stop": 0,
+      "unexecutable": 4
+    },
+    "reserved_chart_scale_16m": {
+      "overlap": 13,
+      "daily_loss_stop": 0,
+      "unexecutable": 4
+    },
+    "reserved_3d_10d_trail_30m": {
+      "overlap": 19,
+      "daily_loss_stop": 0,
+      "unexecutable": 2
+    },
+    "reserved_chart_scale_30m": {
+      "overlap": 19,
+      "daily_loss_stop": 0,
+      "unexecutable": 2
+    },
     "trend_trail_16m": {
       "overlap": 13,
       "daily_loss_stop": 0,
@@ -332,6 +450,7 @@
     "managed_equity_and_drawdowns.png",
     "horizon_comparison.png",
     "poc_cross_forward_returns.png",
-    "poc_cross_timing_impact.png"
+    "poc_cross_timing_impact.png",
+    "chart_scaling_event_paths.png"
   ]
 }

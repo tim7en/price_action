@@ -1,6 +1,6 @@
 # Two-Minute Nasdaq POC, Trend, Scaling, and Trailing Study
 
-Generated 2026-07-22T01:39:48.563975+00:00. This is a separate extension of the fixed-position New York-open baseline.
+Generated 2026-07-22T01:44:47.751699+00:00. This is a separate extension of the fixed-position New York-open baseline.
 
 > The supplied Fabio notes document 1.5-ATR optional trailing stops and increasing risk only from the day's profits. They do not establish pyramiding into an open trade; the example payload says `pyramid: false`. The POC add-on below is our research hypothesis and is sized only from profit already locked by the raised base stop.
 
@@ -35,6 +35,24 @@ Generated 2026-07-22T01:39:48.563975+00:00. This is a separate extension of the 
 | aligned_poc_acceptance_16m | all | 8 | 8 | 0.6250 | 0.1250 | 0.3750 | 0.1720 | 0.0965 | 14.3175 | 7.6746 | 1.3818 | 1.1928 | 1.0776 | 0.0111 | 0.0057 | 0.0060 | -0.0229 | 6.6429 | 0.0100 | 3.1250 | 6.2500 |
 | aligned_poc_acceptance_16m | development_2024 | 4 | 4 | 0.5000 | 0.0000 | 0.5000 | -0.2897 | -0.3968 | -34.7408 | -43.6313 | 0.3052 | 0.1904 | -1.9538 | -0.0139 | -0.0174 | -0.0464 | -0.0214 | 8.8905 | 0.0091 | 2.0000 | 4.0000 |
 | aligned_poc_acceptance_16m | holdout_2025 | 4 | 4 | 0.7500 | 0.2500 | 0.2500 | 0.6338 | 0.5898 | 63.3758 | 58.9804 | 3.5350 | 3.2916 | 7.2094 | 0.0254 | 0.0236 | 0.0820 | -0.0103 | 4.3954 | 0.0100 | 4.2500 | 8.5000 |
+| aligned_poc_acceptance_reserved_16m | all | 8 | 8 | 0.6250 | 0.1250 | 0.3750 | 0.1278 | 0.0523 | 9.0408 | 3.5397 | 1.3214 | 1.1185 | 0.8217 | 0.0070 | 0.0026 | 0.0027 | -0.0172 | 5.5011 | 0.0075 | 3.0000 | 6.0000 |
+| aligned_poc_acceptance_reserved_16m | development_2024 | 4 | 4 | 0.5000 | 0.0000 | 0.5000 | -0.2897 | -0.3968 | -22.8233 | -30.5290 | 0.3914 | 0.2447 | -1.4809 | -0.0092 | -0.0122 | -0.0327 | -0.0161 | 7.7057 | 0.0075 | 2.0000 | 4.0000 |
+| aligned_poc_acceptance_reserved_16m | holdout_2025 | 4 | 4 | 0.7500 | 0.2500 | 0.2500 | 0.5454 | 0.5014 | 40.9048 | 37.6083 | 3.1816 | 2.9483 | 6.2043 | 0.0163 | 0.0150 | 0.0516 | -0.0077 | 3.2965 | 0.0075 | 4.0000 | 8.0000 |
+| aligned_poc_acceptance_chart_scale_16m | all | 8 | 8 | 0.6250 | 0.1250 | 0.3750 | 0.1326 | 0.0562 | 9.3966 | 3.8345 | 1.3341 | 1.1284 | 0.8447 | 0.0073 | 0.0028 | 0.0030 | -0.0172 | 5.5621 | 0.0075 | 3.0000 | 6.0000 |
+| aligned_poc_acceptance_chart_scale_16m | development_2024 | 4 | 4 | 0.5000 | 0.0000 | 0.5000 | -0.2897 | -0.3968 | -22.8233 | -30.5290 | 0.3914 | 0.2447 | -1.4809 | -0.0092 | -0.0122 | -0.0327 | -0.0161 | 7.7057 | 0.0075 | 2.0000 | 4.0000 |
+| aligned_poc_acceptance_chart_scale_16m | holdout_2025 | 4 | 4 | 0.7500 | 0.2500 | 0.2500 | 0.5549 | 0.5093 | 41.6165 | 38.1979 | 3.2195 | 2.9788 | 6.0868 | 0.0166 | 0.0152 | 0.0525 | -0.0077 | 3.4186 | 0.0075 | 4.0000 | 8.0000 |
+| reserved_3d_10d_trail_16m | all | 115 | 110 | 0.5217 | 0.1652 | 0.3478 | 0.1921 | 0.1125 | 9.8876 | 4.9466 | 1.4106 | 1.1876 | 1.0006 | 0.1175 | 0.0559 | 0.0288 | -0.0617 | 4.9409 | 0.0056 | 3.7304 | 7.4609 |
+| reserved_3d_10d_trail_16m | development_2024 | 58 | 56 | 0.5345 | 0.2069 | 0.3448 | 0.2385 | 0.1588 | 11.8783 | 7.0467 | 1.5053 | 1.2754 | 1.2292 | 0.0698 | 0.0403 | 0.0413 | -0.0277 | 4.8316 | 0.0056 | 3.2759 | 6.5517 |
+| reserved_3d_10d_trail_16m | holdout_2025 | 57 | 54 | 0.5088 | 0.1228 | 0.3509 | 0.1449 | 0.0653 | 7.8619 | 2.8097 | 1.3187 | 1.1035 | 0.7781 | 0.0446 | 0.0149 | 0.0165 | -0.0617 | 5.0522 | 0.0056 | 4.1930 | 8.3860 |
+| reserved_chart_scale_16m | all | 115 | 110 | 0.5217 | 0.1652 | 0.3478 | 0.1923 | 0.1124 | 9.8973 | 4.9421 | 1.4110 | 1.1875 | 0.9987 | 0.1177 | 0.0558 | 0.0288 | -0.0617 | 4.9552 | 0.0056 | 3.7304 | 7.4609 |
+| reserved_chart_scale_16m | development_2024 | 58 | 56 | 0.5345 | 0.2069 | 0.3448 | 0.2390 | 0.1591 | 11.9122 | 7.0674 | 1.5067 | 1.2762 | 1.2294 | 0.0700 | 0.0404 | 0.0414 | -0.0277 | 4.8448 | 0.0056 | 3.2759 | 6.5517 |
+| reserved_chart_scale_16m | holdout_2025 | 57 | 54 | 0.5088 | 0.1228 | 0.3509 | 0.1447 | 0.0649 | 7.8470 | 2.7795 | 1.3181 | 1.1023 | 0.7743 | 0.0445 | 0.0148 | 0.0164 | -0.0617 | 5.0675 | 0.0056 | 4.1930 | 8.3860 |
+| reserved_3d_10d_trail_30m | all | 142 | 128 | 0.4718 | 0.2676 | 0.4789 | 0.1367 | 0.0551 | 6.4083 | 1.4314 | 1.2067 | 1.0424 | 0.6438 | 0.0906 | 0.0162 | 0.0084 | -0.1170 | 4.9768 | 0.0056 | 5.2676 | 10.5352 |
+| reserved_3d_10d_trail_30m | development_2024 | 73 | 65 | 0.4932 | 0.2740 | 0.4384 | 0.1723 | 0.0906 | 8.1968 | 3.2392 | 1.2794 | 1.1016 | 0.8267 | 0.0594 | 0.0217 | 0.0222 | -0.0594 | 4.9576 | 0.0056 | 4.8219 | 9.6438 |
+| reserved_3d_10d_trail_30m | holdout_2025 | 69 | 63 | 0.4493 | 0.2609 | 0.5217 | 0.0990 | 0.0176 | 4.5160 | -0.4811 | 1.1378 | 0.9865 | 0.4519 | 0.0294 | -0.0055 | -0.0060 | -0.1170 | 4.9971 | 0.0056 | 5.7391 | 11.4783 |
+| reserved_chart_scale_30m | all | 142 | 128 | 0.4718 | 0.2676 | 0.4789 | 0.1386 | 0.0567 | 6.5564 | 1.5479 | 1.2115 | 1.0458 | 0.6545 | 0.0928 | 0.0178 | 0.0093 | -0.1160 | 5.0086 | 0.0056 | 5.2676 | 10.5352 |
+| reserved_chart_scale_30m | development_2024 | 73 | 65 | 0.4932 | 0.2740 | 0.4384 | 0.1726 | 0.0909 | 8.2237 | 3.2556 | 1.2804 | 1.1021 | 0.8276 | 0.0596 | 0.0219 | 0.0224 | -0.0594 | 4.9682 | 0.0056 | 4.8219 | 9.6438 |
+| reserved_chart_scale_30m | holdout_2025 | 69 | 63 | 0.4493 | 0.2609 | 0.5217 | 0.1027 | 0.0205 | 4.7925 | -0.2588 | 1.1463 | 0.9928 | 0.4744 | 0.0314 | -0.0040 | -0.0044 | -0.1160 | 5.0513 | 0.0056 | 5.7391 | 11.4783 |
 | trend_trail_16m | all | 115 | 110 | 0.5217 | 0.1652 | 0.3478 | 0.1921 | 0.1125 | 14.5260 | 8.3641 | 1.4925 | 1.2590 | 1.1787 | 0.1768 | 0.0964 | 0.0493 | -0.0620 | 6.1619 | 0.0075 | 3.7304 | 7.4609 |
 | trend_trail_16m | development_2024 | 58 | 56 | 0.5345 | 0.2069 | 0.3448 | 0.2385 | 0.1588 | 16.1014 | 9.9214 | 1.5322 | 1.3010 | 1.3027 | 0.0953 | 0.0568 | 0.0581 | -0.0323 | 6.1800 | 0.0075 | 3.2759 | 6.5517 |
 | trend_trail_16m | holdout_2025 | 57 | 54 | 0.5088 | 0.1228 | 0.3509 | 0.1449 | 0.0653 | 12.9230 | 6.7796 | 1.4500 | 1.2144 | 1.0518 | 0.0744 | 0.0374 | 0.0415 | -0.0620 | 6.1434 | 0.0075 | 4.1930 | 8.3860 |
@@ -70,6 +88,12 @@ Generated 2026-07-22T01:39:48.563975+00:00. This is a separate extension of the 
 | trend_3d_10d_sized_16m | 115 | 0 | 0.0000 | 0.0000 |  |
 | aligned_poc_immediate_10m | 13 | 0 | 0.0000 | 0.0000 |  |
 | aligned_poc_acceptance_16m | 8 | 0 | 0.0000 | 0.0000 |  |
+| aligned_poc_acceptance_reserved_16m | 8 | 0 | 0.0000 | 0.0000 |  |
+| aligned_poc_acceptance_chart_scale_16m | 8 | 1 | 0.1250 | 0.4882 | 0.0149 |
+| reserved_3d_10d_trail_16m | 115 | 0 | 0.0000 | 0.0000 |  |
+| reserved_chart_scale_16m | 115 | 2 | 0.0174 | 0.8187 | 0.0091 |
+| reserved_3d_10d_trail_30m | 142 | 0 | 0.0000 | 0.0000 |  |
+| reserved_chart_scale_30m | 142 | 3 | 0.0211 | 1.5019 | 0.0143 |
 | trend_trail_16m | 115 | 0 | 0.0000 | 0.0000 |  |
 | trend_trail_poc_scale_16m | 115 | 0 | 0.0000 | 0.0000 |  |
 | trend_trail_poc_scale_30m | 142 | 0 | 0.0000 | 0.0000 |  |
@@ -80,24 +104,30 @@ Generated 2026-07-22T01:39:48.563975+00:00. This is a separate extension of the 
 
 ## Scaling eligibility funnel
 
-| variant | trades | trend_aligned_trades | trades_with_raised_stop | trades_crossing_prior_poc | aligned_trades_crossing_prior_poc | qualified_scale_signals | filled_add_ons |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| static_10m | 83 | 34 | 0 | 1 | 1 | 0 | 0 |
-| static_16m | 115 | 42 | 0 | 6 | 3 | 0 | 0 |
-| static_20m | 122 | 44 | 0 | 8 | 3 | 0 | 0 |
-| static_30m | 142 | 49 | 0 | 9 | 3 | 0 | 0 |
-| trend_sized_16m | 115 | 42 | 0 | 6 | 3 | 0 | 0 |
-| trend_3d_10d_sized_10m | 83 | 38 | 0 | 1 | 0 | 0 | 0 |
-| trend_3d_10d_sized_16m | 115 | 48 | 0 | 6 | 2 | 0 | 0 |
-| aligned_poc_immediate_10m | 13 | 13 | 0 | 0 | 0 | 0 | 0 |
-| aligned_poc_acceptance_16m | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
-| trend_trail_16m | 115 | 42 | 24 | 6 | 3 | 0 | 0 |
-| trend_trail_poc_scale_16m | 115 | 42 | 24 | 6 | 3 | 1 | 0 |
-| trend_trail_poc_scale_30m | 142 | 49 | 40 | 9 | 3 | 1 | 0 |
-| reserved_trend_trail_16m | 115 | 42 | 24 | 6 | 3 | 0 | 0 |
-| reserved_poc_scale_16m | 115 | 42 | 24 | 6 | 3 | 1 | 1 |
-| reserved_trend_trail_30m | 142 | 49 | 40 | 9 | 3 | 0 | 0 |
-| reserved_poc_scale_30m | 142 | 49 | 40 | 9 | 3 | 1 | 1 |
+| variant | trades | trend_aligned_trades | trades_with_raised_stop | trades_crossing_prior_poc | aligned_trades_crossing_prior_poc | qualified_scale_signals | chart_acceptance_observations | filled_add_ons |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| static_10m | 83 | 34 | 0 | 1 | 1 | 0 | 0 | 0 |
+| static_16m | 115 | 42 | 0 | 6 | 3 | 0 | 5 | 0 |
+| static_20m | 122 | 44 | 0 | 8 | 3 | 0 | 7 | 0 |
+| static_30m | 142 | 49 | 0 | 9 | 3 | 0 | 9 | 0 |
+| trend_sized_16m | 115 | 42 | 0 | 6 | 3 | 0 | 5 | 0 |
+| trend_3d_10d_sized_10m | 83 | 38 | 0 | 1 | 0 | 0 | 0 | 0 |
+| trend_3d_10d_sized_16m | 115 | 48 | 0 | 6 | 2 | 0 | 5 | 0 |
+| aligned_poc_immediate_10m | 13 | 13 | 0 | 0 | 0 | 0 | 1 | 0 |
+| aligned_poc_acceptance_16m | 8 | 8 | 0 | 0 | 0 | 0 | 1 | 0 |
+| aligned_poc_acceptance_reserved_16m | 8 | 8 | 3 | 0 | 0 | 0 | 1 | 0 |
+| aligned_poc_acceptance_chart_scale_16m | 8 | 8 | 3 | 0 | 0 | 1 | 1 | 1 |
+| reserved_3d_10d_trail_16m | 115 | 48 | 24 | 6 | 2 | 0 | 5 | 0 |
+| reserved_chart_scale_16m | 115 | 48 | 24 | 6 | 2 | 2 | 5 | 2 |
+| reserved_3d_10d_trail_30m | 142 | 54 | 40 | 9 | 2 | 0 | 9 | 0 |
+| reserved_chart_scale_30m | 142 | 54 | 40 | 9 | 2 | 3 | 9 | 3 |
+| trend_trail_16m | 115 | 42 | 24 | 6 | 3 | 0 | 5 | 0 |
+| trend_trail_poc_scale_16m | 115 | 42 | 24 | 6 | 3 | 1 | 5 | 0 |
+| trend_trail_poc_scale_30m | 142 | 49 | 40 | 9 | 3 | 1 | 9 | 0 |
+| reserved_trend_trail_16m | 115 | 42 | 24 | 6 | 3 | 0 | 5 | 0 |
+| reserved_poc_scale_16m | 115 | 42 | 24 | 6 | 3 | 1 | 5 | 1 |
+| reserved_trend_trail_30m | 142 | 49 | 40 | 9 | 3 | 0 | 9 | 0 |
+| reserved_poc_scale_30m | 142 | 49 | 40 | 9 | 3 | 1 | 9 | 1 |
 
 ## Prior-session POC cross event study
 
@@ -155,19 +185,19 @@ Generated 2026-07-22T01:39:48.563975+00:00. This is a separate extension of the 
 | aligned_poc_acceptance_16m | all | all | 8 | 7.6746 | -60.0959 | 82.4176 | 0.5798 |
 | aligned_poc_acceptance_16m | development_2024 | all | 4 | -43.6313 | -107.7810 | 20.5184 | 0.0580 |
 | aligned_poc_acceptance_16m | holdout_2025 | all | 4 | 58.9804 | -54.9392 | 160.0042 | 0.8652 |
-| trend_trail_16m | all | all | 110 | 8.7444 | -7.5654 | 25.0094 | 0.8602 |
-| trend_trail_16m | development_2024 | all | 56 | 10.2832 | -13.6522 | 33.7285 | 0.7928 |
-| trend_trail_16m | holdout_2025 | all | 54 | 7.1485 | -14.0676 | 29.3312 | 0.7382 |
-| trend_trail_poc_scale_16m | all | all | 110 | 8.7444 | -7.5654 | 25.0094 | 0.8602 |
-| trend_trail_poc_scale_16m | development_2024 | all | 56 | 10.2832 | -13.6522 | 33.7285 | 0.7928 |
-| trend_trail_poc_scale_16m | holdout_2025 | all | 54 | 7.1485 | -14.0676 | 29.3312 | 0.7382 |
-| trend_trail_poc_scale_30m | all | all | 128 | 5.8737 | -11.3615 | 23.9758 | 0.7494 |
-| trend_trail_poc_scale_30m | development_2024 | all | 65 | 5.8547 | -19.1502 | 30.9688 | 0.6790 |
-| trend_trail_poc_scale_30m | holdout_2025 | all | 63 | 5.8933 | -18.4692 | 31.1052 | 0.6750 |
-| reserved_trend_trail_16m | all | all | 110 | 6.7066 | -5.8232 | 19.1593 | 0.8562 |
-| reserved_trend_trail_16m | development_2024 | all | 56 | 7.8590 | -10.5628 | 26.0207 | 0.7950 |
-| reserved_trend_trail_16m | holdout_2025 | all | 54 | 5.5115 | -10.9870 | 22.8107 | 0.7356 |
-| reserved_poc_scale_16m | all | all | 110 | 6.7174 | -5.8107 | 19.1701 | 0.8566 |
+| aligned_poc_acceptance_reserved_16m | all | all | 8 | 3.5397 | -44.7531 | 58.9616 | 0.5436 |
+| aligned_poc_acceptance_reserved_16m | development_2024 | all | 4 | -30.5290 | -80.8357 | 19.7778 | 0.0580 |
+| aligned_poc_acceptance_reserved_16m | holdout_2025 | all | 4 | 37.6083 | -41.2044 | 113.3762 | 0.8482 |
+| aligned_poc_acceptance_chart_scale_16m | all | all | 8 | 3.8345 | -44.7531 | 59.8460 | 0.5448 |
+| aligned_poc_acceptance_chart_scale_16m | development_2024 | all | 4 | -30.5290 | -80.8357 | 19.7778 | 0.0580 |
+| aligned_poc_acceptance_chart_scale_16m | holdout_2025 | all | 4 | 38.1979 | -41.2044 | 115.1451 | 0.8482 |
+| reserved_3d_10d_trail_16m | all | all | 110 | 5.1740 | -7.7187 | 17.7735 | 0.7874 |
+| reserved_3d_10d_trail_16m | development_2024 | all | 56 | 7.3019 | -11.0546 | 25.1917 | 0.7780 |
+| reserved_3d_10d_trail_16m | holdout_2025 | all | 54 | 2.9673 | -14.5307 | 20.6252 | 0.6312 |
+| reserved_chart_scale_16m | all | all | 110 | 5.1692 | -7.7195 | 17.7695 | 0.7880 |
+| reserved_chart_scale_16m | development_2024 | all | 56 | 7.3232 | -11.0463 | 25.2558 | 0.7792 |
+| reserved_chart_scale_16m | holdout_2025 | all | 54 | 2.9354 | -14.5405 | 20.5704 | 0.6290 |
+| reserved_3d_10d_trail_30m | all | all | 128 | 1.5809 | -12.0126 | 16.3013 | 0.5942 |
 
 ## Holdout cost sensitivity
 
@@ -260,6 +290,7 @@ Generated 2026-07-22T01:39:48.563975+00:00. This is a separate extension of the 
 - [10/16/20/30-minute horizon comparison](horizon_comparison.png)
 - [POC-cross forward returns](poc_cross_forward_returns.png)
 - [POC-cross timing impact](poc_cross_timing_impact.png)
+- [Chart-scaling event paths](chart_scaling_event_paths.png)
 
 ## Predeclared rules
 
@@ -270,6 +301,7 @@ Generated 2026-07-22T01:39:48.563975+00:00. This is a separate extension of the 
 - The reserved-scaling diagnostic starts with 75% of those risk allocations so an aligned trade can retain leverage capacity for an add-on. It was introduced after observing that the unconstrained signal was already at 10x, so it is diagnostic rather than validated.
 - The trail activates after a completed close reaches +1R, locks +0.25R, and then follows the best completed close by 1.5 ATR. Stop changes apply only to subsequent bars.
 - One add-on is eligible only after the stop is raised, trend is aligned, and an aggressive, delta-aligned completed bar crosses the 0.1-ATR band around one of the prior five completed-session POCs.
+- The chart-scaling extension instead requires two closes holding at least +0.5R, a new directional close, an edge close on a range-expansion bar, and current developing POC migration of at least 0.1 ATR from its signal-time value.
 - The add-on enters at the next bar open, is capped at 50% of base size and the remaining 10x capacity, and its stop risk plus round-trip cost cannot exceed net base profit already locked by the protected stop.
 - Same-bar stop/target ambiguity resolves to the stop. The 2R target and three-loss daily stop remain active.
 
