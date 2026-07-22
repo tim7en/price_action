@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-22T02:35:22.541467+00:00",
+  "generated_at_utc": "2026-07-22T02:45:56.060199+00:00",
   "data_file": "/Users/timursabitov/Dev/price_action/cache/Nasdaq.csv",
   "data_quality": {
     "input_rows": 681646,
@@ -26,6 +26,24 @@
     "one_way_cost_bps": 0.5,
     "research_only": true,
     "cost_note": "Commission plus slippage is charged to entry and exit notional."
+  },
+  "binance_execution_file": "/Users/timursabitov/Dev/price_action/config/binance_session_scalper_execution.json",
+  "binance_execution": {
+    "product": "usd_m_perp",
+    "maker_fee_bps": 10.0,
+    "taker_fee_bps": 10.0,
+    "maker_fill_fraction": 0.0,
+    "bnb_fee_discount_fraction": 0.0,
+    "slippage_bps": 5.0,
+    "annual_funding_bps": 0.0,
+    "annual_cash_yield_bps": 0.0,
+    "funding_history_supplied": false,
+    "venue_instrument_mapping_supplied": false,
+    "commission_bps": 10.0,
+    "all_in_trade_cost_bps": 15.0,
+    "turnover_definition": "sum(abs(target_weight - prior_weight))",
+    "funding_note": "Positive funding means longs pay and shorts receive; supply historical rates for investable results.",
+    "research_only": true
   },
   "research_config": {
     "profile_rows": 64,
@@ -85,10 +103,44 @@
       0.5,
       0.2,
       0.05
+    ],
+    "cost_sensitivity_bps": [
+      0.5,
+      1.0,
+      2.0,
+      5.0,
+      10.0
     ]
+  },
+  "stability_candidate": {
+    "poc_scope": "3d_or_5d",
+    "timeline": "rth_15_330m",
+    "context": "poc_migration",
+    "stop_factor_15m": 0.5,
+    "holding_minutes": 5
+  },
+  "deployment_gate": {
+    "status": "BLOCKED",
+    "reasons": [
+      "Nasdaq CSV instrument and venue identity are unverified",
+      "execution venue and contract mapping are unverified",
+      "fewer than 200 naive walk-forward trades",
+      "naive expanding-quarter optimizer lost money out of sample",
+      "frozen candidate loses money under configured Binance costs"
+    ],
+    "stability_candidate": {
+      "poc_scope": "3d_or_5d",
+      "timeline": "rth_15_330m",
+      "context": "poc_migration",
+      "stop_factor_15m": 0.5,
+      "holding_minutes": 5
+    },
+    "candidate_selection_warning": "The candidate uses the 2024 and 2025 stability audit and therefore requires a new untouched forward period.",
+    "permitted_next_step": "paper trade the frozen rule with actual venue fees, fills, mark price, maintenance tiers, and exchange-native stops"
   },
   "plot_files": [
     "stop_holding_sensitivity.png",
+    "execution_cost_sensitivity.png",
     "leverage_equity_and_drawdown.png",
     "leverage_survival_probabilities.png",
     "walk_forward_optimizer_equity.png"

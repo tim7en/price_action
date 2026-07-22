@@ -669,6 +669,7 @@ def deployment_gate(
     walk_forward_summary: dict[str, Any],
     data_audit: dict[str, Any],
     execution: NasdaqExecutionCosts,
+    cost_sensitivity: pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     reasons: list[str] = []
     if "unverified" in str(data_audit.get("instrument_identity", "")).lower():
@@ -682,6 +683,16 @@ def deployment_gate(
     )
     if not np.isfinite(walk_forward_return) or walk_forward_return <= 0.0:
         reasons.append("naive expanding-quarter optimizer lost money out of sample")
+    if cost_sensitivity is not None and not cost_sensitivity.empty:
+        binance_proxy = cost_sensitivity.loc[
+            cost_sensitivity["configured_binance_proxy"]
+            & cost_sensitivity["label"].eq("risk_targeted_20x")
+        ]
+        if (
+            not binance_proxy.empty
+            and float(binance_proxy.iloc[0]["cumulative_net_return"]) <= 0.0
+        ):
+            reasons.append("frozen candidate loses money under configured Binance costs")
     return {
         "status": "BLOCKED" if reasons else "FORWARD_PAPER_TEST_ONLY",
         "reasons": reasons,
@@ -941,22 +952,27 @@ def build_poc_leverage_optimizer(
     *,
     data_path: str | Path = DEFAULT_DATA,
     execution_path: str | Path = DEFAULT_EXECUTION,
+    binance_execution_path: str | Path = DEFAULT_BINANCE_EXECUTION,
     output_dir: str | Path = DEFAULT_OUTPUT,
 ) -> dict[str, Any]:
     root = resolve_project_root(project_root)
     data_file = Path(data_path)
     execution_file = Path(execution_path)
+    binance_execution_file = Path(binance_execution_path)
     output = Path(output_dir)
     if not data_file.is_absolute():
         data_file = root / data_file
     if not execution_file.is_absolute():
         execution_file = root / execution_file
+    if not binance_execution_file.is_absolute():
+        binance_execution_file = root / binance_execution_file
     if not output.is_absolute():
         output = root / output
     output.mkdir(parents=True, exist_ok=True)
 
     config = PocLeverageOptimizerConfig()
     execution = load_execution_costs(execution_file)
+    binance_execution = load_binance_execution_costs(binance_execution_file)
     bars, data_audit = load_nasdaq_bars(data_file, 1)
     strategy = NasdaqStrategyConfig(bar_minutes=1)
     indicated = add_indicators(bars, strategy)
@@ -1001,6 +1017,7 @@ def build_poc_leverage_optimizer(
         top_rows.append(match)
     top_grid = pd.concat(top_rows, ignore_index=True) if top_rows else pd.DataFrame()
 
+    stability = parameter_stability_audit(grid, config.minimum_training_trades)
     selections, walk_forward_trades = expanding_quarter_walk_forward(
         trades_by_key,
         config,
@@ -1012,12 +1029,25 @@ def build_poc_leverage_optimizer(
         execution,
         config,
     )
+    cost_sensitivity = execution_cost_sensitivity(
+        observations,
+        indicated,
+        config,
+        configured_binance_cost_bps=binance_execution.all_in_trade_cost_bps,
+    )
+    gate = deployment_gate(
+        walk_forward_summary,
+        data_audit,
+        execution,
+        cost_sensitivity,
+    )
     plot_paths = _plots(
         grid,
         walk_forward_trades,
         leverage_summary,
         survival,
         leverage_equity,
+        cost_sensitivity,
         output,
     )
     governance = {
@@ -1025,25 +1055,35 @@ def build_poc_leverage_optimizer(
         "data_file": str(data_file),
         "data_quality": data_audit,
         "execution": execution.to_dict(),
+        "binance_execution_file": str(binance_execution_file),
+        "binance_execution": binance_execution.to_dict(),
         "research_config": asdict(research),
         "optimizer_config": asdict(config),
+        "stability_candidate": STABILITY_CANDIDATE,
+        "deployment_gate": gate,
         "plot_files": [path.name for path in plot_paths],
         "status": "RESEARCH_ONLY",
     }
     grid.to_csv(output / "parameter_grid.csv", index=False)
     top_grid.to_csv(output / "top_development_parameters.csv", index=False)
+    stability.to_csv(output / "parameter_stability_audit.csv", index=False)
     selections.to_csv(output / "walk_forward_selections.csv", index=False)
     walk_forward_trades.to_csv(output / "walk_forward_trades.csv", index=False)
     leverage_summary.to_csv(output / "leverage_historical_summary.csv", index=False)
     survival.to_csv(output / "leverage_survival_bootstrap.csv", index=False)
     leverage_equity.to_csv(output / "leverage_equity_curves.csv", index=False)
+    cost_sensitivity.to_csv(output / "execution_cost_sensitivity.csv", index=False)
     (output / "governance.json").write_text(json.dumps(governance, indent=2), encoding="utf-8")
+    (output / "deployment_gate.json").write_text(json.dumps(gate, indent=2), encoding="utf-8")
     report = _report(
         top_grid,
+        stability,
         selections,
         walk_forward_summary,
         leverage_summary,
         survival,
+        cost_sensitivity,
+        gate,
         governance,
     )
     (output / "report.md").write_text(report, encoding="utf-8")
@@ -1051,10 +1091,13 @@ def build_poc_leverage_optimizer(
         "report_path": output / "report.md",
         "grid": grid,
         "top_grid": top_grid,
+        "stability": stability,
         "selections": selections,
         "walk_forward_summary": walk_forward_summary,
         "leverage_summary": leverage_summary,
         "survival": survival,
+        "cost_sensitivity": cost_sensitivity,
+        "deployment_gate": gate,
     }
 
 
@@ -1063,12 +1106,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--project-root")
     parser.add_argument("--data-path", default=str(DEFAULT_DATA))
     parser.add_argument("--execution-path", default=str(DEFAULT_EXECUTION))
+    parser.add_argument(
+        "--binance-execution-path",
+        default=str(DEFAULT_BINANCE_EXECUTION),
+    )
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT))
     args = parser.parse_args(argv)
     results = build_poc_leverage_optimizer(
         project_root=args.project_root,
         data_path=args.data_path,
         execution_path=args.execution_path,
+        binance_execution_path=args.binance_execution_path,
         output_dir=args.output_dir,
     )
     print(f"Report: {results['report_path']}")

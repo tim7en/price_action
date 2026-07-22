@@ -38,6 +38,7 @@ price-action-factor-drivers = "price_action.factor_driver_model:main"
 price-action-binance-session-scalper = "price_action.binance_session_scalper:main"
 price-action-nasdaq-session-backtest = "price_action.nasdaq_session_backtest:main"
 price-action-nasdaq-poc-scaling-backtest = "price_action.nasdaq_poc_scaling_backtest:main"
+price-action-nasdaq-poc-leverage-optimizer = "price_action.nasdaq_poc_leverage_optimizer:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]

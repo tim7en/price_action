@@ -1,0 +1,19 @@
+{
+  "status": "BLOCKED",
+  "reasons": [
+    "Nasdaq CSV instrument and venue identity are unverified",
+    "execution venue and contract mapping are unverified",
+    "fewer than 200 naive walk-forward trades",
+    "naive expanding-quarter optimizer lost money out of sample",
+    "frozen candidate loses money under configured Binance costs"
+  ],
+  "stability_candidate": {
+    "poc_scope": "3d_or_5d",
+    "timeline": "rth_15_330m",
+    "context": "poc_migration",
+    "stop_factor_15m": 0.5,
+    "holding_minutes": 5
+  },
+  "candidate_selection_warning": "The candidate uses the 2024 and 2025 stability audit and therefore requires a new untouched forward period.",
+  "permitted_next_step": "paper trade the frozen rule with actual venue fees, fills, mark price, maintenance tiers, and exchange-native stops"
+}

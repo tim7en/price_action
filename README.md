@@ -197,6 +197,19 @@ within-15-minute timing tables, structural-stop sensitivity, leveraged return
 curves, drawdowns, and one-minute case-study charts under
 `outputs/nasdaq_multitimeframe_poc_backtest/`.
 
+To audit stop/holding-time optimization and 20x/40x/100x account survival, run:
+
+```bash
+python build_nasdaq_poc_leverage_optimizer.py
+```
+
+The optimizer separates the exchange leverage ceiling from effective leverage
+implied by a 1% risk budget. It freezes a post-study POC-migration candidate,
+tests naive expanding-quarter selection, session-block bootstrap survival,
+liquidation proxies, and turnover costs through the configured Binance
+fee/slippage scenario. Outputs and a machine-readable deployment gate are
+written under `outputs/nasdaq_poc_leverage_optimizer/`.
+
 The CSV is not identified as CME NQ: most prices are off NQ's quarter-point
 tick grid, and volume provenance is absent. The output is therefore explicitly
 research-only until venue, contract/roll, spread and commission metadata are
