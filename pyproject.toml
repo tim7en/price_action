@@ -53,6 +53,7 @@ price-action-nasdaq-poc-hierarchical-trend = "price_action.nasdaq_poc_hierarchic
 price-action-nasdaq-poc-small-account = "price_action.nasdaq_poc_small_account_scenario:main"
 price-action-btc-5m-small-account = "price_action.btc_5m_small_account_scenario:main"
 price-action-nasdaq-triple-a-proxy = "price_action.nasdaq_triple_a_ohlcv_proxy:main"
+price-action-nasdaq-identify-confirm-trade = "price_action.nasdaq_identify_confirm_trade_backtest:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]
