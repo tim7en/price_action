@@ -103,6 +103,9 @@ def add_pine_indicators(
     bars: pd.DataFrame,
     schedule: pd.DataFrame,
     config: PineFabioConfig,
+    *,
+    bar_minutes: int = 1,
+    vwap_timezone: str = "America/New_York",
 ) -> pd.DataFrame:
     """Calculate only current/past-bar quantities used by the supplied script."""
     out = bars[["open", "high", "low", "close", "volume"]].copy()
@@ -122,10 +125,10 @@ def add_pine_indicators(
     # metadata in the CSV, calendar days in the stated New York timezone are
     # the closest deterministic translation.
     hlc3 = (out["high"] + out["low"] + out["close"]) / 3.0
-    ny_day = pd.Series(out.index.tz_convert("America/New_York").date, index=out.index)
+    anchor_day = pd.Series(out.index.tz_convert(vwap_timezone).date, index=out.index)
     weighted = hlc3 * out["volume"]
-    cumulative_weighted = weighted.groupby(ny_day, sort=False).cumsum()
-    cumulative_volume = out["volume"].groupby(ny_day, sort=False).cumsum().replace(0.0, np.nan)
+    cumulative_weighted = weighted.groupby(anchor_day, sort=False).cumsum()
+    cumulative_volume = out["volume"].groupby(anchor_day, sort=False).cumsum().replace(0.0, np.nan)
     out["vwap"] = cumulative_weighted / cumulative_volume
     out["vwap_upper"] = out["vwap"] + out["atr"] * config.vwap_band_atr
     out["vwap_lower"] = out["vwap"] - out["atr"] * config.vwap_band_atr
@@ -206,9 +209,11 @@ def add_pine_indicators(
     for session in schedule.itertuples(index=False):
         left = int(out.index.searchsorted(pd.Timestamp(session.session_open), side="left"))
         right = int(out.index.searchsorted(pd.Timestamp(session.session_close), side="left"))
-        if right - left <= config.orb_minutes:
+        orb_bars = config.orb_minutes / bar_minutes
+        defining_count = int(np.floor(orb_bars)) + 1  # Pine uses sessionBars <= orbBars.
+        if right - left < defining_count:
             continue
-        defining_right = left + config.orb_minutes + 1  # Pine uses <= 30: 31 bars.
+        defining_right = left + defining_count
         if defining_right > right:
             continue
         high = float(out["high"].iloc[left:defining_right].max())
@@ -272,8 +277,17 @@ def build_raw_signals(
     bars: pd.DataFrame,
     schedule: pd.DataFrame,
     config: PineFabioConfig,
+    *,
+    bar_minutes: int = 1,
+    vwap_timezone: str = "America/New_York",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    indicated = add_pine_indicators(bars, schedule, config)
+    indicated = add_pine_indicators(
+        bars,
+        schedule,
+        config,
+        bar_minutes=bar_minutes,
+        vwap_timezone=vwap_timezone,
+    )
     indicated["poc"] = np.nan
     indicated["vah"] = np.nan
     indicated["val"] = np.nan
@@ -639,9 +653,14 @@ def summarize_scopes(paths: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
-def build_cost_sensitivity(trades: pd.DataFrame, config: PineFabioConfig) -> pd.DataFrame:
+def build_cost_sensitivity(
+    trades: pd.DataFrame,
+    config: PineFabioConfig,
+    *,
+    one_way_costs_bps: tuple[float, ...] = (0.0, 0.10, 0.20, 0.25, 0.30, 0.40, 0.50, 0.75, 1.00),
+) -> pd.DataFrame:
     records: list[dict[str, Any]] = []
-    for one_way_bps in (0.0, 0.10, 0.20, 0.25, 0.30, 0.40, 0.50, 0.75, 1.00):
+    for one_way_bps in one_way_costs_bps:
         path = account_path(
             trades,
             variant="script_realistic_cost",
@@ -659,9 +678,18 @@ def _audit_causality(
     signals: pd.DataFrame,
     trades: pd.DataFrame,
     config: PineFabioConfig,
+    *,
+    bar_minutes: int = 1,
+    vwap_timezone: str = "America/New_York",
 ) -> dict[str, Any]:
     cutoff = min(len(bars) - 1, 100_000)
-    prefix = add_pine_indicators(bars.iloc[: cutoff + 1], schedule, config)
+    prefix = add_pine_indicators(
+        bars.iloc[: cutoff + 1],
+        schedule,
+        config,
+        bar_minutes=bar_minutes,
+        vwap_timezone=vwap_timezone,
+    )
     fields = ["atr", "vwap", "smooth_delta", "triple_a_long", "triple_a_short", "orb_high", "orb_low"]
     prefix_matches = True
     for field in fields:
@@ -711,7 +739,7 @@ def _audit_causality(
         "checks": checks,
         "explanation": {
             "signals": "Every feature uses the signal bar or earlier bars; no negative shift or future slice is used.",
-            "entry": "A close-confirmed signal creates a market order filled at the following one-minute open.",
+            "entry": f"A close-confirmed signal creates a market order filled at the following {bar_minutes}-minute bar open.",
             "exits": "Stops, limits, and trailing stops walk TradingView's inferred OHLC path without future bars.",
         },
     }

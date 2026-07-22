@@ -1,0 +1,78 @@
+{
+  "generated_at_utc": "2026-07-22T07:20:29.504578+00:00",
+  "status": "RESEARCH_ONLY_LIVE_DEPLOYMENT_BLOCKED",
+  "source": "D:\\dev\\price_action\\cache\\cache\\binance_asia_orb\\BTCUSDT_2022-01-01_2026-02-25_5m.csv.gz",
+  "bar_minutes": 5,
+  "config": {
+    "vp_length": 50,
+    "vp_resolution": 24,
+    "value_area_fraction": 0.7,
+    "atr_length": 14,
+    "absorb_volume_multiplier": 2.0,
+    "absorb_price_threshold": 0.3,
+    "delta_lookback": 5,
+    "vwap_band_atr": 0.5,
+    "reward_to_risk": 2.0,
+    "maximum_daily_losses": 3,
+    "trail_activation_atr": 1.5,
+    "trail_offset_atr": 0.5,
+    "orb_minutes": 30,
+    "script_equity_fraction": 1.0,
+    "intended_risk_fraction": 0.01,
+    "intended_maximum_leverage": 10.0,
+    "realistic_one_way_cost_bps": 6.0
+  },
+  "reference_one_way_cost_bps": 6.0,
+  "stress_one_way_cost_bps": 15.0,
+  "data_quality": {
+    "input_rows": 436729,
+    "first_bar_utc": "2022-01-01T00:00:00+00:00",
+    "last_bar_utc": "2026-02-25T11:20:00+00:00",
+    "expected_rows_on_complete_grid": 436745,
+    "missing_five_minute_bars": 16,
+    "non_five_minute_steps": 1,
+    "maximum_gap_minutes": 85.0,
+    "duplicate_timestamps": 0,
+    "zero_volume_bars": 14,
+    "venue_product_identity": "unverified BTCUSDT klines; spot versus perpetual metadata absent"
+  },
+  "interpretations": {
+    "literal_binance_utc": "Pine session in Binance exchange timezone UTC; VWAP UTC day.",
+    "label_intended_new_york": "Session forced to America/New_York as suggested by label; VWAP remains UTC day."
+  },
+  "funding": "not modeled; historical rates and product identity absent",
+  "audits": {
+    "literal_binance_utc": {
+      "status": "PASS",
+      "checks": {
+        "indicator_prefix_invariance": true,
+        "volume_profile_future_mutation_invariance": true,
+        "entries_exactly_one_bar_after_signal": true,
+        "entries_use_next_bar_open": true,
+        "signals_restricted_to_confirmed_bar_data": true,
+        "no_bar_magnifier_or_lower_timeframe_data_used": true
+      },
+      "explanation": {
+        "signals": "Every feature uses the signal bar or earlier bars; no negative shift or future slice is used.",
+        "entry": "A close-confirmed signal creates a market order filled at the following 5-minute bar open.",
+        "exits": "Stops, limits, and trailing stops walk TradingView's inferred OHLC path without future bars."
+      }
+    },
+    "label_intended_new_york": {
+      "status": "PASS",
+      "checks": {
+        "indicator_prefix_invariance": true,
+        "volume_profile_future_mutation_invariance": true,
+        "entries_exactly_one_bar_after_signal": true,
+        "entries_use_next_bar_open": true,
+        "signals_restricted_to_confirmed_bar_data": true,
+        "no_bar_magnifier_or_lower_timeframe_data_used": true
+      },
+      "explanation": {
+        "signals": "Every feature uses the signal bar or earlier bars; no negative shift or future slice is used.",
+        "entry": "A close-confirmed signal creates a market order filled at the following 5-minute bar open.",
+        "exits": "Stops, limits, and trailing stops walk TradingView's inferred OHLC path without future bars."
+      }
+    }
+  }
+}

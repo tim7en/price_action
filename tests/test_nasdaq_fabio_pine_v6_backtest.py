@@ -66,6 +66,27 @@ class PineFabioBacktestTests(unittest.TestCase):
         self.assertFalse(indicated.loc[index[30], "orb_long"])
         self.assertTrue(indicated.loc[index[31], "orb_long"])
 
+    def test_orb_contains_seven_native_five_minute_bars(self) -> None:
+        index = pd.date_range("2025-01-02 09:30", periods=9, freq="5min", tz="UTC")
+        bars = pd.DataFrame(
+            {"open": 100.0, "high": 100.0, "low": 99.0, "close": 100.0, "volume": 100.0},
+            index=index,
+        )
+        bars.loc[index[7], ["high", "close"]] = [101.0, 101.0]
+        schedule = pd.DataFrame(
+            {
+                "session_date": ["2025-01-02"],
+                "session_open": [index[0]],
+                "session_close": [index[-1] + pd.Timedelta(minutes=5)],
+            }
+        )
+        indicated = add_pine_indicators(
+            bars, schedule, PineFabioConfig(), bar_minutes=5, vwap_timezone="UTC"
+        )
+        self.assertTrue(indicated.loc[index[6], "orb_defined"])
+        self.assertFalse(indicated.loc[index[6], "orb_long"])
+        self.assertTrue(indicated.loc[index[7], "orb_long"])
+
     def test_inferred_path_uses_open_proximity(self) -> None:
         self.assertEqual(inferred_path(100.0, 101.0, 95.0, 99.0), [100.0, 101.0, 95.0, 99.0])
         self.assertEqual(inferred_path(100.0, 105.0, 99.0, 101.0), [100.0, 99.0, 105.0, 101.0])

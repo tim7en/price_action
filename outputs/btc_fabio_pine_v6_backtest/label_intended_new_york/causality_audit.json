@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "checks": {
+    "indicator_prefix_invariance": true,
+    "volume_profile_future_mutation_invariance": true,
+    "entries_exactly_one_bar_after_signal": true,
+    "entries_use_next_bar_open": true,
+    "signals_restricted_to_confirmed_bar_data": true,
+    "no_bar_magnifier_or_lower_timeframe_data_used": true
+  },
+  "explanation": {
+    "signals": "Every feature uses the signal bar or earlier bars; no negative shift or future slice is used.",
+    "entry": "A close-confirmed signal creates a market order filled at the following 5-minute bar open.",
+    "exits": "Stops, limits, and trailing stops walk TradingView's inferred OHLC path without future bars."
+  }
+}
