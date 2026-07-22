@@ -1,0 +1,194 @@
+{
+  "generated_at_utc": "2026-07-22T02:16:36.162121+00:00",
+  "strategy": "one_minute_execution_fifteen_minute_composite_poc_context",
+  "data_file": "/Users/timursabitov/Dev/price_action/cache/Nasdaq.csv",
+  "data_quality": {
+    "input_rows": 681646,
+    "bar_minutes": 1,
+    "aggregated_rows": 681646,
+    "first_input_bar_utc": "2024-01-02T05:02:00+00:00",
+    "last_input_bar_utc": "2025-12-05T21:44:00+00:00",
+    "duplicate_timestamps": 0,
+    "zero_volume_rows": 0,
+    "non_one_minute_gap_events": 548,
+    "largest_gap_minutes": 4381.0,
+    "incomplete_aggregate_groups_dropped": 0,
+    "close_not_on_nq_quarter_tick_rows": 641336,
+    "close_not_on_nq_quarter_tick_share": 0.9408637327879867,
+    "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
+    "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
+  },
+  "research_config": {
+    "profile_rows": 64,
+    "profile_value_fraction": 0.7,
+    "poc_zone_half_width_daily_atr": 0.025,
+    "poc_cluster_distance_daily_atr": 0.05,
+    "daily_atr_sessions": 14,
+    "fifteen_minute_reference_blocks": 20
+  },
+  "execution": {
+    "instrument_assumption": "unverified_nasdaq_100_cash_or_cfd",
+    "commission_bps": 0.15,
+    "slippage_bps": 0.35,
+    "venue_and_contract_verified": false,
+    "historical_spread_supplied": false,
+    "one_way_cost_bps": 0.5,
+    "research_only": true,
+    "cost_note": "Commission plus slippage is charged to entry and exit notional."
+  },
+  "variants": {
+    "1m_cross_10m": [
+      "one_minute_cross",
+      10
+    ],
+    "1m_acceptance_10m": [
+      "one_minute_acceptance",
+      10
+    ],
+    "15m_acceptance_10m": [
+      "fifteen_minute_acceptance",
+      10
+    ],
+    "1m_focus_acceptance_10m": [
+      "one_minute_focus_acceptance",
+      10
+    ],
+    "1m_acceptance_3d_10m": [
+      "one_minute_acceptance_3d",
+      10
+    ],
+    "1m_acceptance_5d_10m": [
+      "one_minute_acceptance_5d",
+      10
+    ],
+    "1m_acceptance_3d_or_5d_10m": [
+      "one_minute_acceptance_3d_or_5d",
+      10
+    ],
+    "1m_acceptance_3d_or_5d_opening_10m": [
+      "one_minute_acceptance_3d_or_5d_opening",
+      10
+    ],
+    "opening_3d5d_stop_0.00x_10m": [
+      "opening_3d5d_structural_stop_0.00",
+      10
+    ],
+    "opening_3d5d_stop_0.25x_10m": [
+      "opening_3d5d_structural_stop_0.25",
+      10
+    ],
+    "opening_3d5d_stop_0.50x_10m": [
+      "opening_3d5d_structural_stop_0.50",
+      10
+    ],
+    "opening_3d5d_stop_0.75x_10m": [
+      "opening_3d5d_structural_stop_0.75",
+      10
+    ],
+    "opening_3d5d_stop_1.00x_10m": [
+      "opening_3d5d_structural_stop_1.00",
+      10
+    ],
+    "1m_focus_15m_context_10m": [
+      "one_minute_focus_15m",
+      10
+    ],
+    "1m_focus_15m_context_15m": [
+      "one_minute_focus_15m",
+      15
+    ],
+    "15m_focus_context_15m": [
+      "fifteen_minute_focus_15m",
+      15
+    ]
+  },
+  "blocked_signals": {
+    "1m_cross_10m": {
+      "overlap": 632,
+      "daily_loss_stop": 2279,
+      "unexecutable": 0
+    },
+    "1m_acceptance_10m": {
+      "overlap": 158,
+      "daily_loss_stop": 752,
+      "unexecutable": 0
+    },
+    "15m_acceptance_10m": {
+      "overlap": 109,
+      "daily_loss_stop": 273,
+      "unexecutable": 0
+    },
+    "1m_focus_acceptance_10m": {
+      "overlap": 90,
+      "daily_loss_stop": 244,
+      "unexecutable": 0
+    },
+    "1m_acceptance_3d_10m": {
+      "overlap": 30,
+      "daily_loss_stop": 200,
+      "unexecutable": 0
+    },
+    "1m_acceptance_5d_10m": {
+      "overlap": 20,
+      "daily_loss_stop": 144,
+      "unexecutable": 0
+    },
+    "1m_acceptance_3d_or_5d_10m": {
+      "overlap": 81,
+      "daily_loss_stop": 371,
+      "unexecutable": 0
+    },
+    "1m_acceptance_3d_or_5d_opening_10m": {
+      "overlap": 22,
+      "daily_loss_stop": 2,
+      "unexecutable": 0
+    },
+    "opening_3d5d_stop_0.00x_10m": {
+      "overlap": 10,
+      "daily_loss_stop": 0,
+      "unexecutable": 0
+    },
+    "opening_3d5d_stop_0.25x_10m": {
+      "overlap": 10,
+      "daily_loss_stop": 0,
+      "unexecutable": 0
+    },
+    "opening_3d5d_stop_0.50x_10m": {
+      "overlap": 18,
+      "daily_loss_stop": 0,
+      "unexecutable": 0
+    },
+    "opening_3d5d_stop_0.75x_10m": {
+      "overlap": 21,
+      "daily_loss_stop": 0,
+      "unexecutable": 0
+    },
+    "opening_3d5d_stop_1.00x_10m": {
+      "overlap": 22,
+      "daily_loss_stop": 0,
+      "unexecutable": 0
+    },
+    "1m_focus_15m_context_10m": {
+      "overlap": 62,
+      "daily_loss_stop": 65,
+      "unexecutable": 0
+    },
+    "1m_focus_15m_context_15m": {
+      "overlap": 62,
+      "daily_loss_stop": 68,
+      "unexecutable": 0
+    },
+    "15m_focus_context_15m": {
+      "overlap": 86,
+      "daily_loss_stop": 52,
+      "unexecutable": 0
+    }
+  },
+  "plot_files": [
+    "confirmation_clock_forward_returns.png",
+    "one_minute_acceptance_timing.png",
+    "strategy_equity_and_drawdown.png",
+    "one_minute_poc_case_studies.png"
+  ],
+  "selection_warning": "All rules share the same 2024-2025 sample and are exploratory."
+}

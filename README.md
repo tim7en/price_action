@@ -185,6 +185,18 @@ It never charges an add-on's stop risk to base capital and leaves the original
 baseline unchanged. Results, event studies, scaling paths, equity curves, and
 drawdowns are written under `outputs/nasdaq_poc_scaling_backtest/`.
 
+For the deeper one-minute execution versus completed 15-minute auction study,
+using prior 1-, 3-, and 5-session composite POCs, run:
+
+```bash
+python build_nasdaq_multitimeframe_poc_backtest.py
+```
+
+This writes causal POC-cross and acceptance event studies, session and
+within-15-minute timing tables, structural-stop sensitivity, leveraged return
+curves, drawdowns, and one-minute case-study charts under
+`outputs/nasdaq_multitimeframe_poc_backtest/`.
+
 The CSV is not identified as CME NQ: most prices are off NQ's quarter-point
 tick grid, and volume provenance is absent. The output is therefore explicitly
 research-only until venue, contract/roll, spread and commission metadata are
