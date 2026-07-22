@@ -40,6 +40,7 @@ price-action-nasdaq-session-backtest = "price_action.nasdaq_session_backtest:mai
 price-action-nasdaq-poc-scaling-backtest = "price_action.nasdaq_poc_scaling_backtest:main"
 price-action-nasdaq-poc-leverage-optimizer = "price_action.nasdaq_poc_leverage_optimizer:main"
 price-action-nasdaq-poc-asymmetric-runner = "price_action.nasdaq_poc_asymmetric_runner:main"
+price-action-nasdaq-macro-poc-assessment = "price_action.nasdaq_macro_poc_assessment:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]

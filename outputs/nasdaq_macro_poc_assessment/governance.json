@@ -1,0 +1,56 @@
+{
+  "generated_at_utc": "2026-07-22T06:27:53.821096+00:00",
+  "status": "RESEARCH_ONLY_LIVE_DEPLOYMENT_BLOCKED",
+  "signal_status": "frozen stable_5m_base ledger; no entry-rule optimization in this assessment",
+  "causal_policy": "monthly, SPY daily, and Nasdaq daily context joined strictly before session date",
+  "config": {
+    "base_risk_fraction": 0.0025,
+    "maximum_risk_fraction": 0.0075,
+    "profit_reinvestment_fraction": 0.5,
+    "daily_loss_limit_fraction": 0.0075,
+    "daily_loss_count_limit": 3,
+    "maximum_leverage": 20.0,
+    "reference_one_way_cost_bps": 0.5,
+    "cost_scenarios_bps": [
+      0.25,
+      0.5,
+      1.0,
+      1.5,
+      2.0
+    ],
+    "bootstrap_samples": 5000,
+    "bootstrap_seed": 17,
+    "mnq_multiplier": 2.0,
+    "mnq_base_round_turn_fees": 1.5,
+    "mnq_base_round_turn_slippage_points": 0.5,
+    "mnq_stress_round_turn_fees": 2.5,
+    "mnq_stress_round_turn_slippage_points": 1.0,
+    "account_sizes": [
+      25000.0,
+      100000.0
+    ]
+  },
+  "inputs": {
+    "trades": "D:\\dev\\price_action\\outputs\\nasdaq_poc_asymmetric_runner\\trades\\stable_5m_base.csv",
+    "macro": "D:\\dev\\price_action\\outputs\\regime_analysis\\regime_timeline.csv",
+    "daily": "D:\\dev\\price_action\\outputs\\spy_drawdown_regime_research\\drawdown_daily_panel.csv",
+    "nasdaq": "D:\\dev\\price_action\\cache\\Nasdaq.csv"
+  },
+  "data_quality": {
+    "input_rows": 681646,
+    "first_input_bar_utc": "2024-01-02T05:02:00+00:00",
+    "last_input_bar_utc": "2025-12-05T21:44:00+00:00",
+    "duplicate_timestamps": 0,
+    "close_not_on_nq_quarter_tick_rows": 641336,
+    "close_not_on_nq_quarter_tick_share": 0.9408637327879867,
+    "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
+    "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
+  },
+  "blocking_reasons": [
+    "Unverified Nasdaq CSV contract, venue, price grid, and volume identity.",
+    "The frozen candidate was selected with visibility into both available years.",
+    "Only 89 frozen trades and no untouched forward period.",
+    "OHLCV cannot verify Fabio-style footprint aggression or absorption.",
+    "MNQ fees and slippage are scenarios rather than broker-specific historical fills."
+  ]
+}
