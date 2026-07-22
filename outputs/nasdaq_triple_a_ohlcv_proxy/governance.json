@@ -1,0 +1,95 @@
+{
+  "generated_at_utc": "2026-07-22T09:58:52.910810+00:00",
+  "status": "RESEARCH_ONLY_NOT_TRUE_ORDER_FLOW",
+  "config": {
+    "profile_bins": 32,
+    "value_area_fraction": 0.7,
+    "anchor_hours_before_rth": 6.5,
+    "signal_start_minutes": 30,
+    "signal_end_minutes": 180,
+    "atr_bars": 14,
+    "volume_bars": 50,
+    "prior_extreme_bars": 3,
+    "threshold_quantile": 0.55,
+    "recovery_close_location": 0.6,
+    "location_tolerance_atr": 0.1,
+    "trigger_buffer_atr": 0.02,
+    "stop_buffer_atr": 0.05,
+    "trigger_expiry_bars": 3,
+    "minimum_structural_rr": 1.5,
+    "maximum_holding_minutes": 120,
+    "starter_risk_fraction": 0.001,
+    "total_risk_fraction": 0.0025,
+    "maximum_leverage": 20.0,
+    "add_maximum_base_multiple": 1.5,
+    "confirmation_minimum_r": 0.5,
+    "target1_exit_fraction": 0.3333333333333333,
+    "one_way_cost_bps": 0.5,
+    "maximum_daily_losses": 3
+  },
+  "thresholds": {
+    "volume_strength_minimum": 0.8743124666382058,
+    "excursion_atr_minimum": 0.4566070459035039,
+    "fit_start_utc": "2024-01-02T15:00:00+00:00",
+    "fit_end_utc": "2024-12-31T17:29:00+00:00",
+    "fit_bars": 37779
+  },
+  "data_quality": {
+    "input_rows": 681646,
+    "first_input_bar_utc": "2024-01-02T05:02:00+00:00",
+    "last_input_bar_utc": "2025-12-05T21:44:00+00:00",
+    "duplicate_timestamps": 0,
+    "close_not_on_nq_quarter_tick_rows": 641336,
+    "close_not_on_nq_quarter_tick_share": 0.9408637327879867,
+    "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
+    "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
+  },
+  "blocked": {
+    "static_0.25pct": {
+      "not_activated": 138,
+      "overlap": 45,
+      "daily_halt": 32,
+      "unexecutable": 0
+    },
+    "staged_0.25pct": {
+      "not_activated": 138,
+      "overlap": 35,
+      "daily_halt": 30,
+      "unexecutable": 0
+    },
+    "starter_only_0.10pct": {
+      "not_activated": 138,
+      "overlap": 35,
+      "daily_halt": 30,
+      "unexecutable": 0
+    },
+    "staged_2pct": {
+      "not_activated": 138,
+      "overlap": 35,
+      "daily_halt": 30,
+      "unexecutable": 0
+    }
+  },
+  "development_selected_specification": {
+    "candidate": "t180_rr3_volume_long",
+    "signal_end_minute_exclusive": 180,
+    "minimum_structural_rr": 3.0,
+    "intensity": "volume",
+    "side_scope": "long",
+    "development_volume_median": 1.1932198599991803,
+    "development_excursion_median": 0.7347056194916315
+  },
+  "audit": {
+    "status": "PASS",
+    "checks": {
+      "thresholds_fit_only_before_2025": true,
+      "prior_daily_context_strictly_prior": true,
+      "signals_at_least_30_minutes_after_open": true,
+      "profile_uses_no_bar_after_signal": true,
+      "entries_not_before_signal_available": true,
+      "risk_never_above_configured_cap": true,
+      "effective_leverage_never_above_cap": true,
+      "candidate_ranking_uses_development_only": true
+    }
+  }
+}

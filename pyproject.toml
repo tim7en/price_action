@@ -52,6 +52,7 @@ price-action-cross-asset-leverage-alignment = "price_action.cross_asset_leverage
 price-action-nasdaq-poc-hierarchical-trend = "price_action.nasdaq_poc_hierarchical_trend_strategy:main"
 price-action-nasdaq-poc-small-account = "price_action.nasdaq_poc_small_account_scenario:main"
 price-action-btc-5m-small-account = "price_action.btc_5m_small_account_scenario:main"
+price-action-nasdaq-triple-a-proxy = "price_action.nasdaq_triple_a_ohlcv_proxy:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/price_action"]

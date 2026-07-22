@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "checks": {
+    "thresholds_fit_only_before_2025": true,
+    "prior_daily_context_strictly_prior": true,
+    "signals_at_least_30_minutes_after_open": true,
+    "profile_uses_no_bar_after_signal": true,
+    "entries_not_before_signal_available": true,
+    "risk_never_above_configured_cap": true,
+    "effective_leverage_never_above_cap": true,
+    "candidate_ranking_uses_development_only": true
+  }
+}
