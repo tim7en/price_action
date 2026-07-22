@@ -1,0 +1,119 @@
+{
+  "generated_at_utc": "2026-07-22T08:34:20.540556+00:00",
+  "status": "RESEARCH_ONLY_LIVE_DEPLOYMENT_BLOCKED",
+  "data_source": "D:\\dev\\price_action\\cache\\Nasdaq.csv",
+  "schedule_source": "D:\\dev\\price_action\\outputs\\nasdaq_session_backtest\\session_schedule.csv",
+  "data_quality": {
+    "input_rows": 681646,
+    "first_input_bar_utc": "2024-01-02T05:02:00+00:00",
+    "last_input_bar_utc": "2025-12-05T21:44:00+00:00",
+    "duplicate_timestamps": 0,
+    "close_not_on_nq_quarter_tick_rows": 641336,
+    "close_not_on_nq_quarter_tick_share": 0.9408637327879867,
+    "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
+    "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
+  },
+  "pine_config": {
+    "vp_length": 50,
+    "vp_resolution": 24,
+    "value_area_fraction": 0.7,
+    "atr_length": 14,
+    "absorb_volume_multiplier": 2.0,
+    "absorb_price_threshold": 0.3,
+    "delta_lookback": 5,
+    "vwap_band_atr": 0.5,
+    "reward_to_risk": 2.0,
+    "maximum_daily_losses": 3,
+    "trail_activation_atr": 1.5,
+    "trail_offset_atr": 0.5,
+    "orb_minutes": 30,
+    "script_equity_fraction": 1.0,
+    "intended_risk_fraction": 0.01,
+    "intended_maximum_leverage": 10.0,
+    "realistic_one_way_cost_bps": 0.5
+  },
+  "reference_one_way_cost_bps": 0.5,
+  "locked_net_profit_bps": 0.25,
+  "costs_bps_per_side": [
+    0.0,
+    0.1,
+    0.2,
+    0.25,
+    0.3,
+    0.4,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "risk_config": {
+    "orb_bars": 6,
+    "profile_bins": 24,
+    "value_area_fraction": 0.7,
+    "ivb_lookback_sessions": 60,
+    "ivb_minimum_sessions": 20,
+    "effort_lookback_bars": 50,
+    "effort_quantile": 0.75,
+    "vtracker_range_lookback_bars": 20,
+    "delta_lookback_bars": 5,
+    "donchian_timeframe_minutes": 240,
+    "donchian_length": 20,
+    "reward_to_risk": 2.0,
+    "trail_activation_atr": 1.5,
+    "trail_offset_atr": 0.5,
+    "risk_target_fraction": 0.0025,
+    "risk_maximum_leverage": 3.0,
+    "risk_maximum_daily_losses": 2,
+    "risk_maximum_daily_return_loss": 0.0075
+  },
+  "execution_diagnostics": {
+    "atr_trailing_baseline": {
+      "raw_long_signals": 1897,
+      "raw_short_signals": 1541,
+      "dual_direction_signal_bars": 0,
+      "signals_blocked_position": 1137,
+      "signals_blocked_daily_losses": 532,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    },
+    "cost_aware_profit_lock": {
+      "raw_signals": 3438,
+      "signals_blocked_position": 820,
+      "signals_blocked_daily_losses": 338,
+      "pending_entries_unfilled_at_end": 0,
+      "open_position_at_end": 0
+    }
+  },
+  "audit": {
+    "signal_engine": {
+      "status": "PASS",
+      "checks": {
+        "indicator_prefix_invariance": true,
+        "volume_profile_future_mutation_invariance": true,
+        "entries_exactly_one_bar_after_signal": true,
+        "entries_use_next_bar_open": true,
+        "signals_restricted_to_confirmed_bar_data": true,
+        "no_bar_magnifier_or_lower_timeframe_data_used": true
+      },
+      "explanation": {
+        "signals": "Every feature uses the signal bar or earlier bars; no negative shift or future slice is used.",
+        "entry": "A close-confirmed signal creates a market order filled at the following 1-minute bar open.",
+        "exits": "Stops, limits, and trailing stops walk TradingView's inferred OHLC path without future bars."
+      }
+    },
+    "cost_lock": {
+      "status": "PASS",
+      "checks": {
+        "entries_fill_on_next_bar_open": true,
+        "regular_cost_lock_exits_preserve_requested_net_buffer": true,
+        "lock_floor_is_beyond_entry_in_trade_direction": true,
+        "activation_is_one_trailing_offset_beyond_lock_floor": true,
+        "gap_exits_are_not_assumed_to_fill_at_stop": true
+      },
+      "cost_model": {
+        "one_way_cost_bps": 0.5,
+        "round_trip_cost_bps": 1.0,
+        "locked_net_profit_bps": 0.25
+      }
+    }
+  }
+}

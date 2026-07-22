@@ -269,7 +269,7 @@ def _audit_cost_lock(
         trades["side"].mul(trades["cost_lock_activation_price"] - trades["cost_lock_floor_price"]).gt(0.0).all()
     )
     checks = {
-        "entries_fill_on_next_five_minute_open": bool(next_bar),
+        "entries_fill_on_next_bar_open": bool(next_bar),
         "regular_cost_lock_exits_preserve_requested_net_buffer": bool(floor_holds),
         "lock_floor_is_beyond_entry_in_trade_direction": bool(floors_directional),
         "activation_is_one_trailing_offset_beyond_lock_floor": bool(activation_beyond_floor),

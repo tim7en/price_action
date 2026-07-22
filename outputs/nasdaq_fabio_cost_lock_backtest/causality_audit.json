@@ -1,0 +1,33 @@
+{
+  "signal_engine": {
+    "status": "PASS",
+    "checks": {
+      "indicator_prefix_invariance": true,
+      "volume_profile_future_mutation_invariance": true,
+      "entries_exactly_one_bar_after_signal": true,
+      "entries_use_next_bar_open": true,
+      "signals_restricted_to_confirmed_bar_data": true,
+      "no_bar_magnifier_or_lower_timeframe_data_used": true
+    },
+    "explanation": {
+      "signals": "Every feature uses the signal bar or earlier bars; no negative shift or future slice is used.",
+      "entry": "A close-confirmed signal creates a market order filled at the following 1-minute bar open.",
+      "exits": "Stops, limits, and trailing stops walk TradingView's inferred OHLC path without future bars."
+    }
+  },
+  "cost_lock": {
+    "status": "PASS",
+    "checks": {
+      "entries_fill_on_next_bar_open": true,
+      "regular_cost_lock_exits_preserve_requested_net_buffer": true,
+      "lock_floor_is_beyond_entry_in_trade_direction": true,
+      "activation_is_one_trailing_offset_beyond_lock_floor": true,
+      "gap_exits_are_not_assumed_to_fill_at_stop": true
+    },
+    "cost_model": {
+      "one_way_cost_bps": 0.5,
+      "round_trip_cost_bps": 1.0,
+      "locked_net_profit_bps": 0.25
+    }
+  }
+}

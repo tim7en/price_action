@@ -1,0 +1,39 @@
+{
+  "generated_at_utc": "2026-07-22T08:42:22.947728+00:00",
+  "status": "RESEARCH_ONLY_FIXED_LEVERAGE_STRESS_TEST",
+  "source_trades": {
+    "btc": "D:\\dev\\price_action\\outputs\\btc_deepcharts_cost_lock_backtest\\trades_cost_aware_profit_lock.csv",
+    "nasdaq": "D:\\dev\\price_action\\outputs\\nasdaq_fabio_cost_lock_backtest\\trades_atr_trailing_baseline.csv"
+  },
+  "costs_bps_per_side": {
+    "btc": 6.0,
+    "nasdaq": 0.5
+  },
+  "leverages": [
+    1.0,
+    20.0,
+    40.0
+  ],
+  "holdout_start": "2025-01-01T00:00:00+00:00",
+  "thresholds_from_development_distribution_only": {
+    "btc": {
+      "impulse_median": 1.3822464350632766,
+      "ivb_room_median": 2.7094948608954943,
+      "effort_median": 2.288283545941125,
+      "orb_width_atr_median": 2.105984363120381
+    },
+    "nasdaq": {
+      "breakout_strength_median": 0.3328858984135814,
+      "vwap_distance_median": 3.5765733882171604,
+      "orb_width_atr_median": 7.983437438970756
+    }
+  },
+  "trend_lock_definition": "positive after-cost target or trailing exit",
+  "fast_whipsaw_definition": "static-stop exit within three bars",
+  "leverage_limitations": [
+    "fixed notional multiplication",
+    "no maintenance-margin or liquidation-price model",
+    "no funding",
+    "no nonlinear slippage"
+  ]
+}
