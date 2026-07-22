@@ -181,6 +181,139 @@ def crossed_prior_poc(
     return None
 
 
+def poc_cross_event_study(
+    candidates: pd.DataFrame,
+    indicated_bars: pd.DataFrame,
+    strategy: NasdaqStrategyConfig,
+    management: PocManagementConfig,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Measure fast continuation after causal crosses of prior-session POCs."""
+    events: list[dict[str, Any]] = []
+    horizon_bars = {2: 1, 4: 2, 6: 3, 10: 5}
+    for row in candidates.itertuples(index=False):
+        if int(row.available_prior_pocs) < 3:
+            continue
+        bar_id = int(row.bar_id)
+        if bar_id <= 0:
+            continue
+        previous_close = float(indicated_bars.iloc[bar_id - 1]["close"])
+        current_close = float(row.close)
+        if current_close == previous_close:
+            continue
+        side = 1 if current_close > previous_close else -1
+        pocs = [
+            float(getattr(row, f"prior_poc_{offset}"))
+            for offset in range(1, management.poc_sessions + 1)
+            if np.isfinite(getattr(row, f"prior_poc_{offset}"))
+        ]
+        crossed = crossed_prior_poc(
+            previous_close,
+            current_close,
+            pocs,
+            float(row.atr) * management.poc_cross_tolerance_atr,
+            side,
+        )
+        if crossed is None:
+            continue
+        bias = trend_bias(current_close, float(row.sma_10d), float(row.sma_30d))
+        aggressive = bool(row.aggressive_up if side > 0 else row.aggressive_down)
+        delta_aligned = bool(
+            row.smoothed_delta_proxy > 0.0
+            if side > 0
+            else row.smoothed_delta_proxy < 0.0
+        )
+        payload: dict[str, Any] = {
+            "timestamp": pd.Timestamp(row.timestamp),
+            "session_date": str(row.session_date),
+            "side": "long" if side > 0 else "short",
+            "crossed_poc": crossed,
+            "cross_price": current_close,
+            "atr": float(row.atr),
+            "trend_bias": "long" if bias > 0 else "short" if bias < 0 else "neutral",
+            "trend_aligned": bias == side,
+            "aggressive": aggressive,
+            "delta_aligned": delta_aligned,
+            "aggression_and_delta_aligned": aggressive and delta_aligned,
+        }
+        complete = True
+        for minutes, offset in horizon_bars.items():
+            future_id = bar_id + offset
+            if future_id >= len(indicated_bars):
+                complete = False
+                break
+            future_time = pd.Timestamp(indicated_bars.index[future_id])
+            if (
+                future_time != pd.Timestamp(row.timestamp) + strategy.bar_interval * offset
+                or future_time >= pd.Timestamp(row.session_close)
+            ):
+                complete = False
+                break
+            future_close = float(indicated_bars.iloc[future_id]["close"])
+            payload[f"forward_{minutes}m_bps"] = (
+                side * (future_close / current_close - 1.0) * 10_000.0
+            )
+        if not complete:
+            continue
+        forward = indicated_bars.iloc[bar_id + 1:bar_id + horizon_bars[10] + 1]
+        if side > 0:
+            favorable = float(forward["high"].max() - current_close)
+            adverse = float(current_close - forward["low"].min())
+        else:
+            favorable = float(current_close - forward["low"].min())
+            adverse = float(forward["high"].max() - current_close)
+        payload["max_favorable_10m_atr"] = favorable / float(row.atr)
+        payload["max_adverse_10m_atr"] = adverse / float(row.atr)
+        events.append(payload)
+
+    event_frame = pd.DataFrame(events)
+    if event_frame.empty:
+        return event_frame, pd.DataFrame()
+    groups = {
+        "all_poc_crosses": pd.Series(True, index=event_frame.index),
+        "trend_aligned": event_frame["trend_aligned"],
+        "aggression_and_delta_aligned": event_frame["aggression_and_delta_aligned"],
+        "trend_plus_aggression_delta": (
+            event_frame["trend_aligned"]
+            & event_frame["aggression_and_delta_aligned"]
+        ),
+    }
+    rows: list[dict[str, Any]] = []
+    rng = np.random.default_rng(20260722)
+    for group_name, mask in groups.items():
+        frame = event_frame.loc[mask].copy()
+        daily_10m = frame.groupby("session_date", sort=True)["forward_10m_bps"].mean()
+        if len(daily_10m):
+            bootstrap_draws = rng.choice(
+                daily_10m.to_numpy(dtype=float),
+                size=(5_000, len(daily_10m)),
+                replace=True,
+            ).mean(axis=1)
+        else:
+            bootstrap_draws = np.asarray([], dtype=float)
+        row: dict[str, Any] = {
+            "group": group_name,
+            "events": int(len(frame)),
+            "sessions": int(frame["session_date"].nunique()),
+            "mean_max_favorable_10m_atr": float(frame["max_favorable_10m_atr"].mean())
+            if len(frame) else np.nan,
+            "mean_max_adverse_10m_atr": float(frame["max_adverse_10m_atr"].mean())
+            if len(frame) else np.nan,
+            "session_bootstrap_10m_ci_low_bps": float(np.quantile(bootstrap_draws, 0.025))
+            if len(bootstrap_draws) else np.nan,
+            "session_bootstrap_10m_ci_high_bps": float(np.quantile(bootstrap_draws, 0.975))
+            if len(bootstrap_draws) else np.nan,
+            "session_bootstrap_probability_10m_positive": float((bootstrap_draws > 0.0).mean())
+            if len(bootstrap_draws) else np.nan,
+        }
+        for minutes in horizon_bars:
+            values = frame[f"forward_{minutes}m_bps"]
+            row[f"mean_forward_{minutes}m_bps"] = float(values.mean()) if len(frame) else np.nan
+            row[f"median_forward_{minutes}m_bps"] = float(values.median()) if len(frame) else np.nan
+            row[f"positive_forward_{minutes}m_share"] = float(values.gt(0.0).mean()) if len(frame) else np.nan
+        rows.append(row)
+    return event_frame, pd.DataFrame(rows)
+
+
 def financed_add_notional(
     *,
     base_notional: float,
@@ -530,6 +663,7 @@ def _equity_frame(trades_by_variant: dict[str, pd.DataFrame]) -> pd.DataFrame:
 def _render_plots(
     summary: pd.DataFrame,
     equity: pd.DataFrame,
+    poc_event_summary: pd.DataFrame,
     output: Path,
 ) -> list[Path]:
     from .nasdaq_session_backtest import _configure_plots
@@ -593,6 +727,32 @@ def _render_plots(
     fig.savefig(path, dpi=180, bbox_inches="tight")
     plt.close(fig)
     paths.append(path)
+
+    if not poc_event_summary.empty:
+        fig, axis = plt.subplots(figsize=(10, 5.5))
+        horizons = [2, 4, 6, 10]
+        event_colors = ["#64748b", "#2563eb", "#d97706", "#0f766e"]
+        for (_, row), color in zip(poc_event_summary.iterrows(), event_colors, strict=True):
+            axis.plot(
+                horizons,
+                [row[f"mean_forward_{minutes}m_bps"] for minutes in horizons],
+                marker="o",
+                linewidth=2,
+                color=color,
+                label=f"{row['group']} (n={int(row['events'])})",
+            )
+        axis.axhline(0.0, color="#334155", linewidth=1)
+        axis.set_xticks(horizons)
+        axis.set_xlabel("Minutes after completed POC-cross bar")
+        axis.set_ylabel("Mean direction-aligned return (bps)")
+        axis.set_title("Do prior-session POC crosses accelerate?")
+        axis.legend(fontsize=8)
+        axis.grid(alpha=0.2)
+        fig.tight_layout()
+        path = output / "poc_cross_forward_returns.png"
+        fig.savefig(path, dpi=180, bbox_inches="tight")
+        plt.close(fig)
+        paths.append(path)
     return paths
 
 
@@ -601,6 +761,7 @@ def _report(
     bootstrap: pd.DataFrame,
     scaling_audit: pd.DataFrame,
     scaling_funnel: pd.DataFrame,
+    poc_event_summary: pd.DataFrame,
     cost_audit: pd.DataFrame,
     governance: dict[str, Any],
 ) -> str:
@@ -623,6 +784,10 @@ Generated {governance['generated_at_utc']}. This is a separate extension of the 
 
 {_markdown_table(scaling_funnel)}
 
+## Prior-session POC cross event study
+
+{_markdown_table(poc_event_summary)}
+
 ## Session-block bootstrap
 
 {_markdown_table(bootstrap, rows=40)}
@@ -635,6 +800,7 @@ Generated {governance['generated_at_utc']}. This is a separate extension of the 
 
 - [Managed equity curves and drawdowns](managed_equity_and_drawdowns.png)
 - [10/16/20/30-minute horizon comparison](horizon_comparison.png)
+- [POC-cross forward returns](poc_cross_forward_returns.png)
 
 ## Predeclared rules
 
@@ -691,6 +857,12 @@ def build_poc_scaling_backtest(
     candidates["timestamp"] = pd.to_datetime(candidates["timestamp"], utc=True)
     candidates["session_open"] = pd.to_datetime(candidates["session_open"], utc=True)
     candidates["session_close"] = pd.to_datetime(candidates["session_close"], utc=True)
+    poc_events, poc_event_summary = poc_cross_event_study(
+        candidates,
+        indicated,
+        strategy,
+        management,
+    )
 
     variants = [
         ManagedVariant("static_10m", 10, 10),
@@ -813,7 +985,7 @@ def build_poc_scaling_backtest(
     cost_audit = pd.concat(cost_frames, ignore_index=True)
     scaling_audit = pd.DataFrame(scale_rows)
     scaling_funnel = pd.DataFrame(funnel_rows)
-    plot_paths = _render_plots(summary, equity, output)
+    plot_paths = _render_plots(summary, equity, poc_event_summary, output)
     governance = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "strategy": "two_minute_nasdaq_poc_trend_scaling_extension",
@@ -836,9 +1008,19 @@ def build_poc_scaling_backtest(
     cost_audit.to_csv(output / "holdout_cost_sensitivity.csv", index=False)
     scaling_audit.to_csv(output / "scaling_audit.csv", index=False)
     scaling_funnel.to_csv(output / "scaling_eligibility_funnel.csv", index=False)
+    poc_events.to_csv(output / "poc_cross_events.csv", index=False)
+    poc_event_summary.to_csv(output / "poc_cross_event_summary.csv", index=False)
     (output / "governance.json").write_text(json.dumps(governance, indent=2), encoding="utf-8")
     (output / "report.md").write_text(
-        _report(summary, bootstrap, scaling_audit, scaling_funnel, cost_audit, governance),
+        _report(
+            summary,
+            bootstrap,
+            scaling_audit,
+            scaling_funnel,
+            poc_event_summary,
+            cost_audit,
+            governance,
+        ),
         encoding="utf-8",
     )
     return {
@@ -848,6 +1030,8 @@ def build_poc_scaling_backtest(
         "trades_by_variant": trades_by_variant,
         "scaling_audit": scaling_audit,
         "scaling_funnel": scaling_funnel,
+        "poc_cross_events": poc_events,
+        "poc_cross_event_summary": poc_event_summary,
         "governance": governance,
     }
 

@@ -1,6 +1,6 @@
 # Two-Minute Nasdaq POC, Trend, Scaling, and Trailing Study
 
-Generated 2026-07-22T01:25:39.490792+00:00. This is a separate extension of the fixed-position New York-open baseline.
+Generated 2026-07-22T01:30:20.425960+00:00. This is a separate extension of the fixed-position New York-open baseline.
 
 > The supplied Fabio notes document 1.5-ATR optional trailing stops and increasing risk only from the day's profits. They do not establish pyramiding into an open trade; the example payload says `pyramid: false`. The POC add-on below is our research hypothesis and is sized only from profit already locked by the raised base stop.
 
@@ -32,9 +32,15 @@ Generated 2026-07-22T01:25:39.490792+00:00. This is a separate extension of the 
 | trend_trail_poc_scale_30m | all | 142 | 128 | 0.4718 | 0.2676 | 0.4789 | 0.1367 | 0.0551 | 11.5195 | 5.3160 | 1.3081 | 1.1305 | 0.9285 | 0.1694 | 0.0709 | 0.0365 | -0.1183 | 6.2034 | 0.0075 | 5.2676 | 10.5352 |
 | trend_trail_poc_scale_30m | development_2024 | 73 | 65 | 0.4932 | 0.2740 | 0.4384 | 0.1723 | 0.0906 | 11.6372 | 5.2262 | 1.3128 | 1.1292 | 0.9076 | 0.0848 | 0.0352 | 0.0360 | -0.0723 | 6.4110 | 0.0075 | 4.8219 | 9.6438 |
 | trend_trail_poc_scale_30m | holdout_2025 | 69 | 63 | 0.4493 | 0.2609 | 0.5217 | 0.0990 | 0.0176 | 11.3950 | 5.4111 | 1.3031 | 1.1318 | 0.9521 | 0.0780 | 0.0344 | 0.0382 | -0.1183 | 5.9839 | 0.0075 | 5.7391 | 11.4783 |
+| reserved_trend_trail_16m | all | 115 | 110 | 0.5217 | 0.1652 | 0.3478 | 0.1921 | 0.1125 | 11.2510 | 6.4156 | 1.4944 | 1.2571 | 1.1634 | 0.1352 | 0.0739 | 0.0380 | -0.0509 | 4.8353 | 0.0056 | 3.7304 | 7.4609 |
+| reserved_trend_trail_16m | development_2024 | 58 | 56 | 0.5345 | 0.2069 | 0.3448 | 0.2385 | 0.1588 | 12.3782 | 7.5846 | 1.5339 | 1.3001 | 1.2911 | 0.0729 | 0.0436 | 0.0446 | -0.0243 | 4.7935 | 0.0056 | 3.2759 | 6.5517 |
+| reserved_trend_trail_16m | holdout_2025 | 57 | 54 | 0.5088 | 0.1228 | 0.3509 | 0.1449 | 0.0653 | 10.1040 | 5.2261 | 1.4527 | 1.2122 | 1.0357 | 0.0580 | 0.0291 | 0.0322 | -0.0509 | 4.8778 | 0.0056 | 4.1930 | 8.3860 |
 | reserved_poc_scale_16m | all | 115 | 110 | 0.5217 | 0.1652 | 0.3478 | 0.1924 | 0.1126 | 11.2680 | 6.4260 | 1.4951 | 1.2575 | 1.1636 | 0.1354 | 0.0740 | 0.0381 | -0.0509 | 4.8420 | 0.0056 | 3.7304 | 7.4609 |
 | reserved_poc_scale_16m | development_2024 | 58 | 56 | 0.5345 | 0.2069 | 0.3448 | 0.2390 | 0.1591 | 12.4120 | 7.6053 | 1.5353 | 1.3009 | 1.2911 | 0.0731 | 0.0437 | 0.0447 | -0.0243 | 4.8068 | 0.0056 | 3.2759 | 6.5517 |
 | reserved_poc_scale_16m | holdout_2025 | 57 | 54 | 0.5088 | 0.1228 | 0.3509 | 0.1449 | 0.0653 | 10.1040 | 5.2261 | 1.4527 | 1.2122 | 1.0357 | 0.0580 | 0.0291 | 0.0322 | -0.0509 | 4.8778 | 0.0056 | 4.1930 | 8.3860 |
+| reserved_trend_trail_30m | all | 142 | 128 | 0.4718 | 0.2676 | 0.4789 | 0.1367 | 0.0551 | 8.1797 | 3.3326 | 1.2806 | 1.1048 | 0.8438 | 0.1185 | 0.0441 | 0.0228 | -0.0986 | 4.8471 | 0.0056 | 5.2676 | 10.5352 |
+| reserved_trend_trail_30m | development_2024 | 73 | 65 | 0.4932 | 0.2740 | 0.4384 | 0.1723 | 0.0906 | 8.4877 | 3.5463 | 1.2972 | 1.1141 | 0.8588 | 0.0617 | 0.0241 | 0.0247 | -0.0580 | 4.9413 | 0.0056 | 4.8219 | 9.6438 |
+| reserved_trend_trail_30m | holdout_2025 | 69 | 63 | 0.4493 | 0.2609 | 0.5217 | 0.0990 | 0.0176 | 7.8538 | 3.1064 | 1.2638 | 1.0954 | 0.8272 | 0.0534 | 0.0195 | 0.0216 | -0.0986 | 4.7474 | 0.0056 | 5.7391 | 11.4783 |
 | reserved_poc_scale_30m | all | 142 | 128 | 0.4718 | 0.2676 | 0.4789 | 0.1368 | 0.0552 | 8.1935 | 3.3410 | 1.2811 | 1.1051 | 0.8443 | 0.1187 | 0.0442 | 0.0229 | -0.0986 | 4.8525 | 0.0056 | 5.2676 | 10.5352 |
 | reserved_poc_scale_30m | development_2024 | 73 | 65 | 0.4932 | 0.2740 | 0.4384 | 0.1726 | 0.0909 | 8.5146 | 3.5627 | 1.2982 | 1.1147 | 0.8597 | 0.0619 | 0.0242 | 0.0248 | -0.0580 | 4.9518 | 0.0056 | 4.8219 | 9.6438 |
 | reserved_poc_scale_30m | holdout_2025 | 69 | 63 | 0.4493 | 0.2609 | 0.5217 | 0.0990 | 0.0176 | 7.8538 | 3.1064 | 1.2638 | 1.0954 | 0.8272 | 0.0534 | 0.0195 | 0.0216 | -0.0986 | 4.7474 | 0.0056 | 5.7391 | 11.4783 |
@@ -51,7 +57,9 @@ Generated 2026-07-22T01:25:39.490792+00:00. This is a separate extension of the 
 | trend_trail_16m | 115 | 0 | 0.0000 | 0.0000 |  |
 | trend_trail_poc_scale_16m | 115 | 0 | 0.0000 | 0.0000 |  |
 | trend_trail_poc_scale_30m | 142 | 0 | 0.0000 | 0.0000 |  |
+| reserved_trend_trail_16m | 115 | 0 | 0.0000 | 0.0000 |  |
 | reserved_poc_scale_16m | 115 | 1 | 0.0087 | 0.7686 | 0.0143 |
+| reserved_trend_trail_30m | 142 | 0 | 0.0000 | 0.0000 |  |
 | reserved_poc_scale_30m | 142 | 1 | 0.0070 | 0.7686 | 0.0143 |
 
 ## Scaling eligibility funnel
@@ -66,8 +74,19 @@ Generated 2026-07-22T01:25:39.490792+00:00. This is a separate extension of the 
 | trend_trail_16m | 115 | 42 | 24 | 6 | 3 | 0 | 0 |
 | trend_trail_poc_scale_16m | 115 | 42 | 24 | 6 | 3 | 1 | 0 |
 | trend_trail_poc_scale_30m | 142 | 49 | 40 | 9 | 3 | 1 | 0 |
+| reserved_trend_trail_16m | 115 | 42 | 24 | 6 | 3 | 0 | 0 |
 | reserved_poc_scale_16m | 115 | 42 | 24 | 6 | 3 | 1 | 1 |
+| reserved_trend_trail_30m | 142 | 49 | 40 | 9 | 3 | 0 | 0 |
 | reserved_poc_scale_30m | 142 | 49 | 40 | 9 | 3 | 1 | 1 |
+
+## Prior-session POC cross event study
+
+| group | events | sessions | mean_max_favorable_10m_atr | mean_max_adverse_10m_atr | session_bootstrap_10m_ci_low_bps | session_bootstrap_10m_ci_high_bps | session_bootstrap_probability_10m_positive | mean_forward_2m_bps | median_forward_2m_bps | positive_forward_2m_share | mean_forward_4m_bps | median_forward_4m_bps | positive_forward_4m_share | mean_forward_6m_bps | median_forward_6m_bps | positive_forward_6m_share | mean_forward_10m_bps | median_forward_10m_bps | positive_forward_10m_share |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| all_poc_crosses | 332 | 154 | 1.0047 | 1.0257 | -5.4013 | 3.1549 | 0.4586 | 0.7785 | 0.4124 | 0.5151 | 0.3284 | -0.0254 | 0.4970 | -0.6897 | -0.6390 | 0.4849 | -1.2306 | -0.5347 | 0.4880 |
+| trend_aligned | 103 | 72 | 1.0221 | 0.9428 | -1.6580 | 5.1837 | 0.8534 | 0.4109 | 1.1602 | 0.5437 | 0.1512 | 0.9608 | 0.5534 | -0.7253 | 1.2826 | 0.5340 | 2.0866 | 3.1712 | 0.5728 |
+| aggression_and_delta_aligned | 150 | 101 | 1.0130 | 1.0686 | -10.3635 | 1.9365 | 0.1532 | -0.1573 | -1.0797 | 0.4667 | -0.0110 | 0.0461 | 0.5000 | -1.2356 | 0.5571 | 0.5133 | -2.7179 | -1.1934 | 0.4667 |
+| trend_plus_aggression_delta | 43 | 35 | 1.0342 | 1.0513 | -6.4263 | 3.2609 | 0.3110 | 0.0395 | -0.1769 | 0.4884 | -1.6611 | 0.3035 | 0.5116 | -3.1515 | 1.2826 | 0.5349 | -0.9097 | 0.8368 | 0.5116 |
 
 ## Session-block bootstrap
 
@@ -97,9 +116,15 @@ Generated 2026-07-22T01:25:39.490792+00:00. This is a separate extension of the 
 | trend_trail_poc_scale_30m | all | all | 128 | 5.8737 | -11.3615 | 23.9758 | 0.7494 |
 | trend_trail_poc_scale_30m | development_2024 | all | 65 | 5.8547 | -19.1502 | 30.9688 | 0.6790 |
 | trend_trail_poc_scale_30m | holdout_2025 | all | 63 | 5.8933 | -18.4692 | 31.1052 | 0.6750 |
+| reserved_trend_trail_16m | all | all | 110 | 6.7066 | -5.8232 | 19.1593 | 0.8562 |
+| reserved_trend_trail_16m | development_2024 | all | 56 | 7.8590 | -10.5628 | 26.0207 | 0.7950 |
+| reserved_trend_trail_16m | holdout_2025 | all | 54 | 5.5115 | -10.9870 | 22.8107 | 0.7356 |
 | reserved_poc_scale_16m | all | all | 110 | 6.7174 | -5.8107 | 19.1701 | 0.8566 |
 | reserved_poc_scale_16m | development_2024 | all | 56 | 7.8803 | -10.5413 | 26.0578 | 0.7958 |
 | reserved_poc_scale_16m | holdout_2025 | all | 54 | 5.5115 | -10.9870 | 22.8107 | 0.7356 |
+| reserved_trend_trail_30m | all | all | 128 | 3.6820 | -9.5982 | 17.7068 | 0.7078 |
+| reserved_trend_trail_30m | development_2024 | all | 65 | 3.9734 | -15.1066 | 23.1401 | 0.6620 |
+| reserved_trend_trail_30m | holdout_2025 | all | 63 | 3.3814 | -15.7274 | 23.4143 | 0.6334 |
 | reserved_poc_scale_30m | all | all | 128 | 3.6914 | -9.5891 | 17.7264 | 0.7078 |
 | reserved_poc_scale_30m | development_2024 | all | 65 | 3.9918 | -15.0971 | 23.1766 | 0.6626 |
 | reserved_poc_scale_30m | holdout_2025 | all | 63 | 3.3814 | -15.7274 | 23.4143 | 0.6334 |
@@ -180,19 +205,20 @@ Generated 2026-07-22T01:25:39.490792+00:00. This is a separate extension of the 
 | trend_trail_poc_scale_30m | holdout_2025 | all | 2.0000 | 69 | 0.3768 | -12.5406 | -0.0862 | -0.1814 |
 | trend_trail_poc_scale_30m | holdout_2025 | all | 3.0000 | 69 | 0.3768 | -24.5083 | -0.1588 | -0.2228 |
 | trend_trail_poc_scale_30m | holdout_2025 | all | 5.0000 | 69 | 0.3188 | -48.4438 | -0.2874 | -0.3087 |
-| reserved_poc_scale_16m | holdout_2025 | all | 0.0000 | 57 | 0.5263 | 10.1040 | 0.0580 | -0.0361 |
-| reserved_poc_scale_16m | holdout_2025 | all | 0.1000 | 57 | 0.5263 | 9.1284 | 0.0522 | -0.0391 |
-| reserved_poc_scale_16m | holdout_2025 | all | 0.2500 | 57 | 0.5263 | 7.6650 | 0.0434 | -0.0435 |
-| reserved_poc_scale_16m | holdout_2025 | all | 0.5000 | 57 | 0.5088 | 5.2261 | 0.0291 | -0.0509 |
-| reserved_poc_scale_16m | holdout_2025 | all | 1.0000 | 57 | 0.4912 | 0.3483 | 0.0008 | -0.0655 |
-| reserved_poc_scale_16m | holdout_2025 | all | 1.5000 | 57 | 0.4912 | -4.5296 | -0.0266 | -0.0799 |
-| reserved_poc_scale_16m | holdout_2025 | all | 2.0000 | 57 | 0.4211 | -9.4074 | -0.0533 | -0.0941 |
-| reserved_poc_scale_16m | holdout_2025 | all | 3.0000 | 57 | 0.4035 | -19.1631 | -0.1046 | -0.1226 |
+| reserved_trend_trail_16m | holdout_2025 | all | 0.0000 | 57 | 0.5263 | 10.1040 | 0.0580 | -0.0361 |
+| reserved_trend_trail_16m | holdout_2025 | all | 0.1000 | 57 | 0.5263 | 9.1284 | 0.0522 | -0.0391 |
+| reserved_trend_trail_16m | holdout_2025 | all | 0.2500 | 57 | 0.5263 | 7.6650 | 0.0434 | -0.0435 |
+| reserved_trend_trail_16m | holdout_2025 | all | 0.5000 | 57 | 0.5088 | 5.2261 | 0.0291 | -0.0509 |
+| reserved_trend_trail_16m | holdout_2025 | all | 1.0000 | 57 | 0.4912 | 0.3483 | 0.0008 | -0.0655 |
+| reserved_trend_trail_16m | holdout_2025 | all | 1.5000 | 57 | 0.4912 | -4.5296 | -0.0266 | -0.0799 |
+| reserved_trend_trail_16m | holdout_2025 | all | 2.0000 | 57 | 0.4211 | -9.4074 | -0.0533 | -0.0941 |
+| reserved_trend_trail_16m | holdout_2025 | all | 3.0000 | 57 | 0.4035 | -19.1631 | -0.1046 | -0.1226 |
 
 ## Plots
 
 - [Managed equity curves and drawdowns](managed_equity_and_drawdowns.png)
 - [10/16/20/30-minute horizon comparison](horizon_comparison.png)
+- [POC-cross forward returns](poc_cross_forward_returns.png)
 
 ## Predeclared rules
 

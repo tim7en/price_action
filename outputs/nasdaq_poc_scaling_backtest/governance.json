@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-22T01:25:39.490792+00:00",
+  "generated_at_utc": "2026-07-22T01:30:20.425960+00:00",
   "strategy": "two_minute_nasdaq_poc_trend_scaling_extension",
   "data_file": "/Users/timursabitov/Dev/price_action/cache/Nasdaq.csv",
   "data_quality": {
@@ -130,12 +130,30 @@
       "base_risk_scale": 1.0
     },
     {
+      "name": "reserved_trend_trail_16m",
+      "entry_window_minutes": 16,
+      "max_holding_minutes": 16,
+      "trend_sizing": true,
+      "trailing_stop": true,
+      "poc_scaling": false,
+      "base_risk_scale": 0.75
+    },
+    {
       "name": "reserved_poc_scale_16m",
       "entry_window_minutes": 16,
       "max_holding_minutes": 16,
       "trend_sizing": true,
       "trailing_stop": true,
       "poc_scaling": true,
+      "base_risk_scale": 0.75
+    },
+    {
+      "name": "reserved_trend_trail_30m",
+      "entry_window_minutes": 30,
+      "max_holding_minutes": 30,
+      "trend_sizing": true,
+      "trailing_stop": true,
+      "poc_scaling": false,
       "base_risk_scale": 0.75
     },
     {
@@ -199,10 +217,20 @@
       "daily_loss_stop": 0,
       "unexecutable": 2
     },
+    "reserved_trend_trail_16m": {
+      "overlap": 13,
+      "daily_loss_stop": 0,
+      "unexecutable": 4
+    },
     "reserved_poc_scale_16m": {
       "overlap": 13,
       "daily_loss_stop": 0,
       "unexecutable": 4
+    },
+    "reserved_trend_trail_30m": {
+      "overlap": 19,
+      "daily_loss_stop": 0,
+      "unexecutable": 2
     },
     "reserved_poc_scale_30m": {
       "overlap": 19,
@@ -214,6 +242,7 @@
   "selection_warning": "All variants share the same sample; no winner is independently validated.",
   "plot_files": [
     "managed_equity_and_drawdowns.png",
-    "horizon_comparison.png"
+    "horizon_comparison.png",
+    "poc_cross_forward_returns.png"
   ]
 }
