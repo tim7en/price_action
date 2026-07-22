@@ -215,6 +215,23 @@ tick grid, and volume provenance is absent. The output is therefore explicitly
 research-only until venue, contract/roll, spread and commission metadata are
 supplied.
 
+To test whether the one-minute POC signals can realize asymmetric 2R--6R
+payoffs rather than merely imposing a distant target, run:
+
+```bash
+python build_nasdaq_poc_asymmetric_runner.py
+```
+
+This separate study compares a causal three-bar micro-invalidation stop with
+completed-15-minute structural floors, zero/one/two-bar failure scratches,
+full exits at 2R--6R, half-at-2R runners, and an auction-confirmed runner. It
+enters on the next bar, checks stops before targets when a one-minute bar
+touches both, caps effective leverage at 20x, stops after three session losses,
+and closes every trade inside the regular session. It selects only on 2024 and
+reports 2025 separately; diagnostic cross-period rankings are clearly marked
+as evaluation-aware. Outputs are written under
+`outputs/nasdaq_poc_asymmetric_runner/`.
+
 
 ## Run it
 
