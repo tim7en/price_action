@@ -4,6 +4,8 @@
 
 Fixed 20x and 40x leverage multiplies the existing net trade return after the same per-side cost. It does not add a liquidation engine, maintenance margin, funding, contract sizing, or nonlinear slippage, so these are mathematical stress paths rather than executable account forecasts.
 
+Neither leverage level is viable. The full BTC path leaves 0.01% of starting equity at 20x and effectively zero at 40x. Full-history NASDAQ leaves 8.69% at 20x and 0.11% at 40x. NASDAQ's positive one-times holdout still falls 36.2% at 20x and 87.9% at 40x because geometric volatility drag grows nonlinearly.
+
 ## Fixed-leverage paths
 
 | asset | period | leverage | trades_completed_before_ruin | bankrupt | terminal_equity | cumulative_return | maximum_drawdown | average_stop_risk_fraction | maximum_stop_risk_fraction | round_trip_cost_fraction_per_trade |
@@ -36,6 +38,8 @@ Fixed 20x and 40x leverage multiplies the existing net trade return after the sa
 
 Candidates are overlapping attribution cohorts, not independently replayed strategies. Ranking uses development PF subject to minimum samples (BTC 60, NASDAQ 150); the holdout columns are never used for selection.
 
+Robust profitable candidates with PF above one in both development and holdout: **0**. NASDAQ's closest candidate is `orb_vwap_breakout_early` (PF 0.984 development, 0.999 holdout); it nearly removes the loss but does not establish an edge. BTC's strong-impulse cohorts raise the trend-lock rate above 71%, yet remain below PF 1 after 6-bps-per-side costs.
+
 ## Trend locks versus damaging failures
 
 | asset | period | outcome_bucket | trades | trade_share | average_net_bps | net_contribution_bps | average_holding_bars |
@@ -57,6 +61,8 @@ Candidates are overlapping attribution cohorts, not independently replayed strat
 - `fast_whipsaw`: static-stop exit within three bars.
 - `slow_stop_failure`: static-stop exit after more than three bars.
 
+The slow-stop bucket causes more aggregate damage than the fast-whipsaw bucket on both assets. This points toward testing causal failure/time-stop exits before considering more leverage.
+
 ## Development-period damage signatures checked in holdout
 
 | asset | development_damage_rank | attribute_group | development_trades | development_average_net_bps | development_fast_whipsaw_rate | holdout_trades | holdout_average_net_bps | holdout_fast_whipsaw_rate |
@@ -69,6 +75,20 @@ Candidates are overlapping attribution cohorts, not independently replayed strat
 | nasdaq | 2 | orb_width=compact | 428 | -1.2012 | 0.0701 | 348 | 0.6191 | 0.0833 |
 | nasdaq | 3 | session=after_120m | 438 | -1.1783 | 0.0822 | 431 | 0.0795 | 0.0951 |
 | nasdaq | 4 | side=short | 395 | -1.0983 | 0.0709 | 372 | 0.8140 | 0.0887 |
+
+Some development signatures reverse in holdout and are not dependable. The following groups remain negative in both periods:
+
+| asset | attribute_group | development_trades | development_average_net_bps | development_fast_whipsaw_rate | holdout_trades | holdout_average_net_bps | holdout_fast_whipsaw_rate | two_period_average_net_bps |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| btc | orb_width=wide | 228 | -11.0964 | 0.0921 | 69 | -6.4414 | 0.0580 | -8.7689 |
+| btc | impulse=low | 227 | -6.9029 | 0.0837 | 75 | -9.9954 | 0.0400 | -8.4492 |
+| btc | ivb_room=high | 228 | -11.0066 | 0.0833 | 80 | -3.8858 | 0.0500 | -7.4462 |
+| btc | effort=low | 227 | -7.6625 | 0.0749 | 60 | -7.1966 | 0.0167 | -7.4296 |
+| btc | side=long | 256 | -7.5476 | 0.0781 | 84 | -5.6803 | 0.0357 | -6.6139 |
+| nasdaq | side=long | 506 | -0.7520 | 0.0988 | 496 | -0.4694 | 0.0948 | -0.6107 |
+| nasdaq | setup=value_area | 64 | -0.3473 | 0.2812 | 49 | -0.7707 | 0.2449 | -0.5590 |
+| nasdaq | orb_width=wide | 429 | -0.6492 | 0.0816 | 489 | -0.1950 | 0.0879 | -0.4221 |
+| nasdaq | breakout=strong | 429 | -0.5901 | 0.0513 | 401 | -0.1315 | 0.0798 | -0.3608 |
 
 ## Frozen distribution thresholds
 

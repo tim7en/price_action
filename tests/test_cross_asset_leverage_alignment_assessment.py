@@ -5,6 +5,7 @@ import unittest
 import pandas as pd
 
 from price_action.cross_asset_leverage_alignment_assessment import (
+    _persistent_damage_comparison,
     classify_trade_outcomes,
     fixed_leverage_path,
 )
@@ -70,6 +71,26 @@ class CrossAssetLeverageAlignmentTests(unittest.TestCase):
             actual.tolist(),
             ["trend_lock", "fast_whipsaw", "slow_stop_failure", "other"],
         )
+
+    def test_persistent_damage_requires_both_periods_to_be_negative(self) -> None:
+        rows = []
+        for group, development, holdout in (
+            ("persistent", -2.0, -1.0),
+            ("reverses", -3.0, 1.0),
+        ):
+            for period, value in (("development", development), ("holdout", holdout)):
+                rows.append(
+                    {
+                        "asset": "btc",
+                        "attribute_group": group,
+                        "period": period,
+                        "trades": 100,
+                        "average_net_bps": value,
+                        "fast_whipsaw_rate": 0.1,
+                    }
+                )
+        actual = _persistent_damage_comparison(pd.DataFrame(rows))
+        self.assertEqual(actual["attribute_group"].tolist(), ["persistent"])
 
 
 if __name__ == "__main__":

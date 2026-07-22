@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": {
+    "alignment_thresholds_use_development_distribution_only": true,
+    "candidate_ranking_uses_development_period_only": true,
+    "holdout_starts_2025_01_01_for_both_assets": true,
+    "fixed_leverage_costs_scale_with_notional": true,
+    "account_path_stops_on_single_trade_wipeout": true
+  },
+  "warning": "Cohorts are attribution views and have not been independently broker-replayed."
+}

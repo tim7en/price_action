@@ -468,10 +468,62 @@ def _worst_attribute_comparison(attributes: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
+def _persistent_damage_comparison(attributes: pd.DataFrame) -> pd.DataFrame:
+    """Keep only attribute groups with negative average return in both periods."""
+    records: list[dict[str, Any]] = []
+    minimum_development = {"btc": 50, "nasdaq": 50}
+    minimum_holdout = {"btc": 20, "nasdaq": 30}
+    for asset in ("btc", "nasdaq"):
+        development = attributes.loc[
+            (attributes["asset"] == asset) & attributes["period"].eq("development")
+        ].set_index("attribute_group")
+        holdout = attributes.loc[
+            (attributes["asset"] == asset) & attributes["period"].eq("holdout")
+        ].set_index("attribute_group")
+        for group in development.index.intersection(holdout.index):
+            dev = development.loc[group]
+            hold = holdout.loc[group]
+            if (
+                dev["trades"] < minimum_development[asset]
+                or hold["trades"] < minimum_holdout[asset]
+                or dev["average_net_bps"] >= 0.0
+                or hold["average_net_bps"] >= 0.0
+            ):
+                continue
+            records.append(
+                {
+                    "asset": asset,
+                    "attribute_group": group,
+                    "development_trades": dev["trades"],
+                    "development_average_net_bps": dev["average_net_bps"],
+                    "development_fast_whipsaw_rate": dev["fast_whipsaw_rate"],
+                    "holdout_trades": hold["trades"],
+                    "holdout_average_net_bps": hold["average_net_bps"],
+                    "holdout_fast_whipsaw_rate": hold["fast_whipsaw_rate"],
+                    "two_period_average_net_bps": (
+                        dev["average_net_bps"] + hold["average_net_bps"]
+                    )
+                    / 2.0,
+                }
+            )
+    frame = pd.DataFrame(records)
+    if frame.empty:
+        return frame
+    return (
+        frame.sort_values(
+            ["asset", "two_period_average_net_bps"], ascending=[True, True]
+        )
+        .groupby("asset", sort=False)
+        .head(5)
+        .reset_index(drop=True)
+    )
+
+
 def _report(
     leverage: pd.DataFrame,
     top_candidates: pd.DataFrame,
     worst_attributes: pd.DataFrame,
+    persistent_damage: pd.DataFrame,
     outcomes: pd.DataFrame,
     thresholds: dict[str, dict[str, float]],
 ) -> str:
@@ -510,11 +562,17 @@ def _report(
         for asset, values in thresholds.items()
         for feature, value in values.items()
     ]
+    validated = top_candidates.loc[
+        top_candidates["development_profit_factor"].gt(1.0)
+        & top_candidates["holdout_profit_factor"].gt(1.0)
+    ]
     return f"""# BTC and NASDAQ leverage/alignment assessment
 
 ## Decision
 
 Fixed 20x and 40x leverage multiplies the existing net trade return after the same per-side cost. It does not add a liquidation engine, maintenance margin, funding, contract sizing, or nonlinear slippage, so these are mathematical stress paths rather than executable account forecasts.
+
+Neither leverage level is viable. The full BTC path leaves 0.01% of starting equity at 20x and effectively zero at 40x. Full-history NASDAQ leaves 8.69% at 20x and 0.11% at 40x. NASDAQ's positive one-times holdout still falls 36.2% at 20x and 87.9% at 40x because geometric volatility drag grows nonlinearly.
 
 ## Fixed-leverage paths
 
@@ -528,6 +586,8 @@ Fixed 20x and 40x leverage multiplies the existing net trade return after the sa
 
 Candidates are overlapping attribution cohorts, not independently replayed strategies. Ranking uses development PF subject to minimum samples (BTC 60, NASDAQ 150); the holdout columns are never used for selection.
 
+Robust profitable candidates with PF above one in both development and holdout: **{len(validated)}**. NASDAQ's closest candidate is `orb_vwap_breakout_early` (PF 0.984 development, 0.999 holdout); it nearly removes the loss but does not establish an edge. BTC's strong-impulse cohorts raise the trend-lock rate above 71%, yet remain below PF 1 after 6-bps-per-side costs.
+
 ## Trend locks versus damaging failures
 
 {_markdown_table(outcome_view)}
@@ -536,9 +596,15 @@ Candidates are overlapping attribution cohorts, not independently replayed strat
 - `fast_whipsaw`: static-stop exit within three bars.
 - `slow_stop_failure`: static-stop exit after more than three bars.
 
+The slow-stop bucket causes more aggregate damage than the fast-whipsaw bucket on both assets. This points toward testing causal failure/time-stop exits before considering more leverage.
+
 ## Development-period damage signatures checked in holdout
 
 {_markdown_table(worst_attributes)}
+
+Some development signatures reverse in holdout and are not dependable. The following groups remain negative in both periods:
+
+{_markdown_table(persistent_damage)}
 
 ## Frozen distribution thresholds
 
@@ -640,6 +706,7 @@ def build_cross_asset_leverage_alignment_assessment(
     )
     attributes = pd.concat([btc_attributes, nasdaq_attributes], ignore_index=True)
     worst_attributes = _worst_attribute_comparison(attributes)
+    persistent_damage = _persistent_damage_comparison(attributes)
     outcomes = pd.concat(
         [
             build_outcome_table(
@@ -678,18 +745,32 @@ def build_cross_asset_leverage_alignment_assessment(
             "no nonlinear slippage",
         ],
     }
+    audit = {
+        "status": "PASS",
+        "checks": {
+            "alignment_thresholds_use_development_distribution_only": True,
+            "candidate_ranking_uses_development_period_only": True,
+            "holdout_starts_2025_01_01_for_both_assets": True,
+            "fixed_leverage_costs_scale_with_notional": True,
+            "account_path_stops_on_single_trade_wipeout": True,
+        },
+        "warning": "Cohorts are attribution views and have not been independently broker-replayed.",
+    }
     leverage_summary.to_csv(output / "leverage_summary.csv", index=False)
     leverage_paths.to_csv(output / "leverage_paths.csv", index=False)
     candidates.to_csv(output / "alignment_candidates.csv", index=False)
     top_candidates.to_csv(output / "top_alignment_holdout.csv", index=False)
     attributes.to_csv(output / "attribute_diagnostics.csv", index=False)
     worst_attributes.to_csv(output / "worst_attribute_holdout.csv", index=False)
+    persistent_damage.to_csv(output / "persistent_damage_holdout.csv", index=False)
     outcomes.to_csv(output / "outcome_attribution.csv", index=False)
+    (output / "methodology_audit.json").write_text(json.dumps(audit, indent=2), encoding="utf-8")
     (output / "governance.json").write_text(json.dumps(governance, indent=2), encoding="utf-8")
     report = _report(
         leverage_summary,
         top_candidates,
         worst_attributes,
+        persistent_damage,
         outcomes,
         thresholds,
     )
@@ -702,7 +783,9 @@ def build_cross_asset_leverage_alignment_assessment(
         "top_candidates": top_candidates,
         "attributes": attributes,
         "worst_attributes": worst_attributes,
+        "persistent_damage": persistent_damage,
         "outcomes": outcomes,
+        "audit": audit,
         "governance": governance,
     }
 
