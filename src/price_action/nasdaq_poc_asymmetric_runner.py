@@ -39,6 +39,7 @@ from .nasdaq_session_backtest import (
     build_ny_schedule,
     load_execution_costs,
     load_nasdaq_bars,
+    session_bootstrap,
 )
 
 
@@ -770,6 +771,7 @@ def _report(
     opportunity: pd.DataFrame,
     stable: pd.DataFrame,
     sensitivity: pd.DataFrame,
+    bootstrap: pd.DataFrame,
     governance: dict[str, Any],
 ) -> str:
     stable_columns = [
@@ -784,9 +786,37 @@ def _report(
         "candidate", "one_way_cost_bps", "trades", "win_rate", "average_net_r",
         "winner_loser_ratio", "cumulative_net_return", "max_drawdown",
     ]]
+    development = selected_summary.loc[
+        selected_summary["candidate"].eq("development_selected")
+        & selected_summary["scope"].eq("development_2024")
+    ].iloc[0]
+    evaluation = selected_summary.loc[
+        selected_summary["candidate"].eq("development_selected")
+        & selected_summary["scope"].eq("evaluation_2025")
+    ].iloc[0]
+    robust = selected_summary.loc[
+        selected_summary["candidate"].eq("migration_conditional_6r")
+        & selected_summary["scope"].eq("all")
+    ].iloc[0]
+    target_reach = opportunity.loc[
+        opportunity["context"].eq("migration_rth")
+        & opportunity["stop_spec"].eq("micro_3bar")
+    ].iloc[0]
+    binance_cost = float(governance["binance_execution"]["all_in_trade_cost_bps"])
+    binance_stress = sensitivity.loc[
+        sensitivity["candidate"].eq("migration_conditional_6r")
+        & sensitivity["one_way_cost_bps"].eq(binance_cost)
+    ].iloc[0]
     return f"""# One-Minute POC Asymmetric-Payoff Study
 
 Generated {governance['generated_at_utc']}.
+
+## Decision summary
+
+- The mechanically optimized 2024 winner is rejected: it made {development['cumulative_net_return']:.2%} in development but lost {evaluation['cumulative_net_return']:.2%} in 2025. This is direct evidence of selection overfit.
+- The broad, simpler migration runner is the best candidate for paper testing, not live trading: {int(robust['trades'])} trades, {robust['win_rate']:.1%} wins, {robust['average_net_r']:+.3f}R expectancy, {robust['winner_loser_ratio']:.2f} net winner/loser ratio, {robust['cumulative_net_return']:+.2%} compounded return, and {robust['max_drawdown']:.2%} drawdown at the unverified 0.5 bps one-way assumption.
+- A 6R outcome is exceptional rather than normal. With migration and the micro stop, {target_reach['reach_2r_before_stop_rate']:.1%} of overlapping events reached 2R before -1R, but only {target_reach['reach_6r_before_stop_rate']:.1%} reached 6R. The framework earns asymmetry through scratches and selective runners, not by forcing every trade to 6R.
+- The candidate's break-even one-way cost is about {robust['break_even_one_way_cost_bps']:.2f} bps. At the configured Binance proxy of {binance_cost:.1f} bps one way, the simulated return is {binance_stress['cumulative_net_return']:.2%}. Deployment therefore remains blocked.
 
 ## Selected candidate comparison
 
@@ -803,6 +833,12 @@ This is an overlapping event diagnostic, not an executable portfolio. Same-bar s
 The ranking below uses both years and is diagnostic only. It is not an untouched selection procedure.
 
 {_markdown_table(stable[stable_columns], rows=30)}
+
+## Session-block bootstrap
+
+Intervals resample complete sessions, preserving clustering between trades from the same day.
+
+{_markdown_table(bootstrap, rows=30)}
 
 ## Execution-cost sensitivity
 
@@ -887,6 +923,7 @@ def build_asymmetric_runner_study(
         "development_selected": top_key,
         "stable_5m_base": ("migration_rth", "hybrid_0.50", 0, 5, "full_2r"),
         "asymmetric_30m_2r": ("migration_rth", "hybrid_0.25", 0, 30, "full_2r"),
+        "migration_conditional_6r": ("migration_rth", "micro_3bar", 2, 60, "conditional_2r_to_6r"),
         "micro_conditional_6r": ("migration_trend_rth", "micro_3bar", 2, 60, "conditional_2r_to_6r"),
     }
     sensitivity, baseline_trades = cost_sensitivity(
@@ -907,6 +944,12 @@ def build_asymmetric_runner_study(
         }.items():
             selected_rows.append({"candidate": label, "scope": scope} | summarize_runner_trades(frame))
     selected_summary = pd.DataFrame(selected_rows)
+    bootstrap_frames: list[pd.DataFrame] = []
+    for label, trades in baseline_trades.items():
+        boot = session_bootstrap(trades.assign(setup=label))
+        boot = boot.loc[boot["setup"].eq("all")].drop(columns="setup")
+        bootstrap_frames.append(boot.assign(candidate=label))
+    bootstrap = pd.concat(bootstrap_frames, ignore_index=True)
     plot_paths = _plots(opportunity, stable, baseline_trades, sensitivity, output)
     governance = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
@@ -920,12 +963,30 @@ def build_asymmetric_runner_study(
         "selected_candidates": {label: list(key) for label, key in selected.items()},
         "plot_files": [path.name for path in plot_paths],
     }
+    configured_binance_cost = float(binance_execution.all_in_trade_cost_bps)
+    binance_stress = sensitivity.loc[
+        sensitivity["one_way_cost_bps"].eq(configured_binance_cost)
+    ]
+    deployment_gate = {
+        "status": "BLOCKED",
+        "reasons": [
+            "The Nasdaq CSV venue, contract, price grid, and volume identity are unverified.",
+            "Historical bid/ask spreads and market-impact fills are unavailable.",
+            "The configured Binance instrument mapping and historical funding are unavailable.",
+            "Every selected candidate loses money at the configured Binance all-in one-way cost stress."
+            if not binance_stress.empty and binance_stress["cumulative_net_return"].lt(0.0).all()
+            else "The Binance execution stress has not established positive net expectancy for every candidate.",
+            "A Nasdaq-derived POC signal cannot be transferred to BTCUSDT without a separate Binance one-minute and trade-side backtest.",
+        ],
+        "configured_binance_one_way_cost_bps": configured_binance_cost,
+    }
 
     grid.to_csv(output / "runner_grid.csv", index=False)
     stable.to_csv(output / "stability_audit.csv", index=False)
     opportunity.to_csv(output / "target_opportunity.csv", index=False)
     selected_summary.to_csv(output / "selected_summary.csv", index=False)
     sensitivity.to_csv(output / "cost_sensitivity.csv", index=False)
+    bootstrap.to_csv(output / "bootstrap.csv", index=False)
     pd.concat([_equity_path(trades, label) for label, trades in baseline_trades.items()], ignore_index=True).to_csv(
         output / "selected_equity_curves.csv", index=False
     )
@@ -934,7 +995,8 @@ def build_asymmetric_runner_study(
     for label, trades in baseline_trades.items():
         trades.to_csv(trades_output / f"{label}.csv", index=False)
     (output / "governance.json").write_text(json.dumps(governance, indent=2), encoding="utf-8")
-    report = _report(selected_summary, opportunity, stable, sensitivity, governance)
+    (output / "deployment_gate.json").write_text(json.dumps(deployment_gate, indent=2), encoding="utf-8")
+    report = _report(selected_summary, opportunity, stable, sensitivity, bootstrap, governance)
     (output / "report.md").write_text(report, encoding="utf-8")
     return {
         "report_path": output / "report.md",
@@ -943,6 +1005,8 @@ def build_asymmetric_runner_study(
         "opportunity": opportunity,
         "selected_summary": selected_summary,
         "cost_sensitivity": sensitivity,
+        "bootstrap": bootstrap,
+        "deployment_gate": deployment_gate,
     }
 
 

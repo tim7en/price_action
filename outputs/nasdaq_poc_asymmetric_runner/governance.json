@@ -1,0 +1,151 @@
+{
+  "generated_at_utc": "2026-07-22T03:28:29.673087+00:00",
+  "status": "RESEARCH_ONLY",
+  "data_file": "/Users/timursabitov/Dev/price_action/cache/Nasdaq.csv",
+  "data_quality": {
+    "input_rows": 681646,
+    "bar_minutes": 1,
+    "aggregated_rows": 681646,
+    "first_input_bar_utc": "2024-01-02T05:02:00+00:00",
+    "last_input_bar_utc": "2025-12-05T21:44:00+00:00",
+    "duplicate_timestamps": 0,
+    "zero_volume_rows": 0,
+    "non_one_minute_gap_events": 548,
+    "largest_gap_minutes": 4381.0,
+    "incomplete_aggregate_groups_dropped": 0,
+    "close_not_on_nq_quarter_tick_rows": 641336,
+    "close_not_on_nq_quarter_tick_share": 0.9408637327879867,
+    "instrument_identity": "unverified; price grid is inconsistent with CME NQ",
+    "volume_identity": "unverified; may be tick volume rather than exchange contract volume"
+  },
+  "execution": {
+    "instrument_assumption": "unverified_nasdaq_100_cash_or_cfd",
+    "commission_bps": 0.15,
+    "slippage_bps": 0.35,
+    "venue_and_contract_verified": false,
+    "historical_spread_supplied": false,
+    "one_way_cost_bps": 0.5,
+    "research_only": true,
+    "cost_note": "Commission plus slippage is charged to entry and exit notional."
+  },
+  "binance_execution": {
+    "product": "usd_m_perp",
+    "maker_fee_bps": 10.0,
+    "taker_fee_bps": 10.0,
+    "maker_fill_fraction": 0.0,
+    "bnb_fee_discount_fraction": 0.0,
+    "slippage_bps": 5.0,
+    "annual_funding_bps": 0.0,
+    "annual_cash_yield_bps": 0.0,
+    "funding_history_supplied": false,
+    "venue_instrument_mapping_supplied": false,
+    "commission_bps": 10.0,
+    "all_in_trade_cost_bps": 15.0,
+    "turnover_definition": "sum(abs(target_weight - prior_weight))",
+    "funding_note": "Positive funding means longs pay and shorts receive; supply historical rates for investable results.",
+    "research_only": true
+  },
+  "config": {
+    "risk_fraction": 0.01,
+    "leverage_ceiling": 20.0,
+    "maximum_session_losses": 3,
+    "stop_specs": [
+      "micro_3bar",
+      "hybrid_0.25",
+      "hybrid_0.50"
+    ],
+    "signal_contexts": [
+      "migration_rth",
+      "migration_trend_rth",
+      "migration_opening_15_30m",
+      "opening_15_30m",
+      "migration_trend_30_40m"
+    ],
+    "scratch_bars": [
+      0,
+      1,
+      2
+    ],
+    "maximum_holding_minutes": [
+      5,
+      10,
+      30,
+      60
+    ],
+    "management_specs": [
+      "full_2r",
+      "full_3r",
+      "full_4r",
+      "full_6r",
+      "partial_2r_to_4r",
+      "partial_2r_to_6r",
+      "conditional_2r_to_6r"
+    ],
+    "micro_lookback_bars": 3,
+    "micro_buffer_atr": 0.05,
+    "micro_minimum_atr": 0.25,
+    "scratch_minimum_progress_r": 0.25,
+    "partial_fraction": 0.5,
+    "protected_stop_r": 0.25,
+    "development_minimum_trades": 20,
+    "cost_sensitivity_bps": [
+      0.5,
+      1.0,
+      2.0,
+      5.0,
+      10.0,
+      15.0
+    ]
+  },
+  "research_config": {
+    "profile_rows": 64,
+    "profile_value_fraction": 0.7,
+    "poc_zone_half_width_daily_atr": 0.025,
+    "poc_cluster_distance_daily_atr": 0.05,
+    "daily_atr_sessions": 14,
+    "fifteen_minute_reference_blocks": 20
+  },
+  "selected_candidates": {
+    "development_selected": [
+      "opening_15_30m",
+      "micro_3bar",
+      2,
+      60,
+      "full_6r"
+    ],
+    "stable_5m_base": [
+      "migration_rth",
+      "hybrid_0.50",
+      0,
+      5,
+      "full_2r"
+    ],
+    "asymmetric_30m_2r": [
+      "migration_rth",
+      "hybrid_0.25",
+      0,
+      30,
+      "full_2r"
+    ],
+    "migration_conditional_6r": [
+      "migration_rth",
+      "micro_3bar",
+      2,
+      60,
+      "conditional_2r_to_6r"
+    ],
+    "micro_conditional_6r": [
+      "migration_trend_rth",
+      "micro_3bar",
+      2,
+      60,
+      "conditional_2r_to_6r"
+    ]
+  },
+  "plot_files": [
+    "target_reach_before_stop.png",
+    "selected_equity_and_drawdown.png",
+    "runner_cost_sensitivity.png",
+    "expectancy_stability.png"
+  ]
+}

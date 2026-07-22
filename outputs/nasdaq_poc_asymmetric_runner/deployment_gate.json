@@ -1,0 +1,11 @@
+{
+  "status": "BLOCKED",
+  "reasons": [
+    "The Nasdaq CSV venue, contract, price grid, and volume identity are unverified.",
+    "Historical bid/ask spreads and market-impact fills are unavailable.",
+    "The configured Binance instrument mapping and historical funding are unavailable.",
+    "Every selected candidate loses money at the configured Binance all-in one-way cost stress.",
+    "A Nasdaq-derived POC signal cannot be transferred to BTCUSDT without a separate Binance one-minute and trade-side backtest."
+  ],
+  "configured_binance_one_way_cost_bps": 15.0
+}
